@@ -1,20 +1,20 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <!-- R&D post template. Copy to rd/<slug>/index.html, replace every TODO, add a card on rd/index.html. -->
+  <!-- R&D post template, filled by tools/build.mjs from a GitHub Discussion. Double-brace names mark values. -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TODO: Post title | R&D | Emiliano Panday Manalo IV</title>
-  <meta name="description" content="TODO: One-sentence summary.">
-  <link rel="canonical" href="https://emilianomanaloiv.github.io/rd/TODO-slug/">
+  <title>{{title}} | R&amp;D | Emiliano Panday Manalo IV</title>
+  <meta name="description" content="{{description}}">
+  <link rel="canonical" href="https://emilianomanaloiv.github.io{{path}}">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <meta name="theme-color" content="#f1eee5" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#292927" media="(prefers-color-scheme: dark)">
 
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://emilianomanaloiv.github.io/rd/TODO-slug/">
-  <meta property="og:title" content="TODO: Post title | R&D | Emiliano Panday Manalo IV">
-  <meta property="og:description" content="TODO: One-sentence summary.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://emilianomanaloiv.github.io{{path}}">
+  <meta property="og:title" content="{{title}}">
+  <meta property="og:description" content="{{description}}">
   <meta name="twitter:card" content="summary">
 
   <script src="/js/theme.js"></script>
@@ -56,26 +56,20 @@
   <main id="main">
     <article id="post" class="section post">
       <div class="container prose">
-        <p class="eyebrow"><a href="/rd/">R&amp;D</a> / <time datetime="TODO-YYYY-MM-DD">TODO: Month D, YYYY</time> · TODO: N min read</p>
-        <h1>TODO: Post title</h1>
-        <p class="lede">TODO: One-sentence summary. Reuse it as the meta description and on the R&amp;D card.</p>
-
-        <h2>TODO: First heading</h2>
-        <p>TODO: Body text. Use h2 and h3 for structure, lists, <code>inline code</code>, blockquotes, and figures.</p>
-        <blockquote>
-          <p>TODO: An optional pull quote.</p>
-        </blockquote>
-
-        <footer class="post-footer">
-          <ul class="tags">
-            <li><span class="tag">TODO topic</span></li>
-          </ul>
-          <!-- Create a thread in GitHub Discussions for this post, then paste its URL here. -->
-          <p><a class="tag tag-link" href="https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/discussions/TODO">Discuss on GitHub</a></p>
-          <p><a href="/rd/">Back to all R&amp;D entries</a></p>
-        </footer>
+        <p class="eyebrow"><a href="/rd/">R&amp;D</a> / <time datetime="{{date_iso}}">{{date}}</time> · {{minutes}} min read</p>
+        <h1>{{title}}</h1>
+        {{body}}
       </div>
     </article>
+
+    <section id="comments" class="section">
+      <div class="container prose">
+        <h2 class="section-title"><span class="section-index" aria-hidden="true">01 /</span> Comments ({{comment_count}})</h2>
+        {{comments}}
+        <p><a class="tag tag-link" href="{{discussion_url}}">Comment on GitHub</a></p>
+        <p class="note">Commenting uses your GitHub account; your username appears here. <a href="/rd/">Back to all R&amp;D entries</a>.</p>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
@@ -84,6 +78,7 @@
         <hr class="footer-rule">
         <p class="footer-brand">EM</p>
         <p class="footer-tagline">Blending Engineering Practices With Art</p>
+        <p class="footer-links"><a href="/guestbook/">Sign the guestbook</a></p>
         <ul class="socials" aria-label="Social profiles">
           <li><a href="https://www.instagram.com/TODO" aria-label="Instagram">IG</a></li>
           <li><a href="https://www.linkedin.com/in/TODO" aria-label="LinkedIn">in</a></li>

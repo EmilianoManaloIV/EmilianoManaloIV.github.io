@@ -1,6 +1,6 @@
 # 0004: Multiple pages without a build step
 
-Status: Accepted (2026-10-18). Amends 0001, which assumed a single page.
+Status: Accepted (2026-10-18). Amends 0001, which assumed a single page. Amended by 0005: R&D posts are now built from GitHub Discussions, not written by hand.
 
 ## Context
 
