@@ -234,8 +234,14 @@ test("guestbook links to GitHub Discussions and explains signing", () => {
   assert.match(html("index.html"), /<a href="\/guestbook\/">sign the guestbook<\/a>/, "Contact links the guestbook");
 });
 
-test("main.js animates only where the motion toggle can pause it", () => {
-  assert.match(read("js/main.js"), /let motion = !reducedMotion\.matches && pausable;/);
+// WCAG 2.2.2: anything that moves must be pausable, so every page carries the
+// motion toggle in its shared footer, and main.js only animates when a toggle exists.
+test("every page has a motion toggle, and motion runs only where one exists", () => {
+  for (const page of pages) {
+    const footer = html(page).match(/<footer class="site-footer">[\s\S]*?<\/footer>/)?.[0] ?? "";
+    assert.match(footer, /<button[^>]*data-motion-toggle[^>]*aria-pressed=/, `${page}: no motion toggle in the footer`);
+  }
+  assert.match(read("js/main.js"), /let motion = pausable && \(savedMotion \? savedMotion === "on" : !reducedMotion\.matches\);/);
 });
 
 test("index.html: has Open Graph tags for link previews", () => {
@@ -262,7 +268,7 @@ test("index.html: motion and theme controls follow ADR 0002", () => {
   assert.match(read("js/theme.js"), /classList\.add\("js"\)/);
   const main = read("js/main.js");
   assert.match(main, /classList\.add\("js-ready"\)/);
-  assert.match(main, /prefers-reduced-motion: reduce[\s\S]*let motion = !reducedMotion\.matches/, "motion must start paused under reduced motion");
+  assert.match(main, /prefers-reduced-motion: reduce[\s\S]*: !reducedMotion\.matches\)/, "motion must start paused under reduced motion");
 });
 
 test("index.html: interaction aids from ADR 0003 are present and named", () => {

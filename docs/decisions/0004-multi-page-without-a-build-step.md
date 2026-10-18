@@ -23,7 +23,7 @@ Add pages as plain HTML files with clean folder URLs: `/about/`, `/rd/`, and `/r
 - **Posts:** each post is a copy of `templates/rd-post.html`. The template is not deployed. Tests require every post to be listed on the R&D index, dated with `<time datetime>`, and linked to its own GitHub Discussions thread.
 - **Discussion:** happens on GitHub Discussions, through a plain link. No comment widget, script, or tracking is added, so ADR 0002's no-network rule holds.
 - **Scripts:** the same three scripts load on every page. `main.js` and `ui.js` skip anything their page doesn't have.
-- **Motion:** only the home page, which has the motion toggle, animates. Other pages draw a still footer torus, so no page has motion the visitor cannot pause (WCAG 2.2.2).
+- **Motion:** every page carries a motion toggle in the shared footer, and the home banner has a second one; all share one state (WCAG 2.2.2). The visitor's choice is remembered across pages and visits in `localStorage`. Without a saved choice, reduced-motion visitors start paused. Before 2026-10-19 only the home page animated, because it was the only page with a toggle.
 
 ## Alternatives
 

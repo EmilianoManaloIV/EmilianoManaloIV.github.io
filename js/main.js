@@ -6,10 +6,18 @@ const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const systemDark = matchMedia("(prefers-color-scheme: dark)");
 const banner = document.querySelector(".banner");
 const terminal = document.querySelector(".terminal");
-// Motion runs only where the visitor can pause it: pages without the banner's
-// toggle (About, R&D, 404) draw a still frame instead (WCAG 2.2.2).
-const pausable = !!document.getElementById("motion-toggle");
-let motion = !reducedMotion.matches && pausable;
+// Motion runs only where the visitor can pause it (WCAG 2.2.2). Every page has a
+// toggle in the shared footer, plus one in the home banner; all share one state.
+// A remembered choice wins; otherwise reduced-motion visitors start paused.
+const motionButtons = [...document.querySelectorAll("[data-motion-toggle]")];
+const pausable = motionButtons.length > 0;
+let savedMotion = null;
+try {
+  savedMotion = localStorage.getItem("motion");
+} catch (e) {
+  // Storage can be blocked; the system setting still applies.
+}
+let motion = pausable && (savedMotion ? savedMotion === "on" : !reducedMotion.matches);
 let bannerVisible = false;
 let time = 0;
 const rand = (max) => Math.floor(Math.random() * max);
@@ -387,7 +395,6 @@ addEventListener("resize", showDevice);
 // Fixed accessible names; aria-pressed carries the state, and the visible
 // ": on/off" suffix is aria-hidden so the state is not announced twice.
 
-const motionButton = document.getElementById("motion-toggle");
 const themeButton = document.getElementById("theme-toggle");
 const showState = (button, on) => {
   button.setAttribute("aria-pressed", String(on));
@@ -407,8 +414,19 @@ function setMotion(on) {
   }
   motion = on;
   root.classList.toggle("motion-off", !on);
-  if (motionButton) showState(motionButton, on); // The motion toggle lives in the home banner only.
+  for (const button of motionButtons) showState(button, on);
   schedule();
+}
+
+// A click is a choice to remember, across pages and visits.
+function chooseMotion() {
+  setMotion(!motion);
+  savedMotion = motion ? "on" : "off";
+  try {
+    localStorage.setItem("motion", savedMotion);
+  } catch (e) {
+    // The choice still applies on this page.
+  }
 }
 
 function isDark() {
@@ -420,8 +438,11 @@ function syncThemeButton() {
   showState(themeButton, isDark());
 }
 
-motionButton?.addEventListener("click", () => setMotion(!motion));
-reducedMotion.addEventListener("change", (e) => setMotion(pausable && !e.matches));
+for (const button of motionButtons) button.addEventListener("click", chooseMotion);
+// The system setting only decides when the visitor hasn't chosen.
+reducedMotion.addEventListener("change", (e) => {
+  if (!savedMotion) setMotion(pausable && !e.matches);
+});
 
 themeButton.addEventListener("click", () => {
   const theme = isDark() ? "light" : "dark";
