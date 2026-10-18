@@ -19,7 +19,7 @@
         "name": "R&D"
       },
       "comments": {
-        "totalCount": 4,
+        "totalCount": 5,
         "pageInfo": {
           "hasNextPage": false,
           "endCursor": null
@@ -66,6 +66,18 @@
             "bodyHTML": "<p>Use {{name}} in Vue, and $&amp; $` $' in regex.</p><p><a href=\"https://visitor.example\">my site</a> <a href=\"javascript:alert(1)\">x</a></p><h1>Visitor heading</h1><constructor a=b>c</constructor><p title=\"&#99999999;\">big entity</p><img src=\"https://evil.example/track.png\" alt=\"tracker\"></div></li></ol><details><div>left open<p>hi</p><img src=x onerror=alert(document.domain)//",
             "author": {
               "login": "hostile-visitor"
+            },
+            "replies": {
+              "nodes": []
+            }
+          },
+          {
+            "url": "u-honest",
+            "createdAt": "2026-10-20T21:00:00Z",
+            "isMinimized": false,
+            "bodyHTML": "<p><a title=\"javascript: is a language\" href=\"https://ok.example\">t</a> <a href=\"#user-content-fn-1\">1</a> <a href=\"/no-such-page/\">np</a> <a href=\"//example.org/x\">pr</a></p><li>bare li</li><table><tr><td>cell</td></tr></table><table><div><table>x",
+            "author": {
+              "login": "honest-visitor"
             },
             "replies": {
               "nodes": []
@@ -129,7 +141,7 @@
         "name": "Guestbook"
       },
       "comments": {
-        "totalCount": 5,
+        "totalCount": 6,
         "pageInfo": {
           "hasNextPage": false,
           "endCursor": null
@@ -190,6 +202,18 @@
             "bodyHTML": "<p>Use {{name}} in Vue, and $&amp; $` $' in regex.</p><p><a href=\"https://visitor.example\">my site</a> <a href=\"javascript:alert(1)\">x</a></p><h1>Visitor heading</h1><constructor a=b>c</constructor><p title=\"&#99999999;\">big entity</p><img src=\"https://evil.example/track.png\" alt=\"tracker\"></div></li></ol><details><div>left open<p>hi</p><img src=x onerror=alert(document.domain)//",
             "author": {
               "login": "hostile-visitor"
+            },
+            "replies": {
+              "nodes": []
+            }
+          },
+          {
+            "url": "u-honest",
+            "createdAt": "2026-10-20T21:00:00Z",
+            "isMinimized": false,
+            "bodyHTML": "<p><a title=\"javascript: is a language\" href=\"https://ok.example\">t</a> <a href=\"#user-content-fn-1\">1</a> <a href=\"/no-such-page/\">np</a> <a href=\"//example.org/x\">pr</a></p><li>bare li</li><table><tr><td>cell</td></tr></table><table><div><table>x",
+            "author": {
+              "login": "honest-visitor"
             },
             "replies": {
               "nodes": []

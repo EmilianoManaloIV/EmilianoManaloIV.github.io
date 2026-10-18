@@ -16,7 +16,9 @@ const SITE = "https://emilianomanaloiv.github.io";
 const REPO = process.env.GITHUB_REPOSITORY || "EmilianoManaloIV/EmilianoManaloIV.github.io";
 const STATIC = ["index.html", "404.html", "styles.css", "favicon.svg", "emiliano-manalo.vcf", "assets", "js", "about", "rd", "guestbook"];
 // Limits for images found in posts and comments, which strangers can write.
-const IMAGE = { maxBytes: 10 * 1024 * 1024, maxPerPage: 20, maxSide: 20000, timeoutMs: 15000 };
+// Attempts count against maxPerPage whether they succeed or not, so a comment full of
+// dead links can't stall the build; pageBytes keeps a page's images well under Pages limits.
+const IMAGE = { maxBytes: 10 * 1024 * 1024, pageBytes: 25 * 1024 * 1024, maxPerPage: 20, maxSide: 20000, timeoutMs: 15000 };
 const API_TIMEOUT_MS = 30000;
 
 const args = process.argv.slice(2);
@@ -130,11 +132,13 @@ async function readCapped(response) {
 
 async function downloadImages(html, dir, fixtureImages) {
   const images = new Map();
-  let n = 0;
+  let attempts = 0;
+  let saved = 0;
+  let pageBytes = 0;
   for (const src of new Set(r.imageSources(html))) {
     try {
       if (!r.isAllowedImageUrl(src)) throw new Error("not a GitHub image host");
-      if (n >= IMAGE.maxPerPage) throw new Error(`more than ${IMAGE.maxPerPage} images on one page`);
+      if (++attempts > IMAGE.maxPerPage) throw new Error(`more than ${IMAGE.maxPerPage} images on one page`);
       let bytes;
       if (fixtureImages) {
         if (!(src in fixtureImages)) throw new Error("not in fixture");
@@ -142,12 +146,17 @@ async function downloadImages(html, dir, fixtureImages) {
       } else {
         const response = await fetch(src, { redirect: "follow", signal: AbortSignal.timeout(IMAGE.timeoutMs) });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        // GitHub redirects attachments to its CDN; anything else after a redirect is refused.
+        if (!r.isAllowedImageUrl(response.url) && !/^https:\/\/[\w.-]+\.githubusercontent\.com\//.test(response.url)) {
+          throw new Error(`redirected off GitHub to ${response.url.slice(0, 80)}`);
+        }
         bytes = await readCapped(response);
       }
       const size = r.imageSize(bytes);
       if (!size) throw new Error("not a PNG, JPEG, GIF, or WebP");
       if (!(size.width > 0 && size.height > 0 && size.width <= IMAGE.maxSide && size.height <= IMAGE.maxSide)) throw new Error("implausible size");
-      const file = `img-${++n}.${size.type === "jpeg" ? "jpg" : size.type}`;
+      if ((pageBytes += bytes.length) > IMAGE.pageBytes) throw new Error("page image budget of 25 MB used up");
+      const file = `img-${++saved}.${size.type === "jpeg" ? "jpg" : size.type}`;
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, file), bytes);
       images.set(src, { file, width: size.width, height: size.height });

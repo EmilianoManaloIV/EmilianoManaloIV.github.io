@@ -61,15 +61,40 @@ test("no built page has an unfilled template value or build marker", () => {
 
 // ADR 0005: strangers write comments and guestbook entries, so check every built page
 // for anything that could run script or load from another site.
-test("no built page carries script hooks or third-party loads", () => {
+// An allowlist, not a denylist: every tag, attribute name, and URL scheme on every built
+// page must be one the site itself uses or the sanitizer allows. Attribute *values* are
+// only checked for URLs, so harmless visitor text ("javascript: is a language") passes.
+const SAFE_TAGS = new Set(("a article b blockquote body br button canvas code del details div em figcaption figure footer " +
+  "h1 h2 h3 h4 h5 h6 head header hr html i img ins kbd li link main meta nav ol p pre s script section span strong " +
+  "sub summary sup table tbody td th thead time title tr ul").split(" "));
+const SAFE_ATTRS = /^(alt|align|as|charset|class|content|crossorigin|datetime|download|height|href|http-equiv|id|lang|loading|media|name|property|rel|role|src|start|title|type|width|aria-[a-z]+|data-[a-z-]+)$/;
+// No "//host" or "/\host" (both leave the site), and any scheme must be http(s) or mailto.
+// Decoded first, as a browser would: "javascript&colon;" and "java&#9;script:" are schemes too.
+const decodeUrl = (url) =>
+  url
+    .replace(/&#x([0-9a-f]+);?/gi, (m, n) => String.fromCodePoint(Math.min(parseInt(n, 16), 0x10ffff)))
+    .replace(/&#(\d+);?/g, (m, n) => String.fromCodePoint(Math.min(Number(n), 0x10ffff)))
+    .replace(/&colon;/gi, ":")
+    .replace(/&(tab|newline);/gi, "")
+    .replace(/&amp;/g, "&")
+    .replace(/[\u0000-  ]/g, "");
+const SAFE_URL = (raw) => {
+  const url = decodeUrl(raw);
+  return !/^\/[/\\]/.test(url) && (!/^[a-z][a-z0-9+.-]*:/i.test(url) || /^(https?|mailto):/i.test(url));
+};
+
+test("no built page carries anything outside the tag, attribute, and URL allowlists", () => {
   for (const page of allPages) {
     const text = html(page);
-    for (const tag of text.match(/<[a-zA-Z][^>]*>/g) ?? []) {
-      assert.doesNotMatch(tag, /\son[a-z]+\s*=/i, `${page}: event handler in ${tag}`);
-      assert.doesNotMatch(tag, /javascript:|vbscript:|data:text|srcset=/i, `${page}: unsafe attribute in ${tag}`);
-      assert.doesNotMatch(tag, /\s(src|href)="\/\//, `${page}: protocol-relative URL in ${tag}`);
+    for (const [tag, name, rest] of text.matchAll(/<([a-zA-Z][a-zA-Z0-9-]*)((?:"[^"]*"|'[^']*'|[^'">])*)>/g)) {
+      assert.ok(SAFE_TAGS.has(name.toLowerCase()), `${page}: <${name}> is not allowed`);
+      // Browsers accept "/" as well as whitespace before an attribute (<a/onclick=...>).
+      for (const [, attr, dq, sq, bare] of rest.matchAll(/[\s/]+([^\s"'=<>/]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g)) {
+        const value = dq ?? sq ?? bare ?? "";
+        assert.match(attr.toLowerCase(), SAFE_ATTRS, `${page}: attribute ${attr} in ${tag.slice(0, 80)}`);
+        if (/^(href|src)$/i.test(attr)) assert.ok(SAFE_URL(value), `${page}: unsafe URL ${value}`);
+      }
     }
-    assert.doesNotMatch(text, /<(iframe|object|embed|svg|math)\b/i, `${page}: embedded content`);
     assert.equal((text.match(/<script\b/gi) ?? []).length, (text.match(/<script\b[^>]*\ssrc="\/?js\/[\w.]+"[^>]*><\/script>/gi) ?? []).length, `${page}: script other than the site's own`);
   }
 });

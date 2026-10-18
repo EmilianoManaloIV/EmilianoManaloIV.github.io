@@ -91,7 +91,32 @@ test("sanitizing hostile input stays fast", () => {
   const started = performance.now();
   sanitize("<a ".repeat(30000));
   sanitize('<a title="'.repeat(5000));
-  assert.ok(performance.now() - started < 1000, "sanitize took too long");
+  sanitize("<b>".repeat(30000) + "</i>".repeat(40000));
+  sanitize("<p>".repeat(33000) + "</b>".repeat(25000));
+  assert.ok(performance.now() - started < 1500, "sanitize took too long");
+});
+
+// From the second security review: these shapes made the browser's parser close
+// elements outside the fragment, spilling later comments out of their box.
+test("list items and tables can't break out of a comment box", () => {
+  const visitor = { shift: 2, ugc: true };
+  assert.equal(sanitize("<li>x</li>", visitor), "x");
+  assert.equal(sanitize("<ul><li>a</li></ul>", visitor), "<ul><li>a</li></ul>");
+  assert.equal(sanitize("<div><li>x</li></div>", visitor), "<div>x</div>");
+  assert.equal(sanitize("<table><tr><td>x</td></tr></table>", visitor), "x", "no tables from visitors");
+  assert.equal(sanitize("<table><div><table>x"), "<table><div>x</div></table>", "no table inside a table");
+  assert.equal(sanitize("<td>x</td>"), "x", "table parts only inside a table");
+  assert.equal(sanitize("<table><tr><td>x</td></tr></table>"), "<table><tr><td>x</td></tr></table>", "owner tables still work");
+});
+
+test("visitor links must be full https or mailto URLs; owner links may be site-relative", () => {
+  const visitor = { ugc: true };
+  for (const href of ["//example.org/x", "/\\evil.example", "/no-such-page/", "#user-content-fn-1", "/\t/evil.example"]) {
+    assert.doesNotMatch(sanitize(`<a href="${href}">x</a>`, visitor), /href=/, href);
+  }
+  assert.match(sanitize('<a href="mailto:a@b.example">m</a>', visitor), /href="mailto:a@b\.example"/);
+  assert.match(sanitize('<a href="/about/">about</a>'), /href="\/about\/"/);
+  for (const href of ["//example.org/x", "/\\evil.example", "#fn-1"]) assert.doesNotMatch(sanitize(`<a href="${href}">x</a>`), /href=/, `owner ${href}`);
 });
 
 test("insertAt inserts text literally, whatever it contains", () => {

@@ -58,6 +58,7 @@ Editing the discussion updates the page; renaming keeps old links working; delet
 Moderation: delete a comment to remove it within a minute, or hide it to remove it within the hour.
 The guestbook is the pinned discussion in the **Guestbook** category; each comment is a signature.
 Only discussions written by `EmilianoManaloIV` in R&D become posts (ADR 0005).
+A broken site link inside a post (for example `/no-such-page/`) stops the deploy until fixed; the Actions log names the page.
 
 ## Git workflow
 

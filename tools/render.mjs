@@ -77,12 +77,18 @@ const ALLOWED = new Map(
 // Elements whose content is dropped along with them. Unclosed, they drop everything after.
 const DROP_CONTENT = new Set(["script", "style", "iframe", "object", "embed", "svg", "math", "template", "noscript", "textarea", "select", "title", "xmp", "plaintext", "noembed", "noframes"]);
 const VOID = new Set(["br", "hr", "img"]);
+const TABLE = new Set(["table", "thead", "tbody", "tr", "th", "td"]);
 const URL_ATTRS = new Set(["href", "src"]);
-const SAFE_URL = /^(https?:|mailto:|\/|#)/i;
 // One complete tag, quote-aware. Names and unquoted values exclude "<", so a failed
 // match stops at the next "<" and the scan stays linear.
 const TAG = /<(\/?)([a-zA-Z][a-zA-Z0-9-]*)((?:\s+[^\s"'<>\/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*)\s*\/?>/y;
 const MAX_INPUT = 200_000;
+
+// Links visitors write must be full https/mailto URLs. The owner's posts may also use
+// site-relative paths, but never "//host" or "/\host", which browsers send off-site.
+// In-page "#" links are dropped: GitHub's footnote ids don't survive sanitizing.
+const VISITOR_URL = /^(https?:|mailto:)/i;
+const OWNER_URL = /^(https?:|mailto:|\/(?![/\\]))/i;
 
 function cleanAttributes(name, raw, ugc) {
   const allowed = ALLOWED.get(name);
@@ -91,7 +97,7 @@ function cleanAttributes(name, raw, ugc) {
     const key = attr.toLowerCase();
     if (!allowed.includes(key)) continue;
     const value = decodeEntities((dq ?? sq ?? bare ?? "").trim());
-    if (URL_ATTRS.has(key) && !SAFE_URL.test(value.replace(/[\u0000- ]/g, ""))) continue;
+    if (URL_ATTRS.has(key) && !(ugc ? VISITOR_URL : OWNER_URL).test(value.replace(/[\u0000-  ]/g, ""))) continue;
     kept.push(` ${key}="${escapeHtml(value)}"`);
   }
   // Links written by visitors earn no search ranking from this site.
@@ -106,6 +112,17 @@ function cleanAttributes(name, raw, ugc) {
 export function sanitize(html, { shift = 1, ugc = false } = {}) {
   const input = String(html ?? "").slice(0, MAX_INPUT);
   const open = [];
+  const depth = new Map(); // open count per tag, so impossible closers are skipped in O(1)
+  const push = (tag) => {
+    open.push(tag);
+    depth.set(tag, (depth.get(tag) ?? 0) + 1);
+  };
+  const pop = () => {
+    const tag = open.pop();
+    depth.set(tag, depth.get(tag) - 1);
+    return tag;
+  };
+  const inside = (tag) => (depth.get(tag) ?? 0) > 0;
   let out = "";
   let i = 0;
   const heading = (name) => (/^h[1-6]$/.test(name) ? `h${Math.min(6, Number(name[1]) + shift)}` : name);
@@ -148,15 +165,20 @@ export function sanitize(html, { shift = 1, ugc = false } = {}) {
     }
     if (closing) {
       // Close only what this fragment opened; stray closers are dropped.
-      const at = open.lastIndexOf(tag);
-      if (at === -1) continue;
-      while (open.length > at) out += `</${open.pop()}>`;
+      if (!inside(tag)) continue;
+      while (open.at(-1) !== tag) out += `</${pop()}>`;
+      out += `</${pop()}>`;
       continue;
     }
-    open.push(tag);
+    // The HTML parser lets <li> and nested tables close elements outside the fragment,
+    // which would break out of the comment box. So: <li> only directly in a list,
+    // no tables at all from visitors, and no table inside a table.
+    if (name === "li" && !["ul", "ol"].includes(open.at(-1))) continue;
+    if (TABLE.has(name) && (ugc || (name === "table" ? inside("table") : !inside("table")))) continue;
+    push(tag);
     out += `<${tag}${cleanAttributes(name, rest, ugc)}>`;
   }
-  while (open.length) out += `</${open.pop()}>`;
+  while (open.length) out += `</${pop()}>`;
   return out;
 }
 
@@ -265,7 +287,7 @@ export const isoDate = (iso) => new Date(iso).toISOString().slice(0, 10);
 // Visitor content sits under the page's "Comments" heading and links get nofollow.
 const VISITOR = { shift: 2, ugc: true };
 const visible = (nodes) => (nodes ?? []).filter((c) => c && !c.isMinimized);
-const login = (c) => c?.author?.login || "ghost";
+const login = (c) => String(c?.author?.login || "ghost");
 
 function commentItem(comment, { replies = true } = {}) {
   const name = login(comment);

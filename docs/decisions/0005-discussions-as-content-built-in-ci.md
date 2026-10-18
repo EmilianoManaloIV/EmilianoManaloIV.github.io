@@ -19,7 +19,9 @@ GitHub Discussions on this repository holds the content. A zero-dependency Node 
 - **Who can publish:** a post must be in R&D and authored by the owner. Both categories use GitHub's announcement format, so only maintainers can start discussions there. That's two independent checks.
 - **Sanitizing:** post and comment bodies use GitHub's pre-rendered, sanitized HTML, but the build does not rely on that. A small tokenizer keeps only allowlisted tags and attributes, escapes every `<` that doesn't start a complete allowed tag, drops comments, unfinished tags, scripts, frames, styles, event handlers, and `javascript:` or `data:` URLs, and balances open tags so a fragment can't break the page around it. Titles and usernames are escaped.
 - **Literal insertion:** template values are filled in one pass and markers are replaced literally, so `{{` or `$&` in anything a visitor writes is plain text and can't break a build.
-- **Visitor links:** links in comments and guestbook entries get `rel="nofollow ugc noopener"`.
+- **Visitor links:** links in comments and guestbook entries must be full `https` or `mailto` URLs, and get `rel="nofollow ugc noopener"`. The owner's posts may also link site-relative paths, never `//host` or `/\host`.
+- **Structure:** visitors can't use tables, `<li>` is kept only directly inside a list, and tables never nest, because the browser's parser would otherwise let a fragment close the comment box around it.
+- **Deploy gate:** the live build runs the site tests, which check tags, attribute names, and URL schemes against allowlists rather than scanning text, so an ordinary comment can't block a deploy. A broken site-relative link in one of the owner's own posts does stop the deploy, and the Actions log names it.
 - **Read-only build:** the token has only `contents: read` and `discussions: read`.
 
 **Privacy:**
