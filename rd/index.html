@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>R&D | Emiliano Panday Manalo IV</title>
+  <meta name="description" content="Notes on what Emiliano Panday Manalo IV is learning, researching, and wants to discuss.">
+  <link rel="canonical" href="https://emilianomanaloiv.github.io/rd/">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#f1eee5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#292927" media="(prefers-color-scheme: dark)">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://emilianomanaloiv.github.io/rd/">
+  <meta property="og:title" content="R&D | Emiliano Panday Manalo IV">
+  <meta property="og:description" content="Notes on what Emiliano Panday Manalo IV is learning, researching, and wants to discuss.">
+  <meta name="twitter:card" content="summary">
+
+  <script src="/js/theme.js"></script>
+  <link rel="preload" href="/assets/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/ibm-plex-mono-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="modulepreload" href="/js/geometry.js">
+  <script type="module" src="/js/main.js"></script>
+  <script type="module" src="/js/ui.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container">
+      <a class="monogram" href="/" aria-label="Emiliano Panday Manalo IV, home">EM</a>
+      <nav id="site-nav" aria-label="Primary">
+        <ul class="nav-list">
+          <li><a href="/#home"><span class="nav-index" aria-hidden="true">00</span> Home</a></li>
+          <li><a href="/#about"><span class="nav-index" aria-hidden="true">01</span> About</a></li>
+          <li><a href="/#projects"><span class="nav-index" aria-hidden="true">02</span> Projects</a></li>
+          <li><a href="/rd/" aria-current="page"><span class="nav-index" aria-hidden="true">03</span> R&amp;D</a></li>
+          <li><a href="/#contact"><span class="nav-index" aria-hidden="true">04</span> Contact</a></li>
+        </ul>
+      </nav>
+      <div class="header-tools">
+        <!-- TODO(figma): replace text labels with the social icons exported from Figma. -->
+        <ul class="socials" aria-label="Social profiles">
+          <li><a href="https://www.instagram.com/TODO" aria-label="Instagram">IG</a></li>
+          <li><a href="https://www.linkedin.com/in/TODO" aria-label="LinkedIn">in</a></li>
+          <li><a href="https://x.com/TODO" aria-label="X">X</a></li>
+          <li><a href="https://github.com/EmilianoManaloIV" aria-label="GitHub">GH</a></li>
+        </ul>
+        <button class="toggle" type="button" id="theme-toggle" aria-pressed="false">Dark mode<span data-state aria-hidden="true">: off</span></button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section id="rd" class="page-hero">
+      <div class="container">
+        <p class="eyebrow"><a href="/">Home</a> / R&amp;D</p>
+        <h1>R&amp;D</h1>
+        <p class="lede">Notes on what I'm learning, researching, and want to discuss. Research and development, in the open.</p>
+      </div>
+    </section>
+
+    <section id="entries" class="section">
+      <div class="container">
+        <h2 class="section-title"><span class="section-index" aria-hidden="true">01 /</span> Entries</h2>
+        <!-- Add one <li class="post-card"> per post, newest first. See templates/rd-post.html. -->
+        <ol class="post-list" data-post-list></ol>
+        <p class="empty-state">First entries coming soon. Meanwhile, start or join a conversation in <a href="https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/discussions">GitHub Discussions</a>.</p>
+      </div>
+    </section>
+
+    <section id="how" class="section">
+      <div class="container">
+        <h2 class="section-title"><span class="section-index" aria-hidden="true">02 /</span> How this works</h2>
+        <div class="prose">
+          <p>Each entry is a short write-up of something I learned, tried, or am still figuring out. Every entry ends with a link to its own discussion thread on GitHub, where questions, corrections, and counterpoints are welcome.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div>
+        <hr class="footer-rule">
+        <p class="footer-brand">EM</p>
+        <p class="footer-tagline">Blending Engineering Practices With Art</p>
+        <ul class="socials" aria-label="Social profiles">
+          <li><a href="https://www.instagram.com/TODO" aria-label="Instagram">IG</a></li>
+          <li><a href="https://www.linkedin.com/in/TODO" aria-label="LinkedIn">in</a></li>
+          <li><a href="https://x.com/TODO" aria-label="X">X</a></li>
+          <li><a href="https://github.com/EmilianoManaloIV" aria-label="GitHub">GH</a></li>
+        </ul>
+      </div>
+      <canvas class="torus-scene" data-scene="torus" aria-hidden="true"></canvas>
+    </div>
+  </footer>
+</body>
+</html>

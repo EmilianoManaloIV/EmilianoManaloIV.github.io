@@ -6,7 +6,10 @@ const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const systemDark = matchMedia("(prefers-color-scheme: dark)");
 const banner = document.querySelector(".banner");
 const terminal = document.querySelector(".terminal");
-let motion = !reducedMotion.matches;
+// Motion runs only where the visitor can pause it: pages without the banner's
+// toggle (About, R&D, 404) draw a still frame instead (WCAG 2.2.2).
+const pausable = !!document.getElementById("motion-toggle");
+let motion = !reducedMotion.matches && pausable;
 let bannerVisible = false;
 let time = 0;
 const rand = (max) => Math.floor(Math.random() * max);
@@ -404,7 +407,7 @@ function setMotion(on) {
   }
   motion = on;
   root.classList.toggle("motion-off", !on);
-  showState(motionButton, on);
+  if (motionButton) showState(motionButton, on); // The motion toggle lives in the home banner only.
   schedule();
 }
 
@@ -417,8 +420,8 @@ function syncThemeButton() {
   showState(themeButton, isDark());
 }
 
-motionButton.addEventListener("click", () => setMotion(!motion));
-reducedMotion.addEventListener("change", (e) => setMotion(!e.matches));
+motionButton?.addEventListener("click", () => setMotion(!motion));
+reducedMotion.addEventListener("change", (e) => setMotion(pausable && !e.matches));
 
 themeButton.addEventListener("click", () => {
   const theme = isDark() ? "light" : "dark";

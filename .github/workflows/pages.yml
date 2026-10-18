@@ -33,7 +33,7 @@ jobs:
         run: |
           mkdir _site
           cp index.html 404.html styles.css favicon.svg emiliano-manalo.vcf _site/
-          cp -r assets js _site/
+          cp -r assets js about rd _site/
       - uses: actions/upload-pages-artifact@v4
         with:
           path: _site
