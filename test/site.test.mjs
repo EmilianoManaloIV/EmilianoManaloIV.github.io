@@ -28,7 +28,7 @@ const isExternal = (url) => /^(https?:|mailto:|tel:)/.test(url);
 
 // Resolve a local href or src from a page to a file path and optional fragment.
 function target(page, url) {
-  const [path, hash = ""] = url.split("#");
+  const [path, hash = ""] = url.split("?")[0].split("#");
   let file = path.startsWith("/") ? path.slice(1) : relative(root, resolve(root, dirname(page), path)).split(sep).join("/");
   if (path === "") file = page;
   if (file === "" || file.endsWith("/")) file += "index.html";
@@ -107,6 +107,7 @@ test("every page repeats the home page's header and footer exactly", () => {
     return ["header", "footer"].map((tag) => source.match(new RegExp(`<${tag} class="site-${tag}">[\\s\\S]*?</${tag}>`))?.[0]);
   };
   const [header, footer] = chrome("index.html");
+  assert.ok(header && footer, "index.html header or footer not found");
   for (const page of [...pages, "templates/rd-post.html"]) {
     const [h, f] = chrome(page);
     assert.equal(h, header, `${page}: header differs from index.html`);
@@ -114,16 +115,36 @@ test("every page repeats the home page's header and footer exactly", () => {
   }
 });
 
-test("subpages mark their nav item with aria-current=page", () => {
-  assert.match(html("about/index.html"), /<a href="\/#about" aria-current="page">/);
-  assert.match(html("rd/index.html"), /<a href="\/rd\/" aria-current="page">/);
+test("each subpage marks exactly its own nav item; home and 404 mark none", () => {
+  const marks = (file) => html(file).match(/<a href="([^"]+)" aria-current="page">/g) ?? [];
+  assert.deepEqual(marks("index.html"), []);
+  assert.deepEqual(marks("404.html"), []);
+  assert.deepEqual(marks("about/index.html"), ['<a href="/#about" aria-current="page">']);
+  for (const page of pages.filter((p) => p.startsWith("rd/"))) {
+    assert.deepEqual(marks(page), ['<a href="/rd/" aria-current="page">'], page);
+  }
+});
+
+test("every page loads the shared scripts and a skip link", () => {
+  for (const page of [...pages, "templates/rd-post.html"]) {
+    const source = html(page);
+    for (const script of ["js/theme.js", "js/main.js", "js/ui.js"]) {
+      assert.match(source, new RegExp(`<script[^>]*src="/?${script.replace(".", "\\.")}"`), `${page}: missing ${script}`);
+    }
+    assert.match(source, /<a class="skip-link" href="#main">/, `${page}: missing skip link`);
+  }
+});
+
+test("main.js animates only where the motion toggle can pause it", () => {
+  assert.match(read("js/main.js"), /let motion = !reducedMotion\.matches && pausable;/);
 });
 
 test("R&D: every post is listed on the index, dated, and linked to its discussion", () => {
   const index = html("rd/index.html");
-  const posts = pages.filter((p) => /^rd\/[^/]+\/index\.html$/.test(p));
+  // Every page under rd/ except the index is a post, however deeply nested.
+  const posts = pages.filter((p) => p.startsWith("rd/") && p !== "rd/index.html");
   for (const post of posts) {
-    const slug = post.split("/")[1];
+    const slug = post.replace(/^rd\//, "").replace(/\/?index\.html$/, "");
     assert.match(index, new RegExp(`href="/rd/${slug}/"`), `${slug} is not listed on rd/index.html`);
     const source = html(post);
     assert.match(source, /<time datetime="\d{4}-\d{2}-\d{2}">/, `${slug}: needs a <time datetime>`);
@@ -240,9 +261,9 @@ test("emiliano-manalo.vcf: is a valid vCard with CRLF line endings", () => {
 });
 
 test(".github/workflows/pages.yml: deploys every page folder", () => {
-  const workflow = read(".github/workflows/pages.yml");
+  const copied = read(".github/workflows/pages.yml").match(/cp -r ([^\n]+) _site\//)[1].split(/\s+/);
   for (const folder of new Set(pages.filter((p) => p.includes("/")).map((p) => p.split("/")[0]))) {
-    assert.match(workflow, new RegExp(`\\b${folder}\\b`), `${folder}/ is not copied into _site`);
+    assert.ok(copied.includes(folder), `${folder}/ is not copied into _site`);
   }
 });
 

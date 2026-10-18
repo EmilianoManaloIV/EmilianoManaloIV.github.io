@@ -967,11 +967,11 @@ html:not(.js) canvas[data-scene] {
 }
 
 /* An empty list never shows; the empty-state line explains instead. */
-.post-list:empty {
+.post-list:not(:has(li)) {
   display: none;
 }
 
-.post-list:not(:empty) + .empty-state {
+.post-list:has(li) + .empty-state {
   display: none;
 }
 

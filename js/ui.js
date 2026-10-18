@@ -15,7 +15,7 @@ function setCurrent(id) {
   let navText = "";
   for (const link of navLinks) {
     // Only same-page links: /#about on the home page, never /rd/ or /#about elsewhere.
-    const here = link.pathname === location.pathname && link.hash === `#${id}`;
+    const here = link.pathname === location.pathname.replace(/index\.html$/, "") && link.hash === `#${id}`;
     if (here) link.setAttribute("aria-current", "true");
     else if (link.getAttribute("aria-current") === "true") link.removeAttribute("aria-current");
     if (here && link.closest("#site-nav")) navText = link.textContent.trim().replace(/\s+/, " / ");
