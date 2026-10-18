@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Project page template, filled by tools/build.mjs from a GitHub Discussion in Projects (ADR 0006). Double-brace names mark values. -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{title}} | Projects | Emiliano Panday Manalo IV</title>
+  <meta name="description" content="{{description}}">
+  <link rel="canonical" href="https://emilianomanaloiv.github.io{{path}}">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#f1eee5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#292927" media="(prefers-color-scheme: dark)">
+
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://emilianomanaloiv.github.io{{path}}">
+  <meta property="og:title" content="{{title}}">
+  <meta property="og:description" content="{{description}}">
+  <meta name="twitter:card" content="summary">
+
+  <script src="/js/theme.js"></script>
+  <link rel="preload" href="/assets/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/ibm-plex-mono-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="modulepreload" href="/js/geometry.js">
+  <script type="module" src="/js/main.js"></script>
+  <script type="module" src="/js/ui.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container">
+      <a class="monogram" href="/" aria-label="Emiliano Panday Manalo IV, home">EM</a>
+      <nav id="site-nav" aria-label="Primary">
+        <ul class="nav-list">
+          <li><a href="/#home"><span class="nav-index" aria-hidden="true">00</span> Home</a></li>
+          <li><a href="/#about"><span class="nav-index" aria-hidden="true">01</span> About</a></li>
+          <li><a href="/#projects" aria-current="page"><span class="nav-index" aria-hidden="true">02</span> Projects</a></li>
+          <li><a href="/rd/"><span class="nav-index" aria-hidden="true">03</span> R&amp;D</a></li>
+          <li><a href="/#contact"><span class="nav-index" aria-hidden="true">04</span> Contact</a></li>
+        </ul>
+      </nav>
+      <div class="header-tools">
+        <!-- TODO(figma): replace text labels with the social icons exported from Figma. -->
+        <ul class="socials" aria-label="Social profiles">
+          <li><a href="https://www.instagram.com/TODO" aria-label="Instagram">IG</a></li>
+          <li><a href="https://www.linkedin.com/in/TODO" aria-label="LinkedIn">in</a></li>
+          <li><a href="https://x.com/TODO" aria-label="X">X</a></li>
+          <li><a href="https://github.com/EmilianoManaloIV" aria-label="GitHub">GH</a></li>
+        </ul>
+        <button class="toggle" type="button" id="theme-toggle" aria-pressed="false">Dark mode<span data-state aria-hidden="true">: off</span></button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <article id="project" class="section post">
+      <div class="container prose">
+        <p class="eyebrow"><a href="/#projects">Projects</a> / <time datetime="{{date_iso}}">{{date}}</time> · {{minutes}} min read</p>
+        <h1>{{title}}</h1>
+        <ul class="tags">
+          {{actions}}
+        </ul>
+        {{body}}
+      </div>
+    </article>
+
+    <section id="comments" class="section">
+      <div class="container prose">
+        <h2 class="section-title"><span class="section-index" aria-hidden="true">01 /</span> Comments ({{comment_count}})</h2>
+        {{comments}}
+        <p><a class="tag tag-link" href="{{discussion_url}}">Comment on GitHub</a></p>
+        <p class="note">Commenting uses your GitHub account; your username appears here. <a href="/#projects">Back to all projects</a>.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div>
+        <hr class="footer-rule">
+        <p class="footer-brand">EM</p>
+        <p class="footer-tagline">Blending Engineering Practices With Art</p>
+        <p class="footer-links"><a href="/guestbook/">Sign the guestbook</a></p>
+        <p class="footer-motion"><button class="toggle" type="button" data-motion-toggle aria-pressed="true">Motion<span data-state aria-hidden="true">: on</span></button></p>
+        <ul class="socials" aria-label="Social profiles">
+          <li><a href="https://www.instagram.com/TODO" aria-label="Instagram">IG</a></li>
+          <li><a href="https://www.linkedin.com/in/TODO" aria-label="LinkedIn">in</a></li>
+          <li><a href="https://x.com/TODO" aria-label="X">X</a></li>
+          <li><a href="https://github.com/EmilianoManaloIV" aria-label="GitHub">GH</a></li>
+        </ul>
+      </div>
+      <canvas class="torus-scene" data-scene="torus" aria-hidden="true"></canvas>
+    </div>
+  </footer>
+</body>
+</html>

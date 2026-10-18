@@ -5,9 +5,10 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-  # R&D posts, their comments, and guestbook entries live in GitHub Discussions (ADR 0005).
+  # R&D posts, projects (their "skill:" labels too), comments, and guestbook entries
+  # live in GitHub Discussions (ADR 0005, 0006).
   discussion:
-    types: [created, edited, deleted, category_changed, transferred]
+    types: [created, edited, deleted, category_changed, transferred, labeled, unlabeled]
   discussion_comment:
     types: [created, edited, deleted]
   # Hiding (minimizing) a comment fires no event, so an hourly rebuild drops hidden ones.

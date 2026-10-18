@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   escapeHtml, slugify, postPath, isPost, findGuestbook, sanitize, insertAt, isAllowedImageUrl, imageSources, imageSize, localizeImages,
-  versionUrls, versionImports, importsOf,
+  versionUrls, versionImports, importsOf, isProject, projectPath, skillsOf, extractLink, projectCard, skillsList,
   readingMinutes, summary, formatDate, renderComments, countComments, fill, postCard, guestbookEntries, redirectPage,
 } from "../tools/render.mjs";
 
@@ -139,6 +139,60 @@ test("versionImports fingerprints relative module imports to match the preload",
   const code = 'import { torus } from "./geometry.js";\nimport { x } from "./other.js";';
   assert.equal(versionImports(code, versions), 'import { torus } from "./geometry.js?v=ccc";\nimport { x } from "./other.js";');
   assert.deepEqual(importsOf(code), ["js/geometry.js", "js/other.js"]);
+});
+
+test("only the owner's discussions in Projects are projects, at stable paths", () => {
+  assert.equal(isProject({ category: { name: "Projects" }, author: owner }), true);
+  assert.equal(isProject({ category: { name: "Projects" }, author: stranger }), false);
+  assert.equal(isProject({ category: { name: "R&D" }, author: owner }), false);
+  assert.equal(projectPath({ number: 21, title: "Blendity" }), "/projects/21-blendity/");
+});
+
+test("skillsOf keeps only 'skill:' labels, trimmed and de-duplicated", () => {
+  const labels = (...names) => ({ labels: { nodes: names.map((name) => ({ name })) } });
+  assert.deepEqual(skillsOf(labels("skill: C++", "bug", "Skill:Unity3D", "skill:  c++ ", "enhancement", "skill:", "skill: Research")), ["C++", "Unity3D", "Research"]);
+  assert.deepEqual(skillsOf({}), []);
+});
+
+test("extractLink takes only a first-paragraph https Link: line", () => {
+  const body = '<p>Link: <a href="https://example.com/blendity">https://example.com/blendity</a></p><p>Text</p>';
+  assert.deepEqual(extractLink(body), { href: "https://example.com/blendity", body: "<p>Text</p>" });
+  assert.equal(extractLink('<p>Intro</p><p>Link: <a href="https://x.example">x</a></p>').href, null, "not the first paragraph");
+  assert.equal(extractLink('<p>Link: <a href="http://x.example">x</a></p>').href, null, "not https");
+  assert.equal(extractLink("<p>No link here</p>").body, "<p>No link here</p>");
+  // Never swallows text: trailing words or a second link keep the paragraph intact.
+  const trailing = '<p>Link: <a href="https://ok.example">u</a> more words</p><p>Second <a href="https://z.example">z</a></p>';
+  assert.deepEqual(extractLink(trailing), { href: null, body: trailing });
+  const two = '<p>Link: <a href="https://a.example">a</a><a href="https://b.example">b</a></p>';
+  assert.deepEqual(extractLink(two), { href: null, body: two });
+  // A line break after the link keeps the rest of the paragraph as the intro.
+  assert.deepEqual(extractLink('<p>Link: <a href="https://x.example">x</a><br>\nIntro text.</p><p>More</p>'), { href: "https://x.example", body: "<p>Intro text.</p><p>More</p>" });
+});
+
+test("skillsOf tolerates missing label entries", () => {
+  assert.deepEqual(skillsOf({ labels: { nodes: [null, { name: "skill: C++" }, {}] } }), ["C++"]);
+});
+
+test("project cards escape titles and skills and fall back to the placeholder", () => {
+  const card = projectCard({ title: '<b>"Blend"</b>', path: "/projects/1-blend/", summary: "<i>s</i>", link: "https://x.example", skills: ["C<script>"], image: null }, 0);
+  assert.doesNotMatch(card, /<b>|<i>|<script>/);
+  assert.match(card, /&lt;b&gt;&quot;Blend&quot;&lt;\/b&gt; link<\/a>/);
+  assert.match(card, /class="slot"/);
+  assert.match(card, /FIG\. 02\.1 \/ /);
+  const withImage = projectCard({ title: "B", path: "/projects/2-b/", summary: "s", link: null, skills: [], image: { src: "/projects/2-b/img-1.png", width: 640, height: 480 } }, 1);
+  assert.match(withImage, /<img src="\/projects\/2-b\/img-1\.png" alt="B" width="640" height="480" loading="lazy">/);
+  assert.doesNotMatch(withImage, /tag-link/, "no Link: line, no button");
+  assert.match(withImage, /FIG\. 02\.2 \/ B/);
+});
+
+test("skillsList counts uses, sorts most used first, and names the projects", () => {
+  const html = skillsList([
+    { title: "Blendity", skills: ["C++", "Research"] },
+    { title: "UNOverse", skills: ["C#", "Research"] },
+  ]);
+  assert.ok(html.indexOf("Research") < html.indexOf("C++"), "most used first");
+  assert.ok(html.indexOf("C#") < html.indexOf("C++"), "then alphabetical");
+  assert.match(html, /title="Used in Blendity, UNOverse">Research <span class="tag-count">×2<\/span>/);
 });
 
 test("only GitHub's image hosts are fetched", () => {

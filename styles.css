@@ -985,6 +985,34 @@ html:not(.js) canvas[data-scene] {
   color: var(--color-ink-muted);
 }
 
+/* Generated project cards and skills (ADR 0006). */
+.project-list:not(:has(article)),
+.skill-list:not(:has(li)) {
+  display: none;
+}
+
+.project-list:has(article) + .empty-state {
+  display: none;
+}
+
+.card h3 a {
+  text-decoration: none;
+}
+
+.card h3 a:hover {
+  text-decoration: underline;
+}
+
+.card-more {
+  margin-top: var(--space-4);
+  font-size: var(--text-small);
+}
+
+.tag-count {
+  margin-left: 0.25em;
+  opacity: 0.8;
+}
+
 /* Comments and guestbook entries (ADR 0005). Usernames get a mono initial badge
    instead of an avatar, so no third-party images load. */
 .comment-list,

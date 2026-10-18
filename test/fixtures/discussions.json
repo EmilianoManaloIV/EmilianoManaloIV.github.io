@@ -2,6 +2,7 @@
   "categories": [
     "Announcements",
     "R&D",
+    "Projects",
     "Guestbook",
     "General"
   ],
@@ -220,6 +221,127 @@
             }
           }
         ]
+      }
+    },
+    {
+      "number": 21,
+      "title": "UNOverse",
+      "url": "https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/discussions/21",
+      "createdAt": "2026-10-19T09:00:00Z",
+      "bodyHTML": "<p dir=\"auto\">Software engineering isn't just about programming, it's about teamwork, people skills, and organization! In our spin of the popular game \"Uno\" by <em>Mattel</em> we utilized Unity3D, C#, SDLC, and Agile methodology to create a program that not only demonstrates technical grit, but presents what it means to be a software engineer; in my case a SCRUM master.</p>",
+      "author": {
+        "login": "EmilianoManaloIV"
+      },
+      "category": {
+        "name": "Projects"
+      },
+      "labels": {
+        "nodes": [
+          {
+            "name": "skill: Software Engineering"
+          },
+          {
+            "name": "skill: C#"
+          },
+          {
+            "name": "skill: Unity3D"
+          },
+          {
+            "name": "skill: Scrum Master"
+          },
+          {
+            "name": "bug"
+          }
+        ]
+      },
+      "comments": {
+        "totalCount": 0,
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": null
+        },
+        "nodes": []
+      }
+    },
+    {
+      "number": 22,
+      "title": "Blendity",
+      "url": "https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/discussions/22",
+      "createdAt": "2026-10-19T10:00:00Z",
+      "bodyHTML": "<p dir=\"auto\">Link: <a href=\"https://github.com/EmilianoManaloIV/blendity\" rel=\"nofollow\">https://github.com/EmilianoManaloIV/blendity</a></p><p dir=\"auto\">I always believe technology should always HELP the artist, not replace them. This application leverages the use of AI-assisted workflows, research, and computer graphics to create a modeling and rendering system that caters to my technique, art-style, and ideals; replicates the navigation of Unity with the complexity of Blender (with more updates to come!).</p><p dir=\"auto\"><img src=\"https://github.com/user-attachments/assets/fixture-pixel.png\" alt=\"Blendity viewport\"></p>",
+      "author": {
+        "login": "EmilianoManaloIV"
+      },
+      "category": {
+        "name": "Projects"
+      },
+      "labels": {
+        "nodes": [
+          {
+            "name": "skill: AI-Assisted Development"
+          },
+          {
+            "name": "skill: C++"
+          },
+          {
+            "name": "skill: Computer Graphics"
+          },
+          {
+            "name": "skill: Research"
+          },
+          {
+            "name": "enhancement"
+          }
+        ]
+      },
+      "comments": {
+        "totalCount": 1,
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": null
+        },
+        "nodes": [
+          {
+            "url": "u-p1",
+            "createdAt": "2026-10-19T12:00:00Z",
+            "isMinimized": false,
+            "bodyHTML": "<p>Does it import FBX?</p>",
+            "author": {
+              "login": "curious-visitor"
+            },
+            "replies": {
+              "nodes": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "number": 23,
+      "title": "FIXTURE-STRANGER project",
+      "url": "https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/discussions/23",
+      "createdAt": "2026-10-19T11:00:00Z",
+      "bodyHTML": "<p>Not the owner.</p>",
+      "author": {
+        "login": "someone-else"
+      },
+      "category": {
+        "name": "Projects"
+      },
+      "labels": {
+        "nodes": [
+          {
+            "name": "skill: FIXTURE-STRANGER-SKILL"
+          }
+        ]
+      },
+      "comments": {
+        "totalCount": 0,
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": null
+        },
+        "nodes": []
       }
     }
   ],
