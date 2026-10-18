@@ -598,15 +598,15 @@ html:not(.js) canvas[data-scene] {
   font-size: var(--text-subheader);
 }
 
-.value:nth-child(1 of .value) h3 {
+.barcode-strip + .value h3 {
   color: var(--brand-mint);
 }
 
-.value:nth-child(2 of .value) h3 {
+.barcode-strip + .value + .value h3 {
   color: var(--brand-magenta);
 }
 
-.value:nth-child(3 of .value) h3 {
+.barcode-strip + .value + .value + .value h3 {
   color: var(--brand-blue);
 }
 
@@ -632,7 +632,7 @@ html:not(.js) canvas[data-scene] {
 
 .section-index {
   margin-right: var(--space-2);
-  color: var(--color-tag);
+  color: var(--color-ink);
 }
 
 .card {
@@ -791,7 +791,7 @@ html:not(.js) canvas[data-scene] {
     grid-template-areas:
       "term head"
       "term art"
-      "labels labels";
+      "term labels";
     align-items: start;
   }
 
@@ -801,8 +801,8 @@ html:not(.js) canvas[data-scene] {
     align-self: stretch;
     height: auto;
     min-height: 20em;
-    margin-top: calc(-1 * var(--space-8));
-    padding: var(--space-8) var(--space-4) 0 0;
+    margin-block: calc(-1 * var(--space-8));
+    padding: var(--space-8) var(--space-4) var(--space-8) 0;
     border-right: 1px solid var(--color-panel-rule);
   }
 
@@ -852,10 +852,6 @@ html:not(.js) canvas[data-scene] {
     min-height: 34rem;
   }
 
-  .terminal {
-    margin-bottom: calc(-1 * var(--space-8));
-    padding-bottom: var(--space-8);
-  }
 
   .banner-scene {
     aspect-ratio: 5 / 4;

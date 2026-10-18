@@ -72,7 +72,11 @@ export function cube(n = 1) {
   };
   const edge = (p, q) => {
     const [a, b] = [vertex(p), vertex(q)].sort((x, y) => x - y);
-    if (!seen.has(`${a}-${b}`)) seen.add(`${a}-${b}`) && edges.push([a, b]);
+    const key = `${a}-${b}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      edges.push([a, b]);
+    }
   };
   const at = (i) => (i / n) * 2 - 1;
   for (let axis = 0; axis < 3; axis++) {

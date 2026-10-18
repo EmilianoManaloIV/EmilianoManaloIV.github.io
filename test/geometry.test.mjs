@@ -17,7 +17,7 @@ test("lathe connects each ring to the previous one", () => {
 });
 
 test("every edge references an existing vertex", () => {
-  for (const mesh of [torus(1, 0.3, 10, 6), dome(), grid(5)]) {
+  for (const mesh of [torus(1, 0.3, 10, 6), dome(), grid(5), cube(2), sphere(8, 5)]) {
     for (const [a, b] of mesh.edges) {
       assert.ok(mesh.vertices[a] && mesh.vertices[b], `bad edge ${a}-${b}`);
     }
@@ -57,17 +57,18 @@ test("subdivided cube shares face borders without duplicate edges", () => {
   const mesh = cube(3);
   const keys = mesh.edges.map(([a, b]) => `${Math.min(a, b)}-${Math.max(a, b)}`);
   assert.equal(new Set(keys).size, keys.length);
+  // 12 cube edges, each split into 3 segments per grid line: 12 * n^2 = 108.
+  assert.equal(mesh.edges.length, 108);
   // Surface lattice points of a 3x3x3 subdivision: 4^3 - 2^3 interior points.
   assert.equal(mesh.vertices.length, 56);
   for (const p of mesh.vertices) assert.ok(Math.max(...p.map(Math.abs)) === 1, `${p} is off the surface`);
 });
 
-test("sphere vertices lie on the unit sphere", () => {
+test("sphere is rings-1 latitude rings on the unit sphere", () => {
   const mesh = sphere(12, 8);
+  assert.equal(mesh.vertices.length, 12 * 7);
+  assert.equal(mesh.edges.length, 12 * 7 + 12 * 6);
   for (const p of mesh.vertices) assert.ok(Math.abs(length(p) - 1) < 1e-9);
-  for (const mesh2 of [mesh, cube(2)]) {
-    for (const [a, b] of mesh2.edges) assert.ok(mesh2.vertices[a] && mesh2.vertices[b]);
-  }
 });
 
 test("wave height changes over time", () => {

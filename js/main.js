@@ -14,7 +14,7 @@ let time = 0;
 const rand = (max) => Math.floor(Math.random() * max);
 const pad = (n, len = 2) => String(n).padStart(len, "0");
 
-/* ---------- Wireframe scenes ---------- */
+// == Wireframe scenes
 
 const meshes = {
   dome: dome(28),
@@ -103,7 +103,7 @@ function tick(now) {
   schedule();
 }
 
-/* ---------- Live terminal, sized to fill its box ---------- */
+// == Live terminal, sized to fill its box
 
 const cursor = document.createElement("span");
 cursor.className = "cursor";
@@ -111,13 +111,11 @@ const script = [
   () => `TRML                         LAB`,
   () => `VRS 02.${pad(rand(400), 3)}.${pad(rand(20))}`,
   () => `OS SYS LOAD`,
-  () => `CRS LOAD /${pad(rand(99))}`,
   () => `OPERATION : RUN [${(90 + Math.random() * 9.9).toFixed(1)}%] : PRP ALL`,
   () => `SET R ON FUN          HLD   A-${rand(9)}`,
   () => `SPC FUN               SPR   F-${rand(9)}`,
   () => `PWR ${rand(900) + 100}-${rand(900) + 100}-${rand(900) + 100}       GAP`,
   () => `MESH SYNC  ${pad(rand(99))}/${pad(rand(99))}      OK`,
-  () => `VTX ${rand(4096)}  EDG ${rand(8192)}  FPS ${50 + rand(11)}`,
   () => `LFT ${pad(rand(60))}  RGT ${pad(rand(60))}  SPN`,
   () => `WND UPD TO LVL ${rand(12)}/12  PRP   I-I`,
 ];
@@ -133,10 +131,11 @@ function fitTerminal() {
   const inner = terminal.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
   maxLines = Math.max(3, Math.floor(inner / parseFloat(style.lineHeight)) - 1);
   while (lines.length > maxLines) lines.shift();
-  if (target) fillTerminal();
+  if (!target) target = script[step++]();
+  fillTerminal();
 }
 
-// Top the console up to a full screen so it never starts or resizes into a near-empty box.
+// Top the console up to a full box, even while paused, so it never looks near-empty.
 function fillTerminal() {
   while (lines.length < maxLines) lines.push(script[step++ % script.length]());
   renderTerminal();
@@ -163,14 +162,11 @@ function type() {
 
 function startTerminal() {
   if (!terminal || typing) return;
-  if (!target) {
-    target = script[step++]();
-    fillTerminal();
-  }
+  if (!target) fitTerminal();
   type();
 }
 
-/* ---------- Headline decode scramble ---------- */
+// == Headline decode scramble
 
 const words = [...document.querySelectorAll("[data-scramble]")];
 const originals = words.map((el) => el.textContent);
@@ -210,25 +206,29 @@ function startScramble() {
   scrambleTimer = setTimeout(beginScramble, scrambledOnce ? 12000 : 300);
 }
 
-// Pausing always leaves the real words in place.
+// Pausing always leaves the real words in place. The early return keeps the
+// per-frame gate from rewriting the words while the banner is off screen.
 function stopScramble() {
+  if (!scrambleTimer && !scrambleStart) return;
   clearTimeout(scrambleTimer);
   scrambleTimer = 0;
   scrambleStart = 0;
   words.forEach((el, i) => (el.textContent = originals[i]));
 }
 
-/* ---------- Device readout: the visitor's own machine, display only ---------- */
+// == Device readout: the visitor's own machine, display only
 
 const field = (name) => document.querySelector(`[data-device="${name}"]`);
 const loadedAt = Date.now();
 const ua = navigator.userAgent;
 const uaData = navigator.userAgentData;
-const os = uaData?.platform || (ua.match(/Windows|iPhone|iPad|Android|Mac|Linux/) || ["Unknown"])[0];
+// Checked in order: Android UAs also contain "Linux", and iPads can claim "Mac".
+const os = uaData?.platform || ["Windows", "Android", "iPhone", "iPad", "Mac", "Linux"].find((k) => ua.includes(k)) || "Unknown";
 const brand = uaData?.brands?.find((b) => !/Not|Chromium/.test(b.brand));
-// Safari reports its version as "Version/17"; its "Safari/605" token is the WebKit build.
-const [, name = "Browser", version = ""] = ua.match(/(Firefox|Edg|Chrome|Version)\/(\d+)/) || [];
-const browser = brand ? `${brand.brand} ${brand.version}` : `${name === "Version" ? "Safari" : name} ${version}`;
+// iOS uses CriOS/FxiOS; Safari's version is "Version/17", its "Safari/605" token is WebKit.
+const [, name = "Browser", version = ""] = ua.match(/(Firefox|FxiOS|Edg|CriOS|Chrome|Version)\/(\d+)/) || [];
+const names = { Version: "Safari", CriOS: "Chrome", FxiOS: "Firefox" };
+const browser = brand ? `${brand.brand} ${brand.version}` : `${names[name] || name} ${version}`;
 let clockTimer = 0;
 
 function showDevice() {
@@ -236,7 +236,7 @@ function showDevice() {
   const memory = navigator.deviceMemory ? `${navigator.deviceMemory} GB` : "mem N/A";
   field("title").textContent = `${os} · ${browser}`;
   field("spec").textContent = `${navigator.hardwareConcurrency || "?"} cores · ${memory}`;
-  field("display").textContent = `${screen.width}×${screen.height} @${devicePixelRatio}x · vp ${innerWidth}×${innerHeight}`;
+  field("display").textContent = `${screen.width}×${screen.height} @${+devicePixelRatio.toFixed(2)}x · vp ${innerWidth}×${innerHeight}`;
   field("clock-title").textContent = "Local";
   field("link-title").textContent = "Link";
   showClock();
@@ -255,7 +255,7 @@ function tickClock() {
   clockTimer = setTimeout(tickClock, 1000 - (Date.now() % 1000));
 }
 
-/* ---------- One gate for all motion ---------- */
+// == One gate for all motion
 // Everything moves only when motion is on, the tab is visible, and its element is on screen.
 
 function schedule() {
@@ -305,7 +305,7 @@ if (banner) watcher.observe(banner);
 document.addEventListener("visibilitychange", schedule);
 addEventListener("resize", showDevice);
 
-/* ---------- Toggles ---------- */
+// == Toggles
 // Fixed accessible names; aria-pressed carries the state, and the visible
 // ": on/off" suffix is aria-hidden so the state is not announced twice.
 
