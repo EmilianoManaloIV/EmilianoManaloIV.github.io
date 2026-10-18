@@ -1,6 +1,4 @@
-// Progressive enhancement: wireframes, live terminal, headline scramble, device
-// readout, and the theme and motion toggles. The page works without this file.
-// No dependencies and no network requests: device values are only displayed.
+// Motion, console, headline, device readout, and toggles; see ADR 0002. No network use.
 import { torus, dome, grid, cube, sphere, waveHeight, rotate, project } from "./geometry.js";
 
 const root = document.documentElement;
@@ -45,16 +43,53 @@ const poses = {
   torus: (t) => [1 + Math.sin(t * 0.3) * 0.25, t * 0.4],
 };
 
-// Poses are read once per frame, not per vertex.
+// Banner layout: the dome and wave at their designed spots, shrunk and nudged only
+// when they would spill past the canvas (narrow phones). Measured once per size
+// over sampled poses, so the moving shapes never hit the edge.
+let layoutKey = "";
+let layout = null;
+function bannerLayout(w, h) {
+  if (layoutKey === `${w}x${h}`) return layout;
+  const m = 8;
+  // A collapsed or tiny canvas has nothing to fit; avoid a negative or NaN scale.
+  if (w <= 4 * m || h <= 4 * m) return { dome: [w * 0.36, h * 0.36, 0], wave: [w * 0.62, h * 0.72, 0] };
+  const s = Math.min(w, h);
+  const place = (k, ox, oy) => ({
+    dome: [w * 0.36 + ox, h * 0.36 + oy, s * 0.24 * k],
+    wave: [w * 0.62 + ox, h * 0.72 + oy, s * 0.42 * k],
+  });
+  const bounds = (spots) => {
+    const box = [Infinity, Infinity, -Infinity, -Infinity];
+    const add = ([x, y]) => {
+      box[0] = Math.min(box[0], x);
+      box[1] = Math.min(box[1], y);
+      box[2] = Math.max(box[2], x);
+      box[3] = Math.max(box[3], y);
+    };
+    for (let i = 0; i < 8; i++) {
+      const t = i * 2.5;
+      const [dx, dy] = poses.dome(t);
+      for (const p of meshes.dome.vertices) add(project(rotate(p, dx, dy), ...spots.dome));
+      for (const [x, , z] of meshes.wave.vertices) add(project(rotate([x, waveHeight(x, z, t), z], ...poses.wave(t)), ...spots.wave));
+    }
+    return box;
+  };
+  let box = bounds(place(1, 0, 0));
+  const k = Math.min(1, (w - 2 * m) / (box[2] - box[0]), (h - 2 * m) / (box[3] - box[1]));
+  box = bounds(place(k, 0, 0));
+  const shift = (lo, hi, size) => (lo < m ? m - lo : hi > size - m ? size - m - hi : 0);
+  layoutKey = `${w}x${h}`;
+  layout = place(k, shift(box[0], box[2], w), shift(box[1], box[3], h));
+  return layout;
+}
+
 const painters = {
   banner(ctx, w, h, t) {
-    const s = Math.min(w, h);
+    const spots = bannerLayout(w, h);
     const [dx, dy] = poses.dome(t);
     const [wx, wy] = poses.wave(t);
-    strokeMesh(ctx, meshes.dome, (p) => project(rotate(p, dx, dy), w * 0.36, h * 0.36, s * 0.24));
-    strokeMesh(ctx, meshes.wave, ([x, , z]) =>
-      project(rotate([x, waveHeight(x, z, t), z], wx, wy), w * 0.62, h * 0.72, s * 0.42),
-    );
+    strokeMesh(ctx, meshes.dome, (p) => project(rotate(p, dx, dy), ...spots.dome));
+    strokeMesh(ctx, meshes.wave, ([x, , z]) => project(rotate([x, waveHeight(x, z, t), z], wx, wy), ...spots.wave));
   },
   cube(ctx, w, h, t) {
     const [ax, ay] = poses.cube(t);
@@ -90,6 +125,10 @@ function draw(scene) {
   const { ctx, canvas } = scene;
   const w = canvas.clientWidth;
   const h = canvas.clientHeight;
+  // Never draw into a stale bitmap: the observer can arrive after the first frames,
+  // and pixel ratio changes (zoom, rotation, another monitor) don't trigger it.
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) resize(scene);
   ctx.clearRect(0, 0, w, h);
   ctx.strokeStyle = scene.color;
   ctx.globalAlpha = 0.85;
@@ -163,10 +202,16 @@ function fitTerminal() {
   fillTerminal();
 }
 
-// Top the console up to a full box, even while paused, so it never looks near-empty.
-// While paused this is a snapshot at the frozen time, matching the frozen shapes.
+// Start like a real console: a boot log of the loaded meshes, then one telemetry
+// pass; it grows from there instead of repeating identical time-zero readings.
 function fillTerminal() {
-  while (lines.length < maxLines) lines.push(next());
+  if (!lines.length) {
+    for (const [name, mesh] of Object.entries(meshes)) {
+      lines.push(`LOAD   ${name.toUpperCase().padEnd(6)} VTX ${mesh.vertices.length}  EDG ${mesh.edges.length}`);
+    }
+    for (let i = 0; i < script.length; i++) lines.push(next());
+  }
+  while (lines.length > maxLines) lines.shift();
   renderTerminal();
 }
 

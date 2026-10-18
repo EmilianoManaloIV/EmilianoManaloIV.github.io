@@ -121,6 +121,42 @@ test("index.html: animated headline keeps a readable copy for screen readers", (
   for (const tag of animated) assert.match(tag, /aria-hidden="true"/, `not hidden: ${tag}`);
 });
 
+test("index.html: interaction aids from ADR 0003 are present and named", () => {
+  const page = html("index.html");
+  assert.match(page, /<button[^>]*data-share[^>]*>Share this page<\/button>/, "share button");
+  // The accessible name contains the visible label (WCAG 2.5.3).
+  assert.match(page, /<button[^>]*data-copy-email="[^"]*" aria-label="Copy email address">Copy<\/button>/);
+  assert.match(page, /<p class="copy-status" role="status" data-copy-status><\/p>/, "live region for copy feedback");
+  assert.match(page, /data-talk data-start="[^"]*" data-end="[^"]*"/, "talk session times");
+  assert.match(page, /<nav class="section-rail" aria-label="Sections">/);
+  const railLinks = page.match(/<a href="#\w+" aria-label="\w+"><\/a>/g) ?? [];
+  assert.equal(railLinks.length, 6, "every rail dot has an accessible name");
+  assert.match(page, /<a class="section-bar" href="#site-nav"/);
+  assert.match(page, /<script type="module" src="js\/ui.js"><\/script>/);
+});
+
+test("styles.css: ADR 0003 aids hide without ui.js and respect reduced motion", () => {
+  const css = read("styles.css");
+  for (const name of ["action", "section-rail", "section-bar"]) {
+    assert.match(css, new RegExp(`html:not\\(\\.ui-ready\\) \\.${name}`), `.${name} hidden until ui.js runs`);
+  }
+  const reduced = css.match(/@media \(prefers-reduced-motion: reduce\) \{[^@]*\.section-bar[^@]*\}/);
+  assert.ok(reduced && /\.section-rail a/.test(reduced[0]), "rail and bar transitions off under reduced motion");
+  assert.match(read("js/ui.js"), /classList\.add\("ui-ready"\)/);
+});
+
+test("index.html: talk chip is not inside a live region", () => {
+  const talk = html("index.html").match(/<p class="talk-status"[^>]*>/)[0];
+  assert.doesNotMatch(talk, /aria-live|role="status"/);
+});
+
+test("index.html: every media figure has a numbered caption", () => {
+  const page = html("index.html");
+  const figures = page.match(/<figure class="card-media">[\s\S]*?<\/figure>/g) ?? [];
+  assert.ok(figures.length >= 5);
+  for (const figure of figures) assert.match(figure, /<figcaption>FIG\. \d{2}\.\d \/ [^<]+<\/figcaption>/);
+});
+
 // Walk js/ recursively so nested or .mjs files cannot escape the checks.
 const scripts = readdirSync(join(root, "js"), { recursive: true }).filter((f) => /\.m?js$/.test(f));
 
@@ -142,9 +178,9 @@ test("js: makes no network requests and loads no remote code", () => {
 });
 
 // Budget tracks bytes over the network: each file gzipped, as GitHub Pages serves it.
-test("js: total gzipped size stays under the 8 KB budget", () => {
+test("js: total gzipped size stays under the 10 KB budget (ADR 0003)", () => {
   const bytes = scripts.reduce((sum, f) => sum + gzipSync(readFileSync(join(root, "js", f)), { level: 9 }).length, 0);
-  assert.ok(bytes < 8 * 1024, `js/ is ${bytes} bytes gzipped`);
+  assert.ok(bytes < 10 * 1024, `js/ is ${bytes} bytes gzipped`);
 });
 
 test("js: every file parses", () => {
