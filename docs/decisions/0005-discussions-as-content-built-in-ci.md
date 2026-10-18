@@ -39,6 +39,12 @@ GitHub Discussions on this repository holds the content. A zero-dependency Node 
 - **Short address:** `/rd/<number>/` is a no-JavaScript redirect to the current address.
 - **Renamed posts:** the 404 page sends any `/rd/<number>-<old-name>/` to `/rd/<number>/`, so links survive renames.
 
+**Cache-busting (added 2026-10-18):**
+- **Why:** GitHub Pages lets browsers cache files for 10 minutes, so right after a deploy a browser could pair a new page with an old cached script. The R&D toggle failed this way.
+- **How:** the build stamps every script and stylesheet address with a fingerprint of the file's contents (`main.js?v=3f9a2c1d7e`), and module imports get the same fingerprint as the page's preload. A changed file gets a new address, so browsers fetch it fresh.
+- **Limit:** a page that is itself still cached keeps pointing at the old addresses. GitHub Pages serves the current file for any `?v=`, so in that rarer case the old page can get new files until its own cache expires. File-name fingerprints would close that gap but break old cached pages entirely, so query fingerprints are the simpler trade.
+- **Tests:** a site test fails if any address's fingerprint doesn't match its file.
+
 **Unchanged rules:** the deployed site keeps every rule from 0001 to 0004:
 - no dependencies;
 - no client-side network calls;

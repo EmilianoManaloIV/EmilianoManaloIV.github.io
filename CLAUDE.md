@@ -12,6 +12,7 @@ comments, and the guestbook (ADR 0005). Read the ADRs in `docs/decisions/` (0001
 - `index.html` is the home page: a fast overview with sections anchored by id.
 - `about/index.html` (About & CV), `rd/index.html` (the R&D blog), and `guestbook/index.html` are subpages.
 - Posts are generated into `_site/rd/<number>-<slug>/` from `templates/rd-post.html`; they are never committed.
+- The build fingerprints script and stylesheet addresses (`?v=<hash>`) so deploys never mix old and new files. Write plain `js/main.js` or `/styles.css` in source pages; the build adds the fingerprint.
 - `tools/render.mjs` holds the pure build helpers (sanitizer, images, markup), tested in `test/render.test.mjs`.
 - Every page repeats the home page's header and footer exactly; a test enforces it (ADR 0004). Change the nav or footer in every page at once.
 - `styles.css` holds design tokens in `:root` at the top, then components.

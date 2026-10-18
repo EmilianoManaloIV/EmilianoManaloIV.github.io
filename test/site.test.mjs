@@ -95,7 +95,7 @@ test("no built page carries anything outside the tag, attribute, and URL allowli
         if (/^(href|src)$/i.test(attr)) assert.ok(SAFE_URL(value), `${page}: unsafe URL ${value}`);
       }
     }
-    assert.equal((text.match(/<script\b/gi) ?? []).length, (text.match(/<script\b[^>]*\ssrc="\/?js\/[\w.]+"[^>]*><\/script>/gi) ?? []).length, `${page}: script other than the site's own`);
+    assert.equal((text.match(/<script\b/gi) ?? []).length, (text.match(/<script\b[^>]*\ssrc="\/?js\/[\w.]+(\?v=[0-9a-f]{10})?"[^>]*><\/script>/gi) ?? []).length, `${page}: script other than the site's own`);
   }
 });
 
@@ -208,7 +208,8 @@ test("each subpage marks exactly its own nav item; home, guestbook, and 404 mark
 test("every page loads the shared scripts and a skip link", () => {
   for (const [name, text] of [...pages.map((p) => [p, html(p)]), ["templates/rd-post.html", strip(source("templates/rd-post.html"))]]) {
     for (const script of ["js/theme.js", "js/main.js", "js/ui.js"]) {
-      assert.match(text, new RegExp(`<script[^>]*src="/?${script.replace(".", "\\.")}"`), `${name}: missing ${script}`);
+      // Built pages carry a fingerprint (?v=...); the template does not, until it is built.
+      assert.match(text, new RegExp(`<script[^>]*src="/?${script.replace(".", "\\.")}(\\?v=[0-9a-f]{10})?"`), `${name}: missing ${script}`);
     }
     assert.match(text, /<a class="skip-link" href="#main">/, `${name}: missing skip link`);
   }
@@ -242,6 +243,24 @@ test("every page has a motion toggle, and motion runs only where one exists", ()
     assert.match(footer, /<button[^>]*data-motion-toggle[^>]*aria-pressed=/, `${page}: no motion toggle in the footer`);
   }
   assert.match(read("js/main.js"), /let motion = pausable && \(savedMotion \? savedMotion === "on" : !reducedMotion\.matches\);/);
+});
+
+// Cache-busting: every script and stylesheet address carries the fingerprint of the
+// file it points at, and module imports match, so a deploy never mixes old and new files.
+test("every script and stylesheet URL is fingerprinted with its file's current hash", async () => {
+  const { createHash } = await import("node:crypto");
+  const fingerprint = (file) => createHash("sha256").update(readFileSync(join(site, file))).digest("hex").slice(0, 10);
+  let checked = 0;
+  for (const page of pages) {
+    for (const [, path, version] of html(page).matchAll(/(?:href|src)="\/?(styles\.css|js\/[\w.-]+\.js)(?:\?v=([0-9a-f]+))?"/g)) {
+      assert.equal(version, fingerprint(path), `${page}: ${path} is not fingerprinted with its current hash`);
+      checked++;
+    }
+  }
+  assert.ok(checked >= pages.length * 4, "expected stylesheet and scripts on every page");
+  const imports = [...read("js/main.js").matchAll(/from "\.\/([\w.-]+\.js)(?:\?v=([0-9a-f]+))?"/g)];
+  assert.ok(imports.length > 0, "main.js imports geometry.js");
+  for (const [, file, version] of imports) assert.equal(version, fingerprint(`js/${file}`), `main.js imports ${file} without its current hash`);
 });
 
 test("index.html: has Open Graph tags for link previews", () => {
@@ -280,7 +299,7 @@ test("index.html: interaction aids from ADR 0003 are present and named", () => {
   const rail = page.match(/<nav class="section-rail" aria-label="Sections">[\s\S]*?<\/nav>/)[0];
   assert.equal((rail.match(/<a href="#\w+" aria-label="\w+"><\/a>/g) ?? []).length, 4, "one named rail dot per home section");
   assert.match(page, /<a class="section-bar" href="#site-nav"/);
-  assert.match(page, /<script type="module" src="js\/ui.js"><\/script>/);
+  assert.match(page, /<script type="module" src="js\/ui\.js\?v=[0-9a-f]{10}"><\/script>/);
 });
 
 test("styles.css: ADR 0003 aids hide without ui.js and respect reduced motion", () => {

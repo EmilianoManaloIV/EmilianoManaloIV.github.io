@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   escapeHtml, slugify, postPath, isPost, findGuestbook, sanitize, insertAt, isAllowedImageUrl, imageSources, imageSize, localizeImages,
+  versionUrls, versionImports, importsOf,
   readingMinutes, summary, formatDate, renderComments, countComments, fill, postCard, guestbookEntries, redirectPage,
 } from "../tools/render.mjs";
 
@@ -122,6 +123,22 @@ test("visitor links must be full https or mailto URLs; owner links may be site-r
 test("insertAt inserts text literally, whatever it contains", () => {
   assert.equal(insertAt("[<!-- X -->]", "<!-- X -->", "$& $` $' {{name}}"), "[$& $` $' {{name}}]");
   assert.throws(() => insertAt("no marker", "<!-- X -->", "v"), /marker missing/);
+});
+
+test("versionUrls fingerprints the site's scripts and stylesheet, and nothing else", () => {
+  const versions = new Map([["styles.css", "aaa"], ["js/main.js", "bbb"], ["js/geometry.js", "ccc"]]);
+  const html = '<link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="styles.css"><link rel="modulepreload" href="/js/geometry.js"><script type="module" src="js/main.js"></script><script src="/js/unknown.js"></script><a href="/rd/">x</a><a href="https://cdn.example/js/main.js">y</a>';
+  assert.equal(
+    versionUrls(html, versions),
+    '<link rel="stylesheet" href="/styles.css?v=aaa"><link rel="stylesheet" href="styles.css?v=aaa"><link rel="modulepreload" href="/js/geometry.js?v=ccc"><script type="module" src="js/main.js?v=bbb"></script><script src="/js/unknown.js"></script><a href="/rd/">x</a><a href="https://cdn.example/js/main.js">y</a>',
+  );
+});
+
+test("versionImports fingerprints relative module imports to match the preload", () => {
+  const versions = new Map([["js/geometry.js", "ccc"]]);
+  const code = 'import { torus } from "./geometry.js";\nimport { x } from "./other.js";';
+  assert.equal(versionImports(code, versions), 'import { torus } from "./geometry.js?v=ccc";\nimport { x } from "./other.js";');
+  assert.deepEqual(importsOf(code), ["js/geometry.js", "js/other.js"]);
 });
 
 test("only GitHub's image hosts are fetched", () => {

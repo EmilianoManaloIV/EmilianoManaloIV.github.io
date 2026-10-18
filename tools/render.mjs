@@ -190,6 +190,27 @@ export function insertAt(html, marker, value) {
   return html.slice(0, at) + value + html.slice(at + marker.length);
 }
 
+// == Cache-busting: each script and stylesheet address carries a fingerprint of the
+// file's contents ("main.js?v=3f9a2c1d7e"). A changed file gets a new address, so a
+// browser never pairs a new page with an old cached script. `versions` maps
+// "styles.css" or "js/<file>.js" to its fingerprint.
+
+export function versionUrls(html, versions) {
+  return html.replace(/\b(href|src)="(\/?)(styles\.css|js\/[\w.-]+\.js)"/g, (match, attr, slash, path) =>
+    versions.has(path) ? `${attr}="${slash}${path}?v=${versions.get(path)}"` : match,
+  );
+}
+
+// Module imports between scripts are versioned too, so the modulepreload in the page
+// and the import inside main.js name the same URL and load the module once.
+export function versionImports(code, versions) {
+  return code.replace(/(\bfrom\s+")\.\/([\w.-]+\.js)(")/g, (match, start, file, end) =>
+    versions.has(`js/${file}`) ? `${start}./${file}?v=${versions.get(`js/${file}`)}${end}` : match,
+  );
+}
+
+export const importsOf = (code) => [...code.matchAll(/\bfrom\s+"\.\/([\w.-]+\.js)"/g)].map((m) => `js/${m[1]}`);
+
 // Only GitHub's own image hosts are fetched during the build.
 export const isAllowedImageUrl = (url) =>
   /^https:\/\/(github\.com\/user-attachments\/|(user-images|private-user-images|camo|raw)\.githubusercontent\.com\/)/.test(url);
