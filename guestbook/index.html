@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guestbook | Emiliano Panday Manalo IV</title>
+  <meta name="description" content="Sign the guestbook of Emiliano Panday Manalo IV and read who has stopped by.">
+  <link rel="canonical" href="https://emilianomanaloiv.github.io/guestbook/">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#f1eee5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#292927" media="(prefers-color-scheme: dark)">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://emilianomanaloiv.github.io/guestbook/">
+  <meta property="og:title" content="Guestbook | Emiliano Panday Manalo IV">
+  <meta property="og:description" content="Sign the guestbook of Emiliano Panday Manalo IV and read who has stopped by.">
+  <meta name="twitter:card" content="summary">
+
+  <script src="/js/theme.js"></script>
+  <link rel="preload" href="/assets/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/ibm-plex-mono-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="modulepreload" href="/js/geometry.js">
+  <script type="module" src="/js/main.js"></script>
+  <script type="module" src="/js/ui.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container">
+      <a class="monogram" href="/" aria-label="Emiliano Panday Manalo IV, home">EM</a>
+      <nav id="site-nav" aria-label="Primary">
+        <ul class="nav-list">
+          <li><a href="/#home"><span class="nav-index" aria-hidden="true">00</span> Home</a></li>
+          <li><a href="/#about"><span class="nav-index" aria-hidden="true">01</span> About</a></li>
+          <li><a href="/#projects"><span class="nav-index" aria-hidden="true">02</span> Projects</a></li>
+          <li><a href="/rd/"><span class="nav-index" aria-hidden="true">03</span> R&amp;D</a></li>
+          <li><a href="/#contact"><span class="nav-index" aria-hidden="true">04</span> Contact</a></li>
+        </ul>
+      </nav>
+      <div class="header-tools">
+        <!-- TODO(figma): replace text labels with the social icons exported from Figma. -->
+        <ul class="socials" aria-label="Social profiles">
+          <li><a href="https://www.instagram.com/TODO" aria-label="Instagram">IG</a></li>
+          <li><a href="https://www.linkedin.com/in/TODO" aria-label="LinkedIn">in</a></li>
+          <li><a href="https://x.com/TODO" aria-label="X">X</a></li>
+          <li><a href="https://github.com/EmilianoManaloIV" aria-label="GitHub">GH</a></li>
+        </ul>
+        <button class="toggle" type="button" id="theme-toggle" aria-pressed="false">Dark mode<span data-state aria-hidden="true">: off</span></button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section id="guestbook" class="page-hero">
+      <div class="container">
+        <p class="eyebrow"><a href="/">Home</a> / Guestbook</p>
+        <h1>Guestbook</h1>
+        <p class="lede">Thanks for stopping by. Leave a note, say where we met, or just say hi.</p>
+      </div>
+    </section>
+
+    <section id="entries" class="section">
+      <div class="container">
+        <h2 class="section-title"><span class="section-index" aria-hidden="true">01 /</span> {{signature_count}} {{signature_label}}</h2>
+        <!-- The build (tools/build.mjs) fills this list from the pinned Guestbook discussion. -->
+        <ol class="guestbook-list"><!-- ENTRIES --></ol>
+        <p class="empty-state">No signatures yet. Be the first!</p>
+        <p><a class="tag tag-link" href="{{guestbook_url}}">Sign the guestbook</a></p>
+        <p class="note">Signing uses your GitHub account; your username appears here. Entries show up within about a minute.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div>
+        <hr class="footer-rule">
+        <p class="footer-brand">EM</p>
+        <p class="footer-tagline">Blending Engineering Practices With Art</p>
+        <p class="footer-links"><a href="/guestbook/">Sign the guestbook</a></p>
+        <ul class="socials" aria-label="Social profiles">
+          <li><a href="https://www.instagram.com/TODO" aria-label="Instagram">IG</a></li>
+          <li><a href="https://www.linkedin.com/in/TODO" aria-label="LinkedIn">in</a></li>
+          <li><a href="https://x.com/TODO" aria-label="X">X</a></li>
+          <li><a href="https://github.com/EmilianoManaloIV" aria-label="GitHub">GH</a></li>
+        </ul>
+      </div>
+      <canvas class="torus-scene" data-scene="torus" aria-hidden="true"></canvas>
+    </div>
+  </footer>
+</body>
+</html>

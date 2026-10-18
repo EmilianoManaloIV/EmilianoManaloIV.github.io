@@ -5,11 +5,14 @@ Visitors mostly arrive on a phone by scanning a QR code, often on slow Wi-Fi.
 
 ## Stack
 
-Hand-written static HTML, CSS, and a little first-party JavaScript. **Zero dependencies, no build step.**
-Read the ADRs in `docs/decisions/` (0001 to 0004) before changing this.
+Hand-written static HTML, CSS, and a little first-party JavaScript. **Zero dependencies.**
+A zero-dependency build (`tools/build.mjs`) runs in CI and turns GitHub Discussions into R&D posts,
+comments, and the guestbook (ADR 0005). Read the ADRs in `docs/decisions/` (0001 to 0005) before changing this.
 
 - `index.html` is the home page: a fast overview with sections anchored by id.
-- `about/index.html` (About & CV) and `rd/index.html` (the R&D blog) are subpages. Posts live at `rd/<slug>/index.html`.
+- `about/index.html` (About & CV), `rd/index.html` (the R&D blog), and `guestbook/index.html` are subpages.
+- Posts are generated into `_site/rd/<number>-<slug>/` from `templates/rd-post.html`; they are never committed.
+- `tools/render.mjs` holds the pure build helpers (sanitizer, images, markup), tested in `test/render.test.mjs`.
 - Every page repeats the home page's header and footer exactly; a test enforces it (ADR 0004). Change the nav or footer in every page at once.
 - `styles.css` holds design tokens in `:root` at the top, then components.
 - `js/theme.js` applies a saved theme in `<head>`. `js/main.js` runs the canvas wireframes, terminal, and toggles.
@@ -29,8 +32,11 @@ CSS is mobile-first with `min-width` queries at those two widths.
 ## Commands
 
 ```bash
-node --test            # run the site checks in test/
-py -m http.server 8000 # serve locally (use `py`, not `python`, on this machine)
+node tools/build.mjs --offline                                # build _site/ without posts
+node tools/build.mjs --fixture test/fixtures/discussions.json # build with sample posts and comments
+node tools/build.mjs                                          # build with real discussions (uses `gh auth token`)
+node --test                                                   # unit tests plus site checks on _site/
+py -m http.server 8000 --directory _site                      # preview the build (use `py`, not `python`)
 ```
 
 ## Rules
@@ -45,11 +51,14 @@ py -m http.server 8000 # serve locally (use `py`, not `python`, on this machine)
 
 ## Publishing an R&D post
 
-1. Copy `templates/rd-post.html` to `rd/<slug>/index.html` and replace every `TODO`.
-2. Create a thread for it in the repo's GitHub Discussions and put its URL in "Discuss on GitHub".
-3. Add a `<li class="post-card">` linking `/rd/<slug>/` at the top of the list in `rd/index.html`.
+Start a discussion in the **R&D** category of this repo's GitHub Discussions, from the web or the GitHub app.
+Within about a minute the site rebuilds and the post appears at `/rd/<number>-<title>/`, with its comments.
+Editing the discussion updates the page; renaming keeps old links working; deleting removes the page.
 
-`node --test` fails if a post is unlisted, undated, or missing its discussion link.
+Moderation: delete a comment to remove it within a minute, or hide it to remove it within the hour.
+The guestbook is the pinned discussion in the **Guestbook** category; each comment is a signature.
+Only discussions written by `EmilianoManaloIV` in R&D become posts (ADR 0005).
+A broken site link inside a post (for example `/no-such-page/`) stops the deploy until fixed; the Actions log names the page.
 
 ## Git workflow
 

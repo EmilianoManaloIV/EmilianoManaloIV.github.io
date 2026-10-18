@@ -5,9 +5,19 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # R&D posts, their comments, and guestbook entries live in GitHub Discussions (ADR 0005).
+  discussion:
+    types: [created, edited, deleted, category_changed, transferred]
+  discussion_comment:
+    types: [created, edited, deleted]
+  # Hiding (minimizing) a comment fires no event, so an hourly rebuild drops hidden ones.
+  schedule:
+    - cron: "17 * * * *"
 
+# The build only reads: repository files and discussions. Deploying adds Pages rights below.
 permissions:
   contents: read
+  discussions: read
 
 concurrency:
   group: pages-${{ github.event_name == 'pull_request' && github.ref || 'deploy' }}
@@ -21,7 +31,14 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-      - run: node --test
+      - name: Unit tests and site checks on an offline build
+        run: |
+          node tools/build.mjs --offline
+          node --test
+      - name: Site checks on a build from saved sample discussions
+        run: |
+          node tools/build.mjs --fixture test/fixtures/discussions.json
+          node --test
 
   build:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -29,11 +46,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - name: Collect site files
-        run: |
-          mkdir _site
-          cp index.html 404.html styles.css favicon.svg emiliano-manalo.vcf _site/
-          cp -r assets js about rd _site/
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      # A failed build skips the deploy, so the last good site stays live.
+      - name: Build from GitHub Discussions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/build.mjs
+      - name: Check the built site
+        run: node --test
       - uses: actions/upload-pages-artifact@v4
         with:
           path: _site

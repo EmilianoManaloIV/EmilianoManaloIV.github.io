@@ -80,5 +80,20 @@ document.querySelector("[data-copy-email]")?.addEventListener("click", (e) => {
   copy(e.currentTarget.dataset.copyEmail, "Email");
 });
 
+// On the 404 page, an old post address /rd/<number>-<old-name>/ goes to /rd/<number>/,
+// which redirects to the post's current name, so renamed posts keep shared links (ADR 0005).
+// It tries each old address once per visit, so a stale cached redirect can't bounce forever.
+const moved = document.getElementById("not-found") && location.pathname.match(/^\/rd\/(\d+)-[^/]+\/?$/);
+if (moved) {
+  let tried = false;
+  try {
+    tried = sessionStorage.getItem("rd-moved") === location.pathname;
+    sessionStorage.setItem("rd-moved", location.pathname);
+  } catch (e) {
+    // Without storage the redirect still runs; the browser stops a real loop on its own.
+  }
+  if (!tried) location.replace(`/rd/${moved[1]}/`);
+}
+
 // This module's controls show only once it has run, independent of main.js.
 document.documentElement.classList.add("ui-ready");
