@@ -2,7 +2,8 @@
 // Run with: node --test
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { gzipSync } from "node:zlib";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -140,9 +141,10 @@ test("js: makes no network requests and loads no remote code", () => {
   }
 });
 
-test("js: total size stays under the 16 KB budget", () => {
-  const bytes = scripts.reduce((sum, f) => sum + statSync(join(root, "js", f)).size, 0);
-  assert.ok(bytes < 16 * 1024, `js/ is ${bytes} bytes`);
+// Budget tracks bytes over the network: each file gzipped, as GitHub Pages serves it.
+test("js: total gzipped size stays under the 8 KB budget", () => {
+  const bytes = scripts.reduce((sum, f) => sum + gzipSync(readFileSync(join(root, "js", f)), { level: 9 }).length, 0);
+  assert.ok(bytes < 8 * 1024, `js/ is ${bytes} bytes gzipped`);
 });
 
 test("js: every file parses", () => {

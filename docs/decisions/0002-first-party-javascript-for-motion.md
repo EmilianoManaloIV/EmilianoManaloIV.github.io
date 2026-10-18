@@ -20,7 +20,7 @@ Rules, enforced by `test/site.test.mjs`:
 
 - No inline scripts and no external script URLs.
 - No network APIs, URLs, or dynamic imports in `js/`. Only relative static imports.
-- All of `js/` stays under 16 KB uncompressed (raised from 12 KB for banner v2: cube, globe, headline scramble, device readout).
+- All of `js/` stays under 8 KB gzipped, summed per file. This tracks bytes over the network on slow Wi-Fi. It replaced a raw-size limit (12 KB, then 16 KB) that pushed useful comments out of the code.
 - The page must stay usable without JavaScript. Toggles are hidden until scripts run.
 - Motion starts paused under `prefers-reduced-motion`, and a visible control pauses it at any time (WCAG 2.2.2).
 

@@ -12,7 +12,7 @@ Read `CLAUDE.md` and every ADR in `docs/decisions/` first. Then inspect `git dif
 Check, in order:
 
 1. **Correctness.** Broken anchors, wrong selectors, JavaScript errors, logic bugs in `js/`, layout breaking at 375, 800, or 1280 px.
-2. **ADR compliance.** No dependencies, no external URLs, no inline scripts, `js/` under 16 KB, page usable without JavaScript.
+2. **ADR compliance.** No dependencies, no external URLs, no inline scripts, `js/` under 8 KB gzipped, page usable without JavaScript.
 3. **Accessibility.** Keyboard reachability, visible focus, accessible names, decorative content hidden from screen readers, motion pausable, WCAG AA text contrast in both themes.
 4. **Scope.** Changes unrelated to the stated task, or unrequested features.
 5. **Simplicity.** Abstractions or code that an experienced engineer would call unnecessary.

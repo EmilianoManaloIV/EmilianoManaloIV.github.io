@@ -34,28 +34,33 @@ function strokeMesh(ctx, mesh, transform) {
   ctx.stroke();
 }
 
+// One source of truth for motion: [x angle, y angle] at time t. The painters
+// and the console telemetry both read these, so the numbers match the shapes.
+const TAU = Math.PI * 2;
+const poses = {
+  dome: (t) => [0.45, t * 0.35],
+  wave: () => [0.55, -0.6], // the surface itself ripples with phase t * 1.6
+  cube: (t) => [0.55 + t * 0.12, t * 0.22],
+  globe: (t) => [0.35, t * 0.6],
+  torus: (t) => [1 + Math.sin(t * 0.3) * 0.25, t * 0.4],
+};
+
 const painters = {
   banner(ctx, w, h, t) {
     const s = Math.min(w, h);
-    strokeMesh(ctx, meshes.dome, (p) =>
-      project(rotate(p, 0.45, t * 0.35), w * 0.36, h * 0.36, s * 0.24),
-    );
+    strokeMesh(ctx, meshes.dome, (p) => project(rotate(p, ...poses.dome(t)), w * 0.36, h * 0.36, s * 0.24));
     strokeMesh(ctx, meshes.wave, ([x, , z]) =>
-      project(rotate([x, waveHeight(x, z, t), z], 0.55, -0.6), w * 0.62, h * 0.72, s * 0.42),
+      project(rotate([x, waveHeight(x, z, t), z], ...poses.wave(t)), w * 0.62, h * 0.72, s * 0.42),
     );
   },
   cube(ctx, w, h, t) {
-    strokeMesh(ctx, meshes.cube, (p) =>
-      project(rotate(p, 0.55 + t * 0.12, t * 0.22), w / 2, h / 2, Math.min(w, h) * 0.24, 5),
-    );
+    strokeMesh(ctx, meshes.cube, (p) => project(rotate(p, ...poses.cube(t)), w / 2, h / 2, Math.min(w, h) * 0.24, 5));
   },
   globe(ctx, w, h, t) {
-    strokeMesh(ctx, meshes.globe, (p) => project(rotate(p, 0.35, t * 0.6), w / 2, h / 2, w * 0.44, 6));
+    strokeMesh(ctx, meshes.globe, (p) => project(rotate(p, ...poses.globe(t)), w / 2, h / 2, w * 0.44, 6));
   },
   torus(ctx, w, h, t) {
-    strokeMesh(ctx, meshes.torus, (p) =>
-      project(rotate(p, 1.0 + Math.sin(t * 0.3) * 0.25, t * 0.4), w / 2, h / 2, Math.min(w, h) * 0.3),
-    );
+    strokeMesh(ctx, meshes.torus, (p) => project(rotate(p, ...poses.torus(t)), w / 2, h / 2, Math.min(w, h) * 0.3));
   },
 };
 
@@ -95,30 +100,46 @@ function refreshColors() {
 
 let frame = 0;
 let last = 0;
+let frames = 0;
+let dt = 16.7;
+const revs = {};
 function tick(now) {
   frame = 0;
-  time += Math.min((now - (last || now)) / 1000, 0.1);
+  const delta = now - (last || now);
+  time += Math.min(delta / 1000, 0.1);
   last = now;
+  frames++;
+  if (delta) dt += (delta - dt) * 0.1;
+  // Log each full Y turn a shape completes.
+  for (const name of ["dome", "cube", "globe", "torus"]) {
+    const rev = Math.floor(poses[name](time)[1] / TAU);
+    if (rev > (revs[name] ?? rev)) log(`${name.toUpperCase().padEnd(6)} REV ${pad(rev)} COMPLETE`);
+    revs[name] = rev;
+  }
   for (const scene of scenes) if (scene.visible) draw(scene);
   schedule();
 }
 
-// == Live terminal, sized to fill its box
+// == Live console: telemetry from the shapes above, sized to fill its box
 
 const cursor = document.createElement("span");
 cursor.className = "cursor";
+const angle = (a) => (((a % TAU) + TAU) % TAU).toFixed(3);
+const pose = (name) => poses[name](time).map((a, i) => `${i ? "RY" : "RX"} ${angle(a)}`).join("  ");
+const shown = (name) => (scenes.find((s) => s.canvas.dataset.scene === name)?.visible ? 1 : 0);
 const script = [
-  () => `TRML                         LAB`,
-  () => `VRS 02.${pad(rand(400), 3)}.${pad(rand(20))}`,
-  () => `OS SYS LOAD`,
-  () => `OPERATION : RUN [${(90 + Math.random() * 9.9).toFixed(1)}%] : PRP ALL`,
-  () => `SET R ON FUN          HLD   A-${rand(9)}`,
-  () => `SPC FUN               SPR   F-${rand(9)}`,
-  () => `PWR ${rand(900) + 100}-${rand(900) + 100}-${rand(900) + 100}       GAP`,
-  () => `MESH SYNC  ${pad(rand(99))}/${pad(rand(99))}      OK`,
-  () => `LFT ${pad(rand(60))}  RGT ${pad(rand(60))}  SPN`,
-  () => `WND UPD TO LVL ${rand(12)}/12  PRP   I-I`,
+  () => `DOME   ${pose("dome")}  VTX ${meshes.dome.vertices.length}`,
+  () => `WAVE   PHASE ${angle(time * 1.6)}  PEAK ${waveHeight(0, 0, time).toFixed(3)}`,
+  () => `CUBE   ${pose("cube")}  EDG ${meshes.cube.edges.length}`,
+  () => `GLOBE  RY ${angle(poses.globe(time)[1])}  VTX ${meshes.globe.vertices.length}`,
+  () => `TORUS  ${pose("torus")}  VIS ${shown("torus")}`,
+  () => `FRAME  ${frames}  DT ${dt.toFixed(1)}ms  FPS ${Math.round(1000 / dt)}`,
+  () => `SCENE  BANNER ${shown("banner")}  CUBE ${shown("cube")}  TORUS ${shown("torus")}`,
 ];
+// Events jump the queue so they type next; capped so a long pause can't pile them up.
+const events = [];
+const log = (line) => events.push(line) > 4 && events.shift();
+const next = () => events.shift() || script[step++ % script.length]();
 const lines = [];
 let maxLines = 8;
 let current = "";
@@ -131,13 +152,14 @@ function fitTerminal() {
   const inner = terminal.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
   maxLines = Math.max(3, Math.floor(inner / parseFloat(style.lineHeight)) - 1);
   while (lines.length > maxLines) lines.shift();
-  if (!target) target = script[step++]();
+  if (!target) target = next();
   fillTerminal();
 }
 
 // Top the console up to a full box, even while paused, so it never looks near-empty.
+// While paused this is a snapshot at the frozen time, matching the frozen shapes.
 function fillTerminal() {
-  while (lines.length < maxLines) lines.push(script[step++ % script.length]());
+  while (lines.length < maxLines) lines.push(next());
   renderTerminal();
 }
 
@@ -153,7 +175,7 @@ function type() {
   } else {
     lines.push(current);
     while (lines.length > maxLines) lines.shift();
-    target = script[step++ % script.length]();
+    target = next();
     current = "";
   }
   renderTerminal();
@@ -196,6 +218,7 @@ function scrambleFrame() {
 }
 
 function beginScramble() {
+  log("DECODE HEADLINE");
   scrambledOnce = true;
   scrambleStart = performance.now();
   scrambleFrame();
@@ -317,6 +340,7 @@ const showState = (button, on) => {
 };
 
 function setMotion(on) {
+  if (on !== motion) log(on ? "MOTION RESUME" : "MOTION HALT");
   motion = on;
   root.classList.toggle("motion-off", !on);
   showState(motionButton, on);

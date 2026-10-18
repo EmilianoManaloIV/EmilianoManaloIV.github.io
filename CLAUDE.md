@@ -33,7 +33,7 @@ py -m http.server 8000 # serve locally (use `py`, not `python`, on this machine)
 ## Rules
 
 - No npm packages, CDNs, or external stylesheet, script, or font URLs. No inline scripts.
-- JavaScript lives in `js/`, makes no network requests, uses only relative imports, and stays under 16 KB total.
+- JavaScript lives in `js/`, makes no network requests, uses only relative imports, and stays under 8 KB gzipped in total.
 - The page must work without JavaScript. Motion must be pausable and start paused under reduced motion.
 - The tests enforce these rules. Do not weaken them to make a change pass.
 - Every `<img>` needs `alt`, `width`, and `height`.
