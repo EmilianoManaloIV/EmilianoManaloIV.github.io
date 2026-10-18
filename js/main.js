@@ -1,6 +1,4 @@
-// Progressive enhancement: wireframes, live terminal, headline scramble, device
-// readout, and the theme and motion toggles. The page works without this file.
-// No dependencies and no network requests: device values are only displayed.
+// Motion, console, headline, device readout, and toggles; see ADR 0002. No network use.
 import { torus, dome, grid, cube, sphere, waveHeight, rotate, project } from "./geometry.js";
 
 const root = document.documentElement;
@@ -52,6 +50,9 @@ let layoutKey = "";
 let layout = null;
 function bannerLayout(w, h) {
   if (layoutKey === `${w}x${h}`) return layout;
+  const m = 8;
+  // A collapsed or tiny canvas has nothing to fit; avoid a negative or NaN scale.
+  if (w <= 4 * m || h <= 4 * m) return { dome: [w * 0.36, h * 0.36, 0], wave: [w * 0.62, h * 0.72, 0] };
   const s = Math.min(w, h);
   const place = (k, ox, oy) => ({
     dome: [w * 0.36 + ox, h * 0.36 + oy, s * 0.24 * k],
@@ -73,7 +74,6 @@ function bannerLayout(w, h) {
     }
     return box;
   };
-  const m = 8;
   let box = bounds(place(1, 0, 0));
   const k = Math.min(1, (w - 2 * m) / (box[2] - box[0]), (h - 2 * m) / (box[3] - box[1]));
   box = bounds(place(k, 0, 0));
@@ -83,7 +83,6 @@ function bannerLayout(w, h) {
   return layout;
 }
 
-// Poses are read once per frame, not per vertex.
 const painters = {
   banner(ctx, w, h, t) {
     const spots = bannerLayout(w, h);

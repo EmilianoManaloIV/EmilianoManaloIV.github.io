@@ -135,6 +135,21 @@ test("index.html: interaction aids from ADR 0003 are present and named", () => {
   assert.match(page, /<script type="module" src="js\/ui.js"><\/script>/);
 });
 
+test("styles.css: ADR 0003 aids hide without ui.js and respect reduced motion", () => {
+  const css = read("styles.css");
+  for (const name of ["action", "section-rail", "section-bar"]) {
+    assert.match(css, new RegExp(`html:not\\(\\.ui-ready\\) \\.${name}`), `.${name} hidden until ui.js runs`);
+  }
+  const reduced = css.match(/@media \(prefers-reduced-motion: reduce\) \{[^@]*\.section-bar[^@]*\}/);
+  assert.ok(reduced && /\.section-rail a/.test(reduced[0]), "rail and bar transitions off under reduced motion");
+  assert.match(read("js/ui.js"), /classList\.add\("ui-ready"\)/);
+});
+
+test("index.html: talk chip is not inside a live region", () => {
+  const talk = html("index.html").match(/<p class="talk-status"[^>]*>/)[0];
+  assert.doesNotMatch(talk, /aria-live|role="status"/);
+});
+
 test("index.html: every media figure has a numbered caption", () => {
   const page = html("index.html");
   const figures = page.match(/<figure class="card-media">[\s\S]*?<\/figure>/g) ?? [];

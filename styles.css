@@ -262,9 +262,9 @@ button {
 /* Toggles need js/main.js, so hide them until it has run.
    Canvases stay empty without JavaScript, so hide them in that case too. */
 html:not(.js-ready) .toggle,
-html:not(.js-ready) .action,
-html:not(.js-ready) .section-rail,
-html:not(.js-ready) .section-bar,
+html:not(.ui-ready) .action,
+html:not(.ui-ready) .section-rail,
+html:not(.ui-ready) .section-bar,
 html:not(.js) canvas[data-scene] {
   display: none;
 }
@@ -351,20 +351,21 @@ html:not(.js) canvas[data-scene] {
     transform: translateY(-50%);
   }
 
-  /* 6px dots inside 18px targets, so they are easy to hit. */
+  /* 6px dots inside 24px targets (WCAG 2.5.8). Slate and deep amber keep 3:1
+     against both the paper background and the charcoal banner. */
   .section-rail a {
-    width: 18px;
-    height: 18px;
-    padding: 6px;
-    background: var(--brand-silver);
+    width: 24px;
+    height: 24px;
+    padding: 9px;
+    background: var(--brand-slate);
     background-clip: content-box;
-    border-radius: 9px;
+    border-radius: 12px;
     transition: height 0.2s;
   }
 
   .section-rail a[aria-current="true"] {
-    height: 34px;
-    background-color: var(--brand-accent-light);
+    height: 40px;
+    background-color: var(--brand-accent-dark);
   }
 }
 
@@ -396,9 +397,9 @@ html:not(.js) canvas[data-scene] {
     color: var(--color-ink-muted);
   }
 
-  /* Anchored sections land below the bar, not under it. */
-  section[id] {
-    scroll-margin-top: 2.5rem;
+  /* Anchors and keyboard focus land below the bar, not under it. */
+  html {
+    scroll-padding-top: 3rem;
   }
 }
 

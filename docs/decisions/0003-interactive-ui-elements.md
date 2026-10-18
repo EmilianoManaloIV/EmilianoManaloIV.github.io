@@ -28,7 +28,7 @@ All rules from 0002 still hold:
 - **Usable without JavaScript.** The rail, the bar, and the action buttons stay hidden without it. The `mailto:` link and the vCard still work.
 - **Reduced motion respected.** Under reduced motion, transitions are off.
 
-The JavaScript budget rises from **8 KB to 10 KB gzipped**, summed per file. The measured total after this change is 9.9 KB.
+The JavaScript budget rises from **8 KB to 10 KB gzipped**, summed per file. KB here means 1,024 bytes. The measured total after this change is about 10,000 bytes, so the headroom is small.
 
 ## Alternatives
 
@@ -38,5 +38,5 @@ The JavaScript budget rises from **8 KB to 10 KB gzipped**, summed per file. The
 
 ## Consequences
 
-- The budget has about 0.3 KB of headroom. The next feature needs trimming or another decision.
+- The budget has little headroom. The next feature needs trimming or another decision.
 - The talk chip reads "Schedule TBA" until the owner fills in the session times.
