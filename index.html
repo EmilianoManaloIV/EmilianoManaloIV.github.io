@@ -30,14 +30,14 @@
   <header class="site-header">
     <div class="container">
       <a class="monogram" href="#home" aria-label="Emiliano Panday Manalo IV, home">EM</a>
-      <nav aria-label="Primary">
+      <nav id="site-nav" aria-label="Primary">
         <ul class="nav-list">
-          <li><a href="#home">Home</a></li>
-          <li><a href="#about">About</a></li>
-          <li><a href="#projects">Projects</a></li>
-          <li><a href="#research">Research</a></li>
-          <li><a href="#talk">Talk</a></li>
-          <li><a href="#contact">Contact</a></li>
+          <li><a href="#home"><span class="nav-index" aria-hidden="true">00</span> Home</a></li>
+          <li><a href="#about"><span class="nav-index" aria-hidden="true">01</span> About</a></li>
+          <li><a href="#projects"><span class="nav-index" aria-hidden="true">02</span> Projects</a></li>
+          <li><a href="#research"><span class="nav-index" aria-hidden="true">03</span> Research</a></li>
+          <li><a href="#talk"><span class="nav-index" aria-hidden="true">04</span> Talk</a></li>
+          <li><a href="#contact"><span class="nav-index" aria-hidden="true">05</span> Contact</a></li>
         </ul>
       </nav>
       <div class="header-tools">
@@ -104,10 +104,13 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
             <h3>TODO: About heading</h3>
             <p>TODO: Short bio. Two or three sentences on who you are, what you are studying or working on, and what you want to talk about at the conference.</p>
           </div>
-          <div class="card-media">
-            <!-- TODO: replace with a photo, e.g. <img src="assets/img/portrait.jpg" alt="..." width="800" height="600" loading="lazy">. -->
-            <div class="slot" aria-hidden="true">portrait</div>
-          </div>
+          <figure class="card-media">
+            <div class="frame">
+              <!-- TODO: replace with a photo, e.g. <img src="assets/img/portrait.jpg" alt="..." width="800" height="600" loading="lazy">. -->
+              <div class="slot" aria-hidden="true">portrait</div>
+            </div>
+            <figcaption>FIG. 01.1 / Portrait</figcaption>
+          </figure>
         </article>
       </div>
     </section>
@@ -128,10 +131,13 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
               <li><span class="tag">Research</span></li>
             </ul>
           </div>
-          <div class="card-media">
-            <!-- TODO: replace with a Blendity screenshot or render. -->
-            <div class="slot" aria-hidden="true">Blendity image</div>
-          </div>
+          <figure class="card-media">
+            <div class="frame">
+              <!-- TODO: replace with a Blendity screenshot or render. -->
+              <div class="slot" aria-hidden="true">Blendity image</div>
+            </div>
+            <figcaption>FIG. 02.1 / Blendity</figcaption>
+          </figure>
         </article>
 
         <article class="card">
@@ -146,10 +152,13 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
               <li><span class="tag">Scrum Master</span></li>
             </ul>
           </div>
-          <div class="card-media">
-            <!-- TODO: replace with a UNOverse screenshot. -->
-            <div class="slot" aria-hidden="true">UNOverse image</div>
-          </div>
+          <figure class="card-media">
+            <div class="frame">
+              <!-- TODO: replace with a UNOverse screenshot. -->
+              <div class="slot" aria-hidden="true">UNOverse image</div>
+            </div>
+            <figcaption>FIG. 02.2 / UNOverse</figcaption>
+          </figure>
         </article>
       </div>
     </section>
@@ -190,9 +199,12 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
               <li><span class="tag">TODO topic</span></li>
             </ul>
           </div>
-          <div class="card-media">
-            <div class="slot" aria-hidden="true">research image</div>
-          </div>
+          <figure class="card-media">
+            <div class="frame">
+              <div class="slot" aria-hidden="true">research image</div>
+            </div>
+            <figcaption>FIG. 03.1 / Research</figcaption>
+          </figure>
         </article>
       </div>
     </section>
@@ -210,9 +222,12 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
               <li><a class="tag tag-link" href="https://github.com/EmilianoManaloIV/TODO-paper">Paper</a></li>
             </ul>
           </div>
-          <div class="card-media">
-            <div class="slot" aria-hidden="true">talk or poster image</div>
-          </div>
+          <figure class="card-media">
+            <div class="frame">
+              <div class="slot" aria-hidden="true">talk or poster image</div>
+            </div>
+            <figcaption>FIG. 04.1 / Talk</figcaption>
+          </figure>
         </article>
       </div>
     </section>

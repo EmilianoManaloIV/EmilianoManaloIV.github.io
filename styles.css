@@ -292,9 +292,24 @@ html:not(.js) canvas[data-scene] {
   list-style: none;
 }
 
+/* Phones: a compact two-column grid keeps the hero on the first screen. */
 .nav-list {
-  flex-direction: column;
-  gap: var(--space-2);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2) var(--space-4);
+}
+
+.nav-index {
+  margin-right: var(--space-1);
+  color: var(--color-ink-muted);
+  font-size: var(--text-xs);
+}
+
+.nav-list a[aria-current="true"] {
+  text-decoration: underline;
+  text-decoration-color: var(--brand-accent-light);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.35em;
 }
 
 .nav-list a {
@@ -386,6 +401,13 @@ html:not(.js) canvas[data-scene] {
   mask-composite: intersect;
   opacity: 0.18;
   pointer-events: none;
+}
+
+/* On phones the banner stacks, so the dots would run behind the console and labels. */
+@media (max-width: 799px) {
+  .dot-field {
+    display: none;
+  }
 }
 
 .terminal {
@@ -651,8 +673,20 @@ html:not(.js) canvas[data-scene] {
   font-weight: 500;
 }
 
-/* Corner brackets and a crosshair mark around media, after the references. */
 .card-media {
+  margin: 0;
+}
+
+.card-media figcaption {
+  margin-top: var(--space-2);
+  color: var(--color-ink-muted);
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Corner brackets and a crosshair mark around media, after the references. */
+.frame {
   position: relative;
   padding: var(--space-3);
   --bracket: linear-gradient(var(--brand-silver), var(--brand-silver));
@@ -663,7 +697,7 @@ html:not(.js) canvas[data-scene] {
     var(--bracket) bottom right / 1px 14px no-repeat;
 }
 
-.card-media::after {
+.frame::after {
   content: "+";
   content: "+" / "";
   position: absolute;
@@ -777,7 +811,7 @@ html:not(.js) canvas[data-scene] {
   }
 
   .nav-list {
-    flex-direction: row;
+    display: flex;
     gap: var(--space-4);
   }
 
