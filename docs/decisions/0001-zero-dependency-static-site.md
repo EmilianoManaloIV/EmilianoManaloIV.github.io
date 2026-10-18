@@ -1,6 +1,6 @@
 # 0001: Zero-dependency static site
 
-Status: Accepted (2026-10-18)
+Status: Accepted (2026-10-18). Amended by 0002, which allows small first-party JavaScript.
 
 ## Context
 

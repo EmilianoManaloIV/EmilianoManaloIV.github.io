@@ -5,13 +5,17 @@ Visitors mostly arrive on a phone by scanning a QR code, often on slow Wi-Fi.
 
 ## Stack
 
-Hand-written static HTML and CSS. **Zero dependencies, no build step, no JavaScript.**
-See `docs/decisions/0001-zero-dependency-static-site.md` before changing this.
+Hand-written static HTML, CSS, and a little first-party JavaScript. **Zero dependencies, no build step.**
+Read `docs/decisions/0001-zero-dependency-static-site.md` and `0002-first-party-javascript-for-motion.md` before changing this.
 
 - `index.html` is the single page. Sections are anchored by id.
 - `styles.css` holds design tokens in `:root` at the top, then components.
-- `assets/fonts/` holds self-hosted `.woff2` files. Never link a font CDN.
-- `assets/img/` holds images exported from Figma.
+- `js/theme.js` applies a saved theme in `<head>`. `js/main.js` runs the canvas wireframes, terminal, and toggles.
+- `js/geometry.js` is pure mesh and projection math, unit-tested in `test/geometry.test.mjs`.
+- `assets/fonts/` holds self-hosted `.woff2` files with their OFL licenses. Never link a font CDN.
+- `assets/img/` holds images.
+
+Colors come from the Figma "Branding Guide" variables, in Light and Dark modes. Keep the `--brand-*` names in sync with Figma.
 
 Design source of truth: Figma Sites file "Personal Website"
 https://www.figma.com/site/uuMSVAiWUYtckwg7fJRxfF/Personal-Website?node-id=0-1
@@ -28,7 +32,10 @@ py -m http.server 8000 # serve locally (use `py`, not `python`, on this machine)
 
 ## Rules
 
-- Do not add `<script>` tags, npm packages, or external stylesheet/script/font URLs. The tests fail if you do.
+- No npm packages, CDNs, or external stylesheet, script, or font URLs. No inline scripts.
+- JavaScript lives in `js/`, makes no network requests, uses only relative imports, and stays under 12 KB total.
+- The page must work without JavaScript. Motion must be pausable and start paused under reduced motion.
+- The tests enforce these rules. Do not weaken them to make a change pass.
 - Every `<img>` needs `alt`, `width`, and `height`.
 - Every in-page `href="#..."` must match an element id.
 - Placeholder content is marked with `TODO` so it is easy to find before launch.

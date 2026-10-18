@@ -1,0 +1,681 @@
+/* ==========================================================================
+   Fonts: self-hosted latin subsets, SIL Open Font License (see assets/fonts/).
+   ========================================================================== */
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("assets/fonts/inter-latin-var.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("assets/fonts/space-grotesk-latin-var.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/ibm-plex-mono-latin-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("assets/fonts/ibm-plex-mono-latin-400-italic.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("assets/fonts/ibm-plex-mono-latin-500.woff2") format("woff2");
+}
+
+/* ==========================================================================
+   Design tokens
+   Colors: Figma "Branding Guide" variable collection.
+   Type: Figma text styles and the inspected text layers.
+   ========================================================================== */
+:root {
+  color-scheme: light;
+
+  /* color/primary (Light mode) */
+  --brand-background: #f1eee5;
+  --brand-text-dark: #292927;
+  --brand-text-light: rgb(41 41 39 / 0.75);
+  --brand-text-flipped: #f1eee5;
+  --brand-text-flipped-light: rgb(241 238 229 / 0.75);
+  --brand-accent-light: #d7882b;
+  --brand-accent-dark: #a65e1e;
+
+  /* color/signal (same in both modes) */
+  --brand-mint: #45e8a2;
+  --brand-magenta: #ed24c7;
+  --brand-blue: #4c76ff;
+  --brand-red: #e6533c;
+  --brand-amber: #ff9a00;
+  --brand-yellow: #ffe44d;
+
+  /* color/supporting (same in both modes) */
+  --brand-stone: #d8d3c9;
+  --brand-slate: #6b6b63;
+  --brand-silver: #9a9992;
+  --brand-charcoal: #1a1a1a;
+
+  /* Roles. Dark panels stay charcoal in both themes, so their ink is fixed. */
+  --color-bg: var(--brand-background);
+  --color-ink: var(--brand-text-dark);
+  --color-ink-muted: var(--brand-text-light);
+  --color-rule: var(--brand-silver);
+  --color-slot: var(--brand-stone);
+  --color-panel: var(--brand-charcoal);
+  --color-panel-ink: #f1eee5;
+  --color-panel-ink-muted: rgb(241 238 229 / 0.75);
+  --color-panel-rule: var(--brand-slate);
+  --color-tag-primary: var(--brand-accent-light);
+  --color-tag: var(--brand-accent-dark);
+  --color-tag-ink: #f1eee5;
+  --color-focus: var(--brand-blue);
+
+  /* Families */
+  --font-display: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sub: "Space Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  /* Sizes: Figma desktop values are the maximums. */
+  --text-name: clamp(2.25rem, 1rem + 5vw, 4rem);         /* h1: Inter Bold 64 */
+  --text-subtitle: clamp(1.125rem, 0.9rem + 1vw, 1.5rem); /* SubTitle: 24 */
+  --text-header: clamp(1.5rem, 1.1rem + 1.5vw, 2rem);     /* Header: 32 */
+  --text-subheader: clamp(1rem, 0.85rem + 0.6vw, 1.25rem); /* SubHeader: 20 */
+  --text-banner: clamp(3rem, 1rem + 5vw, 4.5rem);
+  --text-body: 1rem;
+  --text-small: 0.875rem;
+  --text-xs: 0.75rem;
+
+  /* Space and shape */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-24: 6rem;
+  --radius-sm: 4px;
+  --radius-md: 16px;
+  --content-max: 72rem; /* 1152px, the Figma desktop content width */
+  --gutter: clamp(1rem, 5vw, 4rem);
+}
+
+/* Figma Branding Guide, Dark mode. Applied by the toggle or the system setting. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --brand-background: #292927;
+  --brand-text-dark: #f1eee5;
+  --brand-text-light: rgb(241 238 229 / 0.75);
+  --brand-text-flipped: #292927;
+  --brand-text-flipped-light: rgb(41 41 39 / 0.75);
+  --color-slot: #3a3a37;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --brand-background: #292927;
+    --brand-text-dark: #f1eee5;
+    --brand-text-light: rgb(241 238 229 / 0.75);
+    --brand-text-flipped: #292927;
+    --brand-text-flipped-light: rgb(41 41 39 / 0.75);
+    --color-slot: #3a3a37;
+  }
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+  line-height: 1.5;
+}
+
+img,
+svg,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  line-height: 1.15;
+}
+
+p {
+  margin: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--space-4);
+  top: -3rem;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-panel);
+  color: var(--color-panel-ink);
+  z-index: 10;
+}
+
+.skip-link:focus {
+  top: var(--space-4);
+}
+
+.container {
+  width: 100%;
+  max-width: calc(var(--content-max) + 2 * var(--gutter));
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+/* Empty image slot shown until real artwork is supplied. */
+.slot {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 544 / 432;
+  border-radius: var(--radius-md);
+  background: var(--color-slot);
+  color: var(--color-ink-muted);
+  font-size: var(--text-xs);
+}
+
+/* Small bordered control used for the theme and motion toggles. */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+/* Toggles need js/main.js, so hide them until it has run.
+   Canvases stay empty without JavaScript, so hide them in that case too. */
+html:not(.js-ready) .toggle,
+html:not(.js) canvas[data-scene] {
+  display: none;
+}
+
+/* ==========================================================================
+   Header and nav. Mobile: stacked list, as in the Figma mobile frame.
+   ========================================================================== */
+.site-header {
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.site-header .container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-block: var(--space-6);
+}
+
+.monogram {
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.nav-list,
+.socials {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nav-list {
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.nav-list a {
+  text-decoration: none;
+}
+
+.nav-list a:hover {
+  text-decoration: underline;
+}
+
+.header-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.socials {
+  gap: var(--space-3);
+}
+
+.socials a {
+  font-size: var(--text-small);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+/* ==========================================================================
+   Hero
+   ========================================================================== */
+.hero {
+  padding-block: var(--space-16);
+  text-align: center;
+}
+
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: var(--text-name);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+
+.hero p {
+  max-width: 36rem;
+  margin: var(--space-4) auto 0;
+  font-family: var(--font-sub);
+  font-size: var(--text-subtitle);
+  line-height: 1.3;
+}
+
+/* ==========================================================================
+   Dark panels
+   ========================================================================== */
+.panel {
+  background: var(--color-panel);
+  color: var(--color-panel-ink);
+}
+
+/* Banner: terminal, wireframe scene, the "Bridging" words, technical labels. */
+.banner .container {
+  display: grid;
+  grid-template-areas:
+    "words"
+    "art"
+    "term"
+    "labels";
+  gap: var(--space-6);
+  padding-block: var(--space-8);
+}
+
+.terminal {
+  grid-area: term;
+  min-width: 0;
+  height: 13.5em;
+  margin: 0;
+  overflow: hidden;
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  color: var(--color-panel-ink-muted);
+  white-space: pre;
+}
+
+.terminal .cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1em;
+  vertical-align: text-bottom;
+  background: var(--brand-mint);
+  animation: blink 1s steps(1) infinite;
+}
+
+.motion-off .terminal .cursor {
+  animation: none;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.banner-scene {
+  grid-area: art;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  color: var(--brand-mint);
+}
+
+.banner-words {
+  grid-area: words;
+  font-size: var(--text-banner);
+  line-height: 1.05;
+}
+
+.banner-words span {
+  display: block;
+}
+
+.banner-words .w-tech,
+.banner-words .w-eng,
+.banner-words .w-art {
+  font-size: 0.45em;
+}
+
+.banner-words .w-tech {
+  color: var(--brand-red);
+}
+
+.banner-words .w-eng {
+  color: var(--brand-amber);
+}
+
+.banner-words .w-art {
+  color: var(--brand-yellow);
+}
+
+.tech-labels {
+  grid-area: labels;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--space-2);
+  font-size: 0.625rem;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.tech-label {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-panel-rule);
+}
+
+.tech-label strong {
+  display: block;
+  color: var(--brand-mint);
+  font-weight: 400;
+}
+
+.tech-labels .toggle {
+  color: var(--brand-mint);
+}
+
+/* Values strip */
+.values .container {
+  display: grid;
+  gap: var(--space-8);
+  padding-block: var(--space-12);
+}
+
+.value {
+  border-top: 1px solid var(--color-panel-rule);
+  padding-top: var(--space-4);
+}
+
+.value h3 {
+  margin-bottom: var(--space-3);
+  font-size: var(--text-header);
+  font-weight: 500;
+}
+
+.value p {
+  font-size: var(--text-subheader);
+}
+
+.value:nth-child(1) h3 {
+  color: var(--brand-mint);
+}
+
+.value:nth-child(2) h3 {
+  color: var(--brand-magenta);
+}
+
+.value:nth-child(3) h3 {
+  color: var(--brand-blue);
+}
+
+/* ==========================================================================
+   Content sections and cards
+   ========================================================================== */
+.section {
+  padding-block: var(--space-12);
+}
+
+.section-title {
+  margin-bottom: var(--space-8);
+  font-family: var(--font-sub);
+  font-size: var(--text-subtitle);
+  font-weight: 400;
+  color: var(--color-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.card {
+  display: grid;
+  gap: var(--space-6);
+  align-items: center;
+}
+
+.card + .card {
+  margin-top: var(--space-16);
+}
+
+.card h3 {
+  margin-bottom: var(--space-4);
+  font-size: var(--text-header);
+  font-weight: 500;
+}
+
+.card-media img {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+}
+
+.card-body > p {
+  color: var(--color-ink-muted);
+}
+
+.card-body > p + p {
+  margin-top: var(--space-3);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-6) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag {
+  display: inline-block;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-tag);
+  color: var(--color-tag-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-small);
+  line-height: 1.4;
+}
+
+.tag-link {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-tag-primary);
+  text-decoration: none;
+}
+
+.tag-link:hover {
+  text-decoration: underline;
+}
+
+.contact-list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+.site-footer .container {
+  display: grid;
+  gap: var(--space-8);
+  padding-block: var(--space-16);
+}
+
+.footer-rule {
+  width: min(100%, 20rem);
+  margin: 0 0 var(--space-6);
+  border: 0;
+  border-top: 1px solid var(--color-rule);
+}
+
+.footer-brand {
+  font-weight: 500;
+}
+
+.footer-tagline {
+  margin-block: var(--space-2) var(--space-4);
+  color: var(--color-ink-muted);
+  font-size: var(--text-small);
+}
+
+.torus-scene {
+  width: 100%;
+  max-width: 26rem;
+  aspect-ratio: 1;
+  justify-self: center;
+  color: var(--color-ink);
+}
+
+/* ==========================================================================
+   Tablet: 800px and up
+   ========================================================================== */
+@media (min-width: 800px) {
+  .site-header .container {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-8);
+  }
+
+  .nav-list {
+    flex-direction: row;
+    gap: var(--space-4);
+  }
+
+  .header-tools {
+    margin-left: auto;
+  }
+
+  .banner .container {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "term words"
+      "art art"
+      "labels labels";
+    align-items: start;
+  }
+
+  .banner-words {
+    text-align: right;
+  }
+
+  .card {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-12);
+  }
+
+  /* Alternate the image side on every other card, as in the design. */
+  .card:nth-of-type(even) .card-media {
+    order: -1;
+  }
+
+  .values .container {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .site-footer .container {
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: var(--space-24);
+  }
+
+  .torus-scene {
+    justify-self: end;
+  }
+}
+
+/* ==========================================================================
+   Desktop: 1280px and up
+   ========================================================================== */
+@media (min-width: 1280px) {
+  .banner .container {
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) minmax(0, 1fr);
+    grid-template-areas:
+      "term art words"
+      "term art labels";
+    align-items: center;
+  }
+
+  .banner-scene {
+    aspect-ratio: 5 / 4;
+  }
+
+  .tech-labels {
+    justify-content: flex-end;
+    align-self: end;
+  }
+}
