@@ -62,26 +62,39 @@
     </section>
 
     <section class="banner panel" aria-label="Bridging technology, engineering, and art">
+      <div class="dot-field" aria-hidden="true"></div>
       <div class="container">
 <pre class="terminal" aria-hidden="true">TRML                         LAB
 VRS 02.190.01
 OS SYS LOAD
+CRS LOAD /
 OPERATION : RUN [99.5%] : PRP ALL
 SET R ON FUN          HLD   A-2
 SPC FUN               SPR   F-7
+PWR 400-260-113       GAP
 LFT                   SPN
+RGT                   SPN
+OVL FN 10-12
 WND UPD TO LVL 10/11  PRP   I-I</pre>
         <canvas class="banner-scene" data-scene="banner" aria-hidden="true"></canvas>
-        <p class="banner-words">
-          <span class="lead">Bridging</span>
-          <span class="w-tech">Technology</span>
-          <span class="w-eng">Engineering</span>
-          <span class="w-art">Art</span>
-        </p>
+        <div class="banner-head">
+          <canvas class="cube-scene" data-scene="cube" aria-hidden="true"></canvas>
+          <p class="banner-words">
+            <span class="visually-hidden">Bridging technology, engineering, and art</span>
+            <span class="lead" aria-hidden="true" data-scramble>Bridging</span>
+            <span class="w-tech" aria-hidden="true" data-scramble>Technology</span>
+            <span class="w-eng" aria-hidden="true" data-scramble>Engineering</span>
+            <span class="w-art" aria-hidden="true" data-scramble>Art</span>
+          </p>
+          <div class="norm-label" aria-hidden="true"><span class="norm-code">EPM—IV</span><span class="norm-bar"></span></div>
+        </div>
         <div class="tech-labels">
-          <div class="tech-label" aria-hidden="true"><strong>System Core V7</strong>Module sector 128<br>Inspect due 2026-07</div>
-          <div class="tech-label" aria-hidden="true"><strong>Batch</strong>05-77</div>
-          <div class="tech-label" aria-hidden="true"><strong>Serial</strong>09-2087-4</div>
+          <div class="tech-label tech-label-core" aria-hidden="true">
+            <canvas class="globe-scene" data-scene="globe"></canvas>
+            <div><strong data-device="title">System Core V7</strong><span data-device="spec">Module sector 128</span><br><span data-device="display">Inspect due 2026-07</span></div>
+          </div>
+          <div class="tech-label" aria-hidden="true"><strong data-device="clock-title">Batch</strong><span data-device="clock">05-77</span></div>
+          <div class="tech-label" aria-hidden="true"><strong data-device="link-title">Serial</strong><span data-device="link">09-2087-4</span></div>
           <button class="toggle" type="button" id="motion-toggle" aria-pressed="true">Motion<span data-state aria-hidden="true">: on</span></button>
         </div>
       </div>
@@ -89,7 +102,7 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
 
     <section id="about" class="section">
       <div class="container">
-        <h2 class="section-title">About</h2>
+        <h2 class="section-title"><span class="section-index" aria-hidden="true">01 /</span> About</h2>
         <article class="card">
           <div class="card-body">
             <h3>TODO: About heading</h3>
@@ -105,7 +118,7 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
 
     <section id="projects" class="section">
       <div class="container">
-        <h2 class="section-title">Projects</h2>
+        <h2 class="section-title"><span class="section-index" aria-hidden="true">02 /</span> Projects</h2>
 
         <article class="card">
           <div class="card-body">
@@ -147,6 +160,12 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
 
     <section class="values panel" aria-label="Values">
       <div class="container">
+        <div class="barcode-strip" aria-hidden="true">
+          <span class="tech-label">ERC</span>
+          <span class="tech-label"><strong>ID</strong>092829123</span>
+          <span class="tech-label"><strong>Batch</strong>XS/22</span>
+          <span class="barcode"></span>
+        </div>
         <div class="value">
           <h3>Cross Disciplined</h3>
           <p>At the intersection of technology, engineering, and art. I wear many hats to solve complex problems.</p>
@@ -159,12 +178,13 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
           <h3>Human First</h3>
           <p>Building systems are inherently human. Humans use technology to <em>create</em>, not <em>replace</em> them.</p>
         </div>
+        <div class="ticks" aria-hidden="true"><span>S S S S S S</span><span>S S S S S S</span></div>
       </div>
     </section>
 
     <section id="research" class="section">
       <div class="container">
-        <h2 class="section-title">Research</h2>
+        <h2 class="section-title"><span class="section-index" aria-hidden="true">03 /</span> Research</h2>
         <article class="card">
           <div class="card-body">
             <h3>TODO: Research title</h3>
@@ -183,7 +203,7 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
 
     <section id="talk" class="section">
       <div class="container">
-        <h2 class="section-title">Talk</h2>
+        <h2 class="section-title"><span class="section-index" aria-hidden="true">04 /</span> Talk</h2>
         <article class="card">
           <div class="card-body">
             <h3>TODO: Talk or poster title</h3>
@@ -203,7 +223,7 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
 
     <section id="contact" class="section">
       <div class="container">
-        <h2 class="section-title">Contact</h2>
+        <h2 class="section-title"><span class="section-index" aria-hidden="true">05 /</span> Contact</h2>
         <ul class="contact-list">
           <li>Email: <a href="mailto:TODO@example.com">TODO@example.com</a></li>
           <li>LinkedIn: <a href="https://www.linkedin.com/in/TODO">linkedin.com/in/TODO</a></li>

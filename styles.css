@@ -201,6 +201,15 @@ button {
   color: inherit;
 }
 
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .skip-link {
   position: absolute;
   left: var(--space-4);
@@ -344,16 +353,39 @@ html:not(.js) canvas[data-scene] {
   color: var(--color-panel-ink);
 }
 
-/* Banner: terminal, wireframe scene, the "Bridging" words, technical labels. */
+/* Banner: full-height console on the left, wireframe scene, the "Bridging"
+   head with a cube behind it, and technical labels. */
+.banner {
+  position: relative;
+  overflow: hidden;
+}
+
 .banner .container {
+  position: relative;
   display: grid;
   grid-template-areas:
-    "words"
+    "head"
     "art"
     "term"
     "labels";
   gap: var(--space-6);
   padding-block: var(--space-8);
+}
+
+/* Dot-matrix columns behind the right side, after the "Illusion" reference. */
+.dot-field {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 38%;
+  background: radial-gradient(circle, var(--brand-mint) 1px, transparent 1.6px) 0 0 / 10px 10px;
+  -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 10px, transparent 10px 50px),
+    linear-gradient(90deg, transparent, #000 60%);
+  mask-image: repeating-linear-gradient(90deg, #000 0 10px, transparent 10px 50px),
+    linear-gradient(90deg, transparent, #000 60%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+  opacity: 0.18;
+  pointer-events: none;
 }
 
 .terminal {
@@ -394,13 +426,32 @@ html:not(.js) canvas[data-scene] {
   color: var(--brand-mint);
 }
 
+.banner-head {
+  grid-area: head;
+  position: relative;
+  padding-block: var(--space-4);
+}
+
+.cube-scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--brand-mint);
+  opacity: 0.35;
+}
+
+.banner-words,
+.norm-label {
+  position: relative;
+}
+
 .banner-words {
-  grid-area: words;
   font-size: var(--text-banner);
   line-height: 1.05;
 }
 
-.banner-words span {
+.banner-words span:not(.visually-hidden) {
   display: block;
 }
 
@@ -420,6 +471,27 @@ html:not(.js) canvas[data-scene] {
 
 .banner-words .w-art {
   color: var(--brand-yellow);
+}
+
+/* Norm label with a gradient bar, after the "10918-1" mark in the references. */
+.norm-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.norm-code {
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-panel-ink);
+  font-size: var(--text-small);
+  line-height: 1.4;
+}
+
+.norm-bar {
+  width: min(10rem, 40%);
+  height: 6px;
+  background: linear-gradient(90deg, var(--brand-red), var(--brand-amber), var(--brand-yellow));
 }
 
 .tech-labels {
@@ -444,6 +516,19 @@ html:not(.js) canvas[data-scene] {
   font-weight: 400;
 }
 
+.tech-label-core {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.globe-scene {
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+  color: var(--brand-mint);
+}
+
 .tech-labels .toggle {
   color: var(--brand-mint);
 }
@@ -452,7 +537,50 @@ html:not(.js) canvas[data-scene] {
 .values .container {
   display: grid;
   gap: var(--space-8);
-  padding-block: var(--space-12);
+  padding-block: var(--space-12) var(--space-6);
+}
+
+.barcode-strip {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--space-2);
+  font-size: 0.625rem;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.barcode-strip .tech-label strong {
+  display: inline;
+  margin-right: var(--space-2);
+  color: var(--color-panel-ink-muted);
+}
+
+.barcode {
+  width: 5rem;
+  min-height: 1.5rem;
+  padding: 3px 4px;
+  border: 1px solid var(--color-panel-rule);
+  background: repeating-linear-gradient(
+    90deg,
+    var(--color-panel-ink) 0 1px,
+    transparent 1px 3px,
+    var(--color-panel-ink) 3px 5px,
+    transparent 5px 6px,
+    var(--color-panel-ink) 6px 7px,
+    transparent 7px 10px
+  );
+  background-clip: content-box;
+}
+
+.ticks {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  color: var(--brand-slate);
+  font-size: 0.625rem;
+  letter-spacing: 0.6em;
 }
 
 .value {
@@ -470,15 +598,15 @@ html:not(.js) canvas[data-scene] {
   font-size: var(--text-subheader);
 }
 
-.value:nth-child(1) h3 {
+.value:nth-child(1 of .value) h3 {
   color: var(--brand-mint);
 }
 
-.value:nth-child(2) h3 {
+.value:nth-child(2 of .value) h3 {
   color: var(--brand-magenta);
 }
 
-.value:nth-child(3) h3 {
+.value:nth-child(3 of .value) h3 {
   color: var(--brand-blue);
 }
 
@@ -489,14 +617,22 @@ html:not(.js) canvas[data-scene] {
   padding-block: var(--space-12);
 }
 
+/* Numbered mono section labels: "01 / ABOUT". */
 .section-title {
   margin-bottom: var(--space-8);
-  font-family: var(--font-sub);
-  font-size: var(--text-subtitle);
-  font-weight: 400;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-rule);
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  font-weight: 500;
   color: var(--color-ink-muted);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.16em;
+}
+
+.section-index {
+  margin-right: var(--space-2);
+  color: var(--color-tag);
 }
 
 .card {
@@ -513,6 +649,29 @@ html:not(.js) canvas[data-scene] {
   margin-bottom: var(--space-4);
   font-size: var(--text-header);
   font-weight: 500;
+}
+
+/* Corner brackets and a crosshair mark around media, after the references. */
+.card-media {
+  position: relative;
+  padding: var(--space-3);
+  --bracket: linear-gradient(var(--brand-silver), var(--brand-silver));
+  background:
+    var(--bracket) top left / 14px 1px no-repeat,
+    var(--bracket) top left / 1px 14px no-repeat,
+    var(--bracket) bottom right / 14px 1px no-repeat,
+    var(--bracket) bottom right / 1px 14px no-repeat;
+}
+
+.card-media::after {
+  content: "+";
+  content: "+" / "";
+  position: absolute;
+  top: -0.6em;
+  right: -0.25em;
+  color: var(--brand-silver);
+  font-size: var(--text-body);
+  line-height: 1;
 }
 
 .card-media img {
@@ -553,6 +712,12 @@ html:not(.js) canvas[data-scene] {
   padding: var(--space-2) var(--space-3);
   background: var(--color-tag-primary);
   text-decoration: none;
+}
+
+/* Decorative arrow; the empty alt text keeps screen readers from announcing it. */
+.tag-link::before {
+  content: "\2192\00a0";
+  content: "\2192\00a0" / "";
 }
 
 .tag-link:hover {
@@ -620,17 +785,33 @@ html:not(.js) canvas[data-scene] {
     margin-left: auto;
   }
 
+  /* The console fills the whole left side, edge to edge vertically. */
   .banner .container {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-areas:
-      "term words"
-      "art art"
+      "term head"
+      "term art"
       "labels labels";
     align-items: start;
   }
 
+  /* contain: size keeps the typed lines from growing the row they fill. */
+  .terminal {
+    contain: size;
+    align-self: stretch;
+    height: auto;
+    min-height: 20em;
+    margin-top: calc(-1 * var(--space-8));
+    padding: var(--space-8) var(--space-4) 0 0;
+    border-right: 1px solid var(--color-panel-rule);
+  }
+
   .banner-words {
     text-align: right;
+  }
+
+  .norm-label {
+    justify-content: flex-end;
   }
 
   .card {
@@ -665,9 +846,15 @@ html:not(.js) canvas[data-scene] {
   .banner .container {
     grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) minmax(0, 1fr);
     grid-template-areas:
-      "term art words"
+      "term art head"
       "term art labels";
     align-items: center;
+    min-height: 34rem;
+  }
+
+  .terminal {
+    margin-bottom: calc(-1 * var(--space-8));
+    padding-bottom: var(--space-8);
   }
 
   .banner-scene {

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { torus, lathe, dome, grid, waveHeight, rotate, project } from "../js/geometry.js";
+import { torus, lathe, dome, grid, sphere, cube, waveHeight, rotate, project } from "../js/geometry.js";
 
 const length = ([x, y, z]) => Math.hypot(x, y, z);
 
@@ -45,6 +45,29 @@ test("closer points project larger than farther points", () => {
   const near = project([1, 0, -1], 0, 0, 100);
   const far = project([1, 0, 1], 0, 0, 100);
   assert.ok(near[0] > far[0]);
+});
+
+test("cube(1) is the 8 corners and 12 edges of a cube", () => {
+  const mesh = cube(1);
+  assert.equal(mesh.vertices.length, 8);
+  assert.equal(mesh.edges.length, 12);
+});
+
+test("subdivided cube shares face borders without duplicate edges", () => {
+  const mesh = cube(3);
+  const keys = mesh.edges.map(([a, b]) => `${Math.min(a, b)}-${Math.max(a, b)}`);
+  assert.equal(new Set(keys).size, keys.length);
+  // Surface lattice points of a 3x3x3 subdivision: 4^3 - 2^3 interior points.
+  assert.equal(mesh.vertices.length, 56);
+  for (const p of mesh.vertices) assert.ok(Math.max(...p.map(Math.abs)) === 1, `${p} is off the surface`);
+});
+
+test("sphere vertices lie on the unit sphere", () => {
+  const mesh = sphere(12, 8);
+  for (const p of mesh.vertices) assert.ok(Math.abs(length(p) - 1) < 1e-9);
+  for (const mesh2 of [mesh, cube(2)]) {
+    for (const [a, b] of mesh2.edges) assert.ok(mesh2.vertices[a] && mesh2.vertices[b]);
+  }
 });
 
 test("wave height changes over time", () => {
