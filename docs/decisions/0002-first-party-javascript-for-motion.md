@@ -1,6 +1,6 @@
 # 0002: First-party JavaScript for motion
 
-Status: Accepted (2026-10-18). Amends 0001.
+Status: Accepted (2026-10-18). Amends 0001. Amended 2026-10-18: the size budget changed from raw bytes to gzipped bytes (see Rules).
 
 ## Context
 
@@ -20,7 +20,7 @@ Rules, enforced by `test/site.test.mjs`:
 
 - No inline scripts and no external script URLs.
 - No network APIs, URLs, or dynamic imports in `js/`. Only relative static imports.
-- All of `js/` stays under 12 KB uncompressed.
+- All of `js/` stays under 8 KB gzipped, summed per file. This tracks bytes over the network on slow Wi-Fi. It replaced a raw-size limit (12 KB, then 16 KB) that pushed useful comments out of the code.
 - The page must stay usable without JavaScript. Toggles are hidden until scripts run.
 - Motion starts paused under `prefers-reduced-motion`, and a visible control pauses it at any time (WCAG 2.2.2).
 

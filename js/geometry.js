@@ -48,6 +48,59 @@ export function dome(segments = 24) {
   return lathe(profile, segments);
 }
 
+// Sphere of radius 1 as latitude rings and meridians, skipping the degenerate poles.
+export function sphere(segments = 12, rings = 8) {
+  const profile = [];
+  for (let k = 1; k < rings; k++) {
+    const a = -Math.PI / 2 + (k / rings) * Math.PI;
+    profile.push([Math.cos(a), Math.sin(a)]);
+  }
+  return lathe(profile, segments);
+}
+
+// Cube spanning -1..1 with every face subdivided into an n-by-n grid of lines.
+// Faces share their border lines, so vertices and edges are de-duplicated.
+export function cube(n = 1) {
+  const vertices = [];
+  const edges = [];
+  const index = new Map();
+  const seen = new Set();
+  const vertex = (p) => {
+    const key = p.join();
+    if (!index.has(key)) index.set(key, vertices.push(p) - 1);
+    return index.get(key);
+  };
+  const edge = (p, q) => {
+    const [a, b] = [vertex(p), vertex(q)].sort((x, y) => x - y);
+    const key = `${a}-${b}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      edges.push([a, b]);
+    }
+  };
+  const at = (i) => (i / n) * 2 - 1;
+  for (let axis = 0; axis < 3; axis++) {
+    const u = (axis + 1) % 3;
+    const v = (axis + 2) % 3;
+    for (const side of [-1, 1]) {
+      const point = (i, j) => {
+        const p = [0, 0, 0];
+        p[axis] = side;
+        p[u] = at(i);
+        p[v] = at(j);
+        return p;
+      };
+      for (let i = 0; i <= n; i++) {
+        for (let j = 0; j < n; j++) {
+          edge(point(i, j), point(i, j + 1));
+          edge(point(j, i), point(j + 1, i));
+        }
+      }
+    }
+  }
+  return { vertices, edges };
+}
+
 // Flat n-by-n grid of lines spanning -1..1 on x and z. Heights are set per frame.
 export function grid(n) {
   const vertices = [];

@@ -2,7 +2,8 @@
 // Run with: node --test
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { gzipSync } from "node:zlib";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -112,6 +113,14 @@ test("index.html: motion and theme controls follow ADR 0002", () => {
   );
 });
 
+test("index.html: animated headline keeps a readable copy for screen readers", () => {
+  const page = html("index.html");
+  assert.match(page, /<span class="visually-hidden">Bridging technology, engineering, and art<\/span>/);
+  const animated = page.match(/<span[^>]*data-scramble[^>]*>/g) ?? [];
+  assert.equal(animated.length, 4, "expected four scrambled words");
+  for (const tag of animated) assert.match(tag, /aria-hidden="true"/, `not hidden: ${tag}`);
+});
+
 // Walk js/ recursively so nested or .mjs files cannot escape the checks.
 const scripts = readdirSync(join(root, "js"), { recursive: true }).filter((f) => /\.m?js$/.test(f));
 
@@ -132,9 +141,10 @@ test("js: makes no network requests and loads no remote code", () => {
   }
 });
 
-test("js: total size stays under the 12 KB budget", () => {
-  const bytes = scripts.reduce((sum, f) => sum + statSync(join(root, "js", f)).size, 0);
-  assert.ok(bytes < 12 * 1024, `js/ is ${bytes} bytes`);
+// Budget tracks bytes over the network: each file gzipped, as GitHub Pages serves it.
+test("js: total gzipped size stays under the 8 KB budget", () => {
+  const bytes = scripts.reduce((sum, f) => sum + gzipSync(readFileSync(join(root, "js", f)), { level: 9 }).length, 0);
+  assert.ok(bytes < 8 * 1024, `js/ is ${bytes} bytes gzipped`);
 });
 
 test("js: every file parses", () => {
