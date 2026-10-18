@@ -22,7 +22,9 @@
   <link rel="preload" href="assets/fonts/ibm-plex-mono-latin-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles.css">
   <link rel="modulepreload" href="js/geometry.js">
+  <link rel="modulepreload" href="js/status.js">
   <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/ui.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -52,6 +54,16 @@
       </div>
     </div>
   </header>
+
+  <nav class="section-rail" aria-label="Sections">
+    <a href="#home" aria-label="Home"></a>
+    <a href="#about" aria-label="About"></a>
+    <a href="#projects" aria-label="Projects"></a>
+    <a href="#research" aria-label="Research"></a>
+    <a href="#talk" aria-label="Talk"></a>
+    <a href="#contact" aria-label="Contact"></a>
+  </nav>
+  <a class="section-bar" href="#site-nav" data-section-bar><span data-section-label>00 / Home</span><span class="section-bar-menu">Menu <span aria-hidden="true">↑</span></span></a>
 
   <main id="main">
     <section id="home" class="hero">
@@ -214,6 +226,11 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
         <h2 class="section-title"><span class="section-index" aria-hidden="true">04 /</span> Talk</h2>
         <article class="card">
           <div class="card-body">
+            <!-- TODO: set data-start and data-end to the session's ISO times, e.g. 2026-11-05T14:00:00-08:00. -->
+            <p class="talk-status" data-talk data-start="" data-end="">
+              <span class="chip" data-state="tba" data-talk-chip>Schedule TBA</span>
+              <span class="talk-local" data-talk-local></span>
+            </p>
             <h3>TODO: Talk or poster title</h3>
             <p>TODO: Conference name, session, date and time, room.</p>
             <p>TODO: Abstract.</p>
@@ -236,13 +253,15 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
       <div class="container">
         <h2 class="section-title"><span class="section-index" aria-hidden="true">05 /</span> Contact</h2>
         <ul class="contact-list">
-          <li>Email: <a href="mailto:TODO@example.com">TODO@example.com</a></li>
+          <li>Email: <a href="mailto:TODO@example.com">TODO@example.com</a> <button class="action" type="button" data-copy-email="TODO@example.com" aria-label="Copy email address">Copy</button></li>
           <li>LinkedIn: <a href="https://www.linkedin.com/in/TODO">linkedin.com/in/TODO</a></li>
           <li>GitHub: <a href="https://github.com/EmilianoManaloIV">github.com/EmilianoManaloIV</a></li>
         </ul>
         <ul class="tags">
           <li><a class="tag tag-link" href="emiliano-manalo.vcf" download>Save contact</a></li>
+          <li><button class="action" type="button" data-share>Share this page</button></li>
         </ul>
+        <p class="copy-status" role="status" data-copy-status></p>
       </div>
     </section>
   </main>

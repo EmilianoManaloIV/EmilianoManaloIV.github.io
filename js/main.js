@@ -203,10 +203,16 @@ function fitTerminal() {
   fillTerminal();
 }
 
-// Top the console up to a full box, even while paused, so it never looks near-empty.
-// While paused this is a snapshot at the frozen time, matching the frozen shapes.
+// Start like a real console: a boot log of the loaded meshes, then one telemetry
+// pass; it grows from there instead of repeating identical time-zero readings.
 function fillTerminal() {
-  while (lines.length < maxLines) lines.push(next());
+  if (!lines.length) {
+    for (const [name, mesh] of Object.entries(meshes)) {
+      lines.push(`LOAD   ${name.toUpperCase().padEnd(6)} VTX ${mesh.vertices.length}  EDG ${mesh.edges.length}`);
+    }
+    for (let i = 0; i < script.length; i++) lines.push(next());
+  }
+  while (lines.length > maxLines) lines.shift();
   renderTerminal();
 }
 

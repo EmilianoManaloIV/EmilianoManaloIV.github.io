@@ -12,6 +12,7 @@ Read `docs/decisions/0001-zero-dependency-static-site.md` and `0002-first-party-
 - `styles.css` holds design tokens in `:root` at the top, then components.
 - `js/theme.js` applies a saved theme in `<head>`. `js/main.js` runs the canvas wireframes, terminal, and toggles.
 - `js/geometry.js` is pure mesh and projection math, unit-tested in `test/geometry.test.mjs`.
+- `js/ui.js` runs wayfinding, share and copy, and the talk status chip. `js/status.js` holds its pure time logic, tested in `test/status.test.mjs`.
 - `assets/fonts/` holds self-hosted `.woff2` files with their OFL licenses. Never link a font CDN.
 - `assets/img/` holds images.
 
@@ -33,7 +34,7 @@ py -m http.server 8000 # serve locally (use `py`, not `python`, on this machine)
 ## Rules
 
 - No npm packages, CDNs, or external stylesheet, script, or font URLs. No inline scripts.
-- JavaScript lives in `js/`, makes no network requests, uses only relative imports, and stays under 8 KB gzipped in total.
+- JavaScript lives in `js/`, makes no network requests, uses only relative imports, and stays under 10 KB gzipped in total (ADR 0003).
 - The page must work without JavaScript. Motion must be pausable and start paused under reduced motion.
 - The tests enforce these rules. Do not weaken them to make a change pass.
 - Every `<img>` needs `alt`, `width`, and `height`.
