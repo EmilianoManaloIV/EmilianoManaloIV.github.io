@@ -6,13 +6,15 @@ Visitors mostly arrive on a phone by scanning a QR code, often on slow Wi-Fi.
 ## Stack
 
 Hand-written static HTML, CSS, and a little first-party JavaScript. **Zero dependencies, no build step.**
-Read `docs/decisions/0001-zero-dependency-static-site.md` and `0002-first-party-javascript-for-motion.md` before changing this.
+Read the ADRs in `docs/decisions/` (0001 to 0004) before changing this.
 
-- `index.html` is the single page. Sections are anchored by id.
+- `index.html` is the home page: a fast overview with sections anchored by id.
+- `about/index.html` (About & CV) and `rd/index.html` (the R&D blog) are subpages. Posts live at `rd/<slug>/index.html`.
+- Every page repeats the home page's header and footer exactly; a test enforces it (ADR 0004). Change the nav or footer in every page at once.
 - `styles.css` holds design tokens in `:root` at the top, then components.
 - `js/theme.js` applies a saved theme in `<head>`. `js/main.js` runs the canvas wireframes, terminal, and toggles.
 - `js/geometry.js` is pure mesh and projection math, unit-tested in `test/geometry.test.mjs`.
-- `js/ui.js` runs wayfinding, share and copy, and the talk status chip. `js/status.js` holds its pure time logic, tested in `test/status.test.mjs`.
+- `js/ui.js` runs wayfinding and share and copy. It reads sections from `main section[id]` on any page.
 - `assets/fonts/` holds self-hosted `.woff2` files with their OFL licenses. Never link a font CDN.
 - `assets/img/` holds images.
 
@@ -40,6 +42,14 @@ py -m http.server 8000 # serve locally (use `py`, not `python`, on this machine)
 - Every `<img>` needs `alt`, `width`, and `height`.
 - Every in-page `href="#..."` must match an element id.
 - Placeholder content is marked with `TODO` so it is easy to find before launch.
+
+## Publishing an R&D post
+
+1. Copy `templates/rd-post.html` to `rd/<slug>/index.html` and replace every `TODO`.
+2. Create a thread for it in the repo's GitHub Discussions and put its URL in "Discuss on GitHub".
+3. Add a `<li class="post-card">` linking `/rd/<slug>/` at the top of the list in `rd/index.html`.
+
+`node --test` fails if a post is unlisted, undated, or missing its discussion link.
 
 ## Git workflow
 

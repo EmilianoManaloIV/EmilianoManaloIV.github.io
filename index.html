@@ -22,7 +22,6 @@
   <link rel="preload" href="assets/fonts/ibm-plex-mono-latin-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles.css">
   <link rel="modulepreload" href="js/geometry.js">
-  <link rel="modulepreload" href="js/status.js">
   <script type="module" src="js/main.js"></script>
   <script type="module" src="js/ui.js"></script>
 </head>
@@ -31,15 +30,14 @@
 
   <header class="site-header">
     <div class="container">
-      <a class="monogram" href="#home" aria-label="Emiliano Panday Manalo IV, home">EM</a>
+      <a class="monogram" href="/" aria-label="Emiliano Panday Manalo IV, home">EM</a>
       <nav id="site-nav" aria-label="Primary">
         <ul class="nav-list">
-          <li><a href="#home"><span class="nav-index" aria-hidden="true">00</span> Home</a></li>
-          <li><a href="#about"><span class="nav-index" aria-hidden="true">01</span> About</a></li>
-          <li><a href="#projects"><span class="nav-index" aria-hidden="true">02</span> Projects</a></li>
-          <li><a href="#research"><span class="nav-index" aria-hidden="true">03</span> Research</a></li>
-          <li><a href="#talk"><span class="nav-index" aria-hidden="true">04</span> Talk</a></li>
-          <li><a href="#contact"><span class="nav-index" aria-hidden="true">05</span> Contact</a></li>
+          <li><a href="/#home"><span class="nav-index" aria-hidden="true">00</span> Home</a></li>
+          <li><a href="/#about"><span class="nav-index" aria-hidden="true">01</span> About</a></li>
+          <li><a href="/#projects"><span class="nav-index" aria-hidden="true">02</span> Projects</a></li>
+          <li><a href="/rd/"><span class="nav-index" aria-hidden="true">03</span> R&amp;D</a></li>
+          <li><a href="/#contact"><span class="nav-index" aria-hidden="true">04</span> Contact</a></li>
         </ul>
       </nav>
       <div class="header-tools">
@@ -59,8 +57,6 @@
     <a href="#home" aria-label="Home"></a>
     <a href="#about" aria-label="About"></a>
     <a href="#projects" aria-label="Projects"></a>
-    <a href="#research" aria-label="Research"></a>
-    <a href="#talk" aria-label="Talk"></a>
     <a href="#contact" aria-label="Contact"></a>
   </nav>
   <a class="section-bar" href="#site-nav" data-section-bar><span data-section-label>00 / Home</span><span class="section-bar-menu">Menu <span aria-hidden="true">↑</span></span></a>
@@ -115,6 +111,9 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
           <div class="card-body">
             <h3>TODO: About heading</h3>
             <p>TODO: Short bio. Two or three sentences on who you are, what you are studying or working on, and what you want to talk about at the conference.</p>
+            <ul class="tags">
+              <li><a class="tag tag-link" href="/about/">Read the full story: About &amp; CV</a></li>
+            </ul>
           </div>
           <figure class="card-media">
             <div class="frame">
@@ -199,59 +198,9 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
       </div>
     </section>
 
-    <section id="research" class="section">
-      <div class="container">
-        <h2 class="section-title"><span class="section-index" aria-hidden="true">03 /</span> Research</h2>
-        <article class="card">
-          <div class="card-body">
-            <h3>TODO: Research title</h3>
-            <p>TODO: One-paragraph summary of the research question, method, and what you found.</p>
-            <ul class="tags">
-              <li><a class="tag tag-link" href="https://github.com/EmilianoManaloIV/TODO-research">Read more</a></li>
-              <li><span class="tag">TODO topic</span></li>
-            </ul>
-          </div>
-          <figure class="card-media">
-            <div class="frame">
-              <div class="slot" aria-hidden="true">research image</div>
-            </div>
-            <figcaption>FIG. 03.1 / Research</figcaption>
-          </figure>
-        </article>
-      </div>
-    </section>
-
-    <section id="talk" class="section">
-      <div class="container">
-        <h2 class="section-title"><span class="section-index" aria-hidden="true">04 /</span> Talk</h2>
-        <article class="card">
-          <div class="card-body">
-            <!-- TODO: set data-start (and optionally data-end; default one hour) to ISO times with an offset, e.g. 2026-11-05T14:00:00-08:00. -->
-            <p class="talk-status" data-talk data-start="" data-end="">
-              <span class="chip" data-state="tba" data-talk-chip>Schedule TBA</span>
-              <span class="talk-local" data-talk-local></span>
-            </p>
-            <h3>TODO: Talk or poster title</h3>
-            <p>TODO: Conference name, session, date and time, room.</p>
-            <p>TODO: Abstract.</p>
-            <ul class="tags">
-              <li><a class="tag tag-link" href="https://github.com/EmilianoManaloIV/TODO-slides">Slides</a></li>
-              <li><a class="tag tag-link" href="https://github.com/EmilianoManaloIV/TODO-paper">Paper</a></li>
-            </ul>
-          </div>
-          <figure class="card-media">
-            <div class="frame">
-              <div class="slot" aria-hidden="true">talk or poster image</div>
-            </div>
-            <figcaption>FIG. 04.1 / Talk</figcaption>
-          </figure>
-        </article>
-      </div>
-    </section>
-
     <section id="contact" class="section">
       <div class="container">
-        <h2 class="section-title"><span class="section-index" aria-hidden="true">05 /</span> Contact</h2>
+        <h2 class="section-title"><span class="section-index" aria-hidden="true">04 /</span> Contact</h2>
         <ul class="contact-list">
           <li>Email: <a href="mailto:TODO@example.com">TODO@example.com</a> <button class="action" type="button" data-copy-email="TODO@example.com" aria-label="Copy email address">Copy</button></li>
           <li>LinkedIn: <a href="https://www.linkedin.com/in/TODO">linkedin.com/in/TODO</a></li>

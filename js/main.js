@@ -404,7 +404,7 @@ function setMotion(on) {
   }
   motion = on;
   root.classList.toggle("motion-off", !on);
-  showState(motionButton, on);
+  if (motionButton) showState(motionButton, on); // The motion toggle lives in the home banner only.
   schedule();
 }
 
@@ -417,7 +417,7 @@ function syncThemeButton() {
   showState(themeButton, isDark());
 }
 
-motionButton.addEventListener("click", () => setMotion(!motion));
+motionButton?.addEventListener("click", () => setMotion(!motion));
 reducedMotion.addEventListener("change", (e) => setMotion(!e.matches));
 
 themeButton.addEventListener("click", () => {

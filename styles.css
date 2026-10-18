@@ -269,9 +269,8 @@ html:not(.js) canvas[data-scene] {
   display: none;
 }
 
-/* Status chips, after the reference boards: a dot carries the state color,
-   the text stays ink for contrast. */
-.chip,
+/* Copy feedback, in the reference boards' status-chip style: a mint dot carries
+   the state, the text stays ink for contrast. */
 .copy-status {
   display: inline-flex;
   align-items: center;
@@ -282,50 +281,12 @@ html:not(.js) canvas[data-scene] {
   text-transform: uppercase;
 }
 
-.chip {
-  padding: 0.15em 0.6em;
-  border: 1px solid var(--color-rule);
-  border-radius: var(--radius-sm);
-  color: var(--color-ink);
-}
-
-.chip::before,
 .copy-status:not(:empty)::before {
   content: "";
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--brand-silver);
-}
-
-.chip[data-state="upcoming"]::before {
-  background: var(--color-ink);
-}
-
-.chip[data-state="live"] {
-  border-color: var(--brand-magenta);
-}
-
-.chip[data-state="live"]::before {
-  background: var(--brand-magenta);
-}
-
-.chip[data-state="ended"]::before,
-.copy-status:not(:empty)::before {
   background: var(--brand-mint);
-}
-
-.talk-status {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
-  margin-bottom: var(--space-4);
-}
-
-.talk-local {
-  color: var(--color-ink-muted);
-  font-size: var(--text-xs);
 }
 
 /* Reserves its line so feedback never shifts the layout. */
@@ -450,7 +411,7 @@ html:not(.js) canvas[data-scene] {
   font-size: var(--text-xs);
 }
 
-.nav-list a[aria-current="true"] {
+.nav-list a[aria-current] {
   text-decoration: underline;
   text-decoration-color: var(--brand-accent-light);
   text-decoration-thickness: 2px;
@@ -912,6 +873,119 @@ html:not(.js) canvas[data-scene] {
 }
 
 /* ==========================================================================
+   Subpages: About & CV, R&D, posts, 404 (ADR 0004)
+   ========================================================================== */
+.page-hero {
+  padding-block: var(--space-16) var(--space-8);
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.page-hero h1,
+.post h1 {
+  font-family: var(--font-display);
+  font-size: var(--text-name);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+
+.eyebrow {
+  margin-bottom: var(--space-4);
+  color: var(--color-ink-muted);
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.lede {
+  max-width: 40rem;
+  margin-top: var(--space-4);
+  font-family: var(--font-sub);
+  font-size: var(--text-subtitle);
+  line-height: 1.35;
+}
+
+/* Long-form text: a readable measure and quiet structure. */
+.prose {
+  max-width: 68ch;
+}
+
+.prose > * + * {
+  margin-top: var(--space-4);
+}
+
+.prose h2 {
+  margin-top: var(--space-12);
+  font-size: var(--text-header);
+  font-weight: 500;
+}
+
+.prose code {
+  padding: 0 0.25em;
+  border-radius: var(--radius-sm);
+  background: var(--color-slot);
+}
+
+.prose blockquote {
+  margin: var(--space-6) 0;
+  padding-left: var(--space-4);
+  border-left: 2px solid var(--brand-accent-dark);
+  color: var(--color-ink-muted);
+}
+
+.entry-list,
+.post-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entry-list li {
+  display: grid;
+  gap: var(--space-2);
+  padding-block: var(--space-4);
+  border-top: 1px solid var(--color-rule);
+}
+
+.entry-list h3,
+.list-heading {
+  margin-bottom: var(--space-2);
+  font-size: var(--text-subheader);
+  font-weight: 500;
+}
+
+.entry-when {
+  color: var(--color-ink-muted);
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.post-card {
+  padding-block: var(--space-6);
+  border-top: 1px solid var(--color-rule);
+}
+
+/* An empty list never shows; the empty-state line explains instead. */
+.post-list:empty {
+  display: none;
+}
+
+.post-list:not(:empty) + .empty-state {
+  display: none;
+}
+
+.empty-state {
+  color: var(--color-ink-muted);
+}
+
+.post-footer {
+  margin-top: var(--space-12);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-rule);
+}
+
+/* ==========================================================================
    Footer
    ========================================================================== */
 .site-footer .container {
@@ -1005,6 +1079,11 @@ html:not(.js) canvas[data-scene] {
 
   .values .container {
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  .entry-list li {
+    grid-template-columns: 10rem 1fr;
+    gap: var(--space-8);
   }
 
   .site-footer .container {
