@@ -2,9 +2,10 @@
 // Run with: node --test
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { spawnSync } from "node:child_process";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const pages = ["index.html", "404.html"];
@@ -17,9 +18,18 @@ const attrs = (source, name) =>
 const isExternal = (url) => /^(https?:|mailto:|tel:)/.test(url);
 
 for (const page of pages) {
-  test(`${page}: has no scripts or external stylesheets`, () => {
+  test(`${page}: scripts are local files only, with no inline code`, () => {
     const source = html(page);
-    assert.doesNotMatch(source, /<script\b/i, "scripts are not allowed");
+    for (const [, attributes, body] of source.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
+      const src = attributes.match(/src="([^"]*)"/)?.[1];
+      assert.ok(src, "inline scripts are not allowed");
+      assert.ok(!isExternal(src), `external script not allowed: ${src}`);
+      assert.equal(body.trim(), "", `script with src must be empty: ${src}`);
+    }
+  });
+
+  test(`${page}: has no external stylesheets, fonts, or icons`, () => {
+    const source = html(page);
     for (const tag of source.match(/<link\b[^>]*>/gi) ?? []) {
       const href = tag.match(/href="([^"]*)"/)?.[1] ?? "";
       if (/rel="(stylesheet|preload|modulepreload|icon)"/.test(tag)) {
@@ -78,6 +88,32 @@ test("styles.css: loads no external resources", () => {
   const css = read("styles.css");
   assert.doesNotMatch(css, /@import/, "@import is not allowed");
   assert.doesNotMatch(css, /url\(\s*["']?https?:/, "external url() is not allowed");
+});
+
+const scripts = readdirSync(join(root, "js")).filter((f) => f.endsWith(".js"));
+
+test("js: makes no network requests and loads no remote code", () => {
+  for (const file of scripts) {
+    const code = read(join("js", file));
+    assert.doesNotMatch(code, /https?:\/\//, `${file}: URLs are not allowed`);
+    assert.doesNotMatch(code, /\bfetch\s*\(|XMLHttpRequest|WebSocket|EventSource/, `${file}: network API`);
+    assert.doesNotMatch(code, /\bimport\s*\(/, `${file}: dynamic import is not allowed`);
+    for (const [, spec] of code.matchAll(/^\s*import\b[^"']*["']([^"']+)["']/gm)) {
+      assert.match(spec, /^\.\//, `${file}: only relative imports allowed, got ${spec}`);
+    }
+  }
+});
+
+test("js: total size stays under the 12 KB budget", () => {
+  const bytes = scripts.reduce((sum, f) => sum + statSync(join(root, "js", f)).size, 0);
+  assert.ok(bytes < 12 * 1024, `js/ is ${bytes} bytes`);
+});
+
+test("js: every file parses", () => {
+  for (const file of scripts) {
+    const result = spawnSync(process.execPath, ["--check", join(root, "js", file)], { encoding: "utf8" });
+    assert.equal(result.status, 0, `${file}: ${result.stderr}`);
+  }
 });
 
 test("emiliano-manalo.vcf: is a valid vCard with CRLF line endings", () => {

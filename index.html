@@ -16,7 +16,11 @@
   <!-- TODO: add og:image once a 1200x630 share image exists in assets/img/. -->
   <meta name="twitter:card" content="summary">
 
+  <script src="js/theme.js"></script>
+  <link rel="preload" href="assets/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/ibm-plex-mono-latin-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles.css">
+  <script type="module" src="js/main.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -34,13 +38,16 @@
           <li><a href="#contact">Contact</a></li>
         </ul>
       </nav>
-      <!-- TODO(figma): replace text labels with the social icons exported from Figma. -->
-      <ul class="socials" aria-label="Social profiles">
-        <li><a href="https://www.instagram.com/TODO" aria-label="Instagram">IG</a></li>
-        <li><a href="https://www.linkedin.com/in/TODO" aria-label="LinkedIn">in</a></li>
-        <li><a href="https://x.com/TODO" aria-label="X">X</a></li>
-        <li><a href="https://github.com/EmilianoManaloIV" aria-label="GitHub">GH</a></li>
-      </ul>
+      <div class="header-tools">
+        <!-- TODO(figma): replace text labels with the social icons exported from Figma. -->
+        <ul class="socials" aria-label="Social profiles">
+          <li><a href="https://www.instagram.com/TODO" aria-label="Instagram">IG</a></li>
+          <li><a href="https://www.linkedin.com/in/TODO" aria-label="LinkedIn">in</a></li>
+          <li><a href="https://x.com/TODO" aria-label="X">X</a></li>
+          <li><a href="https://github.com/EmilianoManaloIV" aria-label="GitHub">GH</a></li>
+        </ul>
+        <button class="toggle" type="button" id="theme-toggle" aria-pressed="false">Theme: light</button>
+      </div>
     </div>
   </header>
 
@@ -54,26 +61,27 @@
 
     <section class="banner panel" aria-label="Bridging technology, engineering, and art">
       <div class="container">
-        <div class="banner-art">
 <pre class="terminal" aria-hidden="true">TRML                         LAB
 VRS 02.190.01
 OS SYS LOAD
-CRS LOAD /
-OPERATION : RUN [99.5%] : PRP ALL     TRML FUN
+OPERATION : RUN [99.5%] : PRP ALL
 SET R ON FUN          HLD   A-2
 SPC FUN               SPR   F-7
 LFT                   SPN
-RGT                   SPN
 WND UPD TO LVL 10/11  PRP   I-I</pre>
-          <!-- TODO(figma): replace with the exported wireframe SVG. -->
-          <div class="slot" aria-hidden="true">wireframe art</div>
-        </div>
+        <canvas class="banner-scene" data-scene="banner" aria-hidden="true"></canvas>
         <p class="banner-words">
           <span class="lead">Bridging</span>
           <span class="w-tech">Technology</span>
           <span class="w-eng">Engineering</span>
           <span class="w-art">Art</span>
         </p>
+        <div class="tech-labels">
+          <div class="tech-label" aria-hidden="true"><strong>System Core V7</strong>Module sector 128<br>Inspect due 2026-07</div>
+          <div class="tech-label" aria-hidden="true"><strong>Batch</strong>05-77</div>
+          <div class="tech-label" aria-hidden="true"><strong>Serial</strong>09-2087-4</div>
+          <button class="toggle" type="button" id="motion-toggle" aria-pressed="true">Motion: on</button>
+        </div>
       </div>
     </section>
 
@@ -219,8 +227,7 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
           <li><a href="https://github.com/EmilianoManaloIV" aria-label="GitHub">GH</a></li>
         </ul>
       </div>
-      <!-- TODO(figma): replace with the exported torus SVG. -->
-      <div class="slot" aria-hidden="true">torus art</div>
+      <canvas class="torus-scene" data-scene="torus" aria-hidden="true"></canvas>
     </div>
   </footer>
 </body>
