@@ -45,22 +45,28 @@ const poses = {
   torus: (t) => [1 + Math.sin(t * 0.3) * 0.25, t * 0.4],
 };
 
+// Poses are read once per frame, not per vertex.
 const painters = {
   banner(ctx, w, h, t) {
     const s = Math.min(w, h);
-    strokeMesh(ctx, meshes.dome, (p) => project(rotate(p, ...poses.dome(t)), w * 0.36, h * 0.36, s * 0.24));
+    const [dx, dy] = poses.dome(t);
+    const [wx, wy] = poses.wave(t);
+    strokeMesh(ctx, meshes.dome, (p) => project(rotate(p, dx, dy), w * 0.36, h * 0.36, s * 0.24));
     strokeMesh(ctx, meshes.wave, ([x, , z]) =>
-      project(rotate([x, waveHeight(x, z, t), z], ...poses.wave(t)), w * 0.62, h * 0.72, s * 0.42),
+      project(rotate([x, waveHeight(x, z, t), z], wx, wy), w * 0.62, h * 0.72, s * 0.42),
     );
   },
   cube(ctx, w, h, t) {
-    strokeMesh(ctx, meshes.cube, (p) => project(rotate(p, ...poses.cube(t)), w / 2, h / 2, Math.min(w, h) * 0.24, 5));
+    const [ax, ay] = poses.cube(t);
+    strokeMesh(ctx, meshes.cube, (p) => project(rotate(p, ax, ay), w / 2, h / 2, Math.min(w, h) * 0.24, 5));
   },
   globe(ctx, w, h, t) {
-    strokeMesh(ctx, meshes.globe, (p) => project(rotate(p, ...poses.globe(t)), w / 2, h / 2, w * 0.44, 6));
+    const [ax, ay] = poses.globe(t);
+    strokeMesh(ctx, meshes.globe, (p) => project(rotate(p, ax, ay), w / 2, h / 2, w * 0.44, 6));
   },
   torus(ctx, w, h, t) {
-    strokeMesh(ctx, meshes.torus, (p) => project(rotate(p, ...poses.torus(t)), w / 2, h / 2, Math.min(w, h) * 0.3));
+    const [ax, ay] = poses.torus(t);
+    strokeMesh(ctx, meshes.torus, (p) => project(rotate(p, ax, ay), w / 2, h / 2, Math.min(w, h) * 0.3));
   },
 };
 
@@ -110,10 +116,11 @@ function tick(now) {
   last = now;
   frames++;
   if (delta) dt += (delta - dt) * 0.1;
-  // Log each full Y turn a shape completes.
+  // Log each full Y turn a shape completes, only while the console is on screen
+  // to read it; off screen the count still advances so nothing replays stale.
   for (const name of ["dome", "cube", "globe", "torus"]) {
     const rev = Math.floor(poses[name](time)[1] / TAU);
-    if (rev > (revs[name] ?? rev)) log(`${name.toUpperCase().padEnd(6)} REV ${pad(rev)} COMPLETE`);
+    if (bannerVisible && rev > (revs[name] ?? rev)) log(`${name.toUpperCase().padEnd(6)} REV ${pad(rev)} COMPLETE`);
     revs[name] = rev;
   }
   for (const scene of scenes) if (scene.visible) draw(scene);
@@ -129,12 +136,12 @@ const pose = (name) => poses[name](time).map((a, i) => `${i ? "RY" : "RX"} ${ang
 const shown = (name) => (scenes.find((s) => s.canvas.dataset.scene === name)?.visible ? 1 : 0);
 const script = [
   () => `DOME   ${pose("dome")}  VTX ${meshes.dome.vertices.length}`,
-  () => `WAVE   PHASE ${angle(time * 1.6)}  PEAK ${waveHeight(0, 0, time).toFixed(3)}`,
+  () => `WAVE   PHASE ${angle(time * 1.6)}  CTR ${(Math.round(waveHeight(0, 0, time) * 1000) / 1000 || 0).toFixed(3)}`,
   () => `CUBE   ${pose("cube")}  EDG ${meshes.cube.edges.length}`,
   () => `GLOBE  RY ${angle(poses.globe(time)[1])}  VTX ${meshes.globe.vertices.length}`,
   () => `TORUS  ${pose("torus")}  VIS ${shown("torus")}`,
   () => `FRAME  ${frames}  DT ${dt.toFixed(1)}ms  FPS ${Math.round(1000 / dt)}`,
-  () => `SCENE  BANNER ${shown("banner")}  CUBE ${shown("cube")}  TORUS ${shown("torus")}`,
+  () => `SCENE  BANNER ${shown("banner")}  CUBE ${shown("cube")}  GLOBE ${shown("globe")}  TORUS ${shown("torus")}`,
 ];
 // Events jump the queue so they type next; capped so a long pause can't pile them up.
 const events = [];
@@ -340,7 +347,16 @@ const showState = (button, on) => {
 };
 
 function setMotion(on) {
-  if (on !== motion) log(on ? "MOTION RESUME" : "MOTION HALT");
+  if (on && !motion) log("MOTION RESUME");
+  // Typing stops as soon as motion halts, so print the halt line immediately.
+  // The half-typed line stays as an interrupted entry; it retypes in full on resume.
+  if (!on && motion && target) {
+    if (current) lines.push(current);
+    current = "";
+    lines.push("MOTION HALT");
+    while (lines.length > maxLines) lines.shift();
+    renderTerminal();
+  }
   motion = on;
   root.classList.toggle("motion-off", !on);
   showState(motionButton, on);
@@ -360,10 +376,10 @@ motionButton.addEventListener("click", () => setMotion(!motion));
 reducedMotion.addEventListener("change", (e) => setMotion(!e.matches));
 
 themeButton.addEventListener("click", () => {
-  const next = isDark() ? "light" : "dark";
-  root.setAttribute("data-theme", next);
+  const theme = isDark() ? "light" : "dark";
+  root.setAttribute("data-theme", theme);
   try {
-    localStorage.setItem("theme", next);
+    localStorage.setItem("theme", theme);
   } catch (e) {
     // The choice still applies for this visit.
   }

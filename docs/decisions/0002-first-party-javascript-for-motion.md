@@ -1,6 +1,6 @@
 # 0002: First-party JavaScript for motion
 
-Status: Accepted (2026-10-18). Amends 0001.
+Status: Accepted (2026-10-18). Amends 0001. Amended 2026-10-18: the size budget changed from raw bytes to gzipped bytes (see Rules).
 
 ## Context
 
