@@ -5,7 +5,8 @@
 //   node tools/build.mjs --offline          no posts or signatures; for quick previews and CI tests
 //   node tools/build.mjs --fixture <file>   content from a saved JSON file, for tests and previews
 //   --out _name                             build into another "_"-prefixed folder of the project
-import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -167,6 +168,35 @@ async function downloadImages(html, dir, fixtureImages) {
   return images;
 }
 
+// == Cache-busting: fingerprint scripts and the stylesheet, then point every page at
+// the fingerprinted addresses, so each deploy loads fresh files (see render.mjs).
+
+const fingerprintOf = (text) => createHash("sha256").update(text).digest("hex").slice(0, 10);
+
+function fingerprint() {
+  const versions = new Map();
+  const jsDir = join(out, "js");
+  const pending = new Set(readdirSync(jsDir).filter((f) => f.endsWith(".js")).map((f) => `js/${f}`));
+  // A script's fingerprint covers its versioned imports, so it is computed after theirs.
+  while (pending.size) {
+    const ready = [...pending].filter((path) => r.importsOf(readFileSync(join(out, path), "utf8")).every((dep) => versions.has(dep) || !pending.has(dep)));
+    if (!ready.length) throw new Error(`circular imports among ${[...pending].join(", ")}`);
+    for (const path of ready) {
+      const code = r.versionImports(readFileSync(join(out, path), "utf8"), versions);
+      writeFileSync(join(out, path), code);
+      versions.set(path, fingerprintOf(code));
+      pending.delete(path);
+    }
+  }
+  versions.set("styles.css", fingerprintOf(readFileSync(join(out, "styles.css"))));
+  const pages = readdirSync(out, { recursive: true }).filter((f) => String(f).endsWith(".html"));
+  for (const page of pages) {
+    const file = join(out, page);
+    writeFileSync(file, r.versionUrls(readFileSync(file, "utf8"), versions));
+  }
+  return versions;
+}
+
 // == Build
 
 function write(file, html) {
@@ -239,8 +269,10 @@ async function build() {
   });
   write(guestbookFile, r.insertAt(page, "<!-- ENTRIES -->", r.localizeImages(entries, guestbookImages)));
 
+  const versions = fingerprint();
+
   const mode = offline ? "offline" : fixturePath ? `fixture ${fixturePath}` : `live ${REPO}`;
-  console.log(`built ${relative(root, out)}/ (${mode}): ${posts.length} posts, ${count} guestbook signatures`);
+  console.log(`built ${relative(root, out)}/ (${mode}): ${posts.length} posts, ${count} guestbook signatures, ${versions.size} fingerprinted assets`);
 }
 
 build().catch((error) => {
