@@ -54,8 +54,8 @@ test("the build produces every source page plus the expected pages", () => {
 
 // Visitors may legitimately write "{{" in a comment, so only the template's own names count.
 test("no built page has an unfilled template value or build marker", () => {
-  const names = [...source("templates/rd-post.html").matchAll(/\{\{(\w+)\}\}/g), ...source("guestbook/index.html").matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]);
-  const leftover = new RegExp(`\\{\\{(${[...new Set(names)].join("|")})\\}\\}|<!-- (POSTS|ENTRIES) -->`);
+  const names = ["templates/rd-post.html", "templates/project.html", "guestbook/index.html"].flatMap((f) => [...source(f).matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]));
+  const leftover = new RegExp(`\\{\\{(${[...new Set(names)].join("|")})\\}\\}|<!-- (POSTS|ENTRIES|PROJECTS|SKILLS) -->`);
   for (const page of allPages) assert.doesNotMatch(read(page), leftover, `${page}: unfilled template`);
 });
 
@@ -70,6 +70,8 @@ const SAFE_TAGS = new Set(("a article b blockquote body br button canvas code de
 const SAFE_ATTRS = /^(alt|align|as|charset|class|content|crossorigin|datetime|download|height|href|http-equiv|id|lang|loading|media|name|property|rel|role|src|start|title|type|width|aria-[a-z]+|data-[a-z-]+)$/;
 // No "//host" or "/\host" (both leave the site), and any scheme must be http(s) or mailto.
 // Decoded first, as a browser would: "javascript&colon;" and "java&#9;script:" are schemes too.
+const TEMPLATES = ["templates/rd-post.html", "templates/project.html"];
+
 const decodeUrl = (url) =>
   url
     .replace(/&#x([0-9a-f]+);?/gi, (m, n) => String.fromCodePoint(Math.min(parseInt(n, 16), 0x10ffff)))
@@ -189,7 +191,7 @@ test("every page repeats the home page's header and footer exactly", () => {
   };
   const [header, footer] = chrome(read("index.html"));
   assert.ok(header && footer, "index.html header or footer not found");
-  for (const [name, text] of [...pages.map((p) => [p, read(p)]), ["templates/rd-post.html", source("templates/rd-post.html")]]) {
+  for (const [name, text] of [...pages.map((p) => [p, read(p)]), ...TEMPLATES.map((t) => [t, source(t)])]) {
     const [h, f] = chrome(text);
     assert.equal(h, header, `${name}: header differs from index.html`);
     assert.equal(f, footer, `${name}: footer differs from index.html`);
@@ -200,13 +202,16 @@ test("each subpage marks exactly its own nav item; home, guestbook, and 404 mark
   const marks = (file) => html(file).match(/<a href="([^"]+)" aria-current="page">/g) ?? [];
   for (const page of ["index.html", "404.html", "guestbook/index.html"]) assert.deepEqual(marks(page), [], page);
   assert.deepEqual(marks("about/index.html"), ['<a href="/#about" aria-current="page">']);
+  for (const page of pages.filter((p) => p.startsWith("projects/"))) {
+    assert.deepEqual(marks(page), ['<a href="/#projects" aria-current="page">'], page);
+  }
   for (const page of pages.filter((p) => p.startsWith("rd/"))) {
     assert.deepEqual(marks(page), ['<a href="/rd/" aria-current="page">'], page);
   }
 });
 
 test("every page loads the shared scripts and a skip link", () => {
-  for (const [name, text] of [...pages.map((p) => [p, html(p)]), ["templates/rd-post.html", strip(source("templates/rd-post.html"))]]) {
+  for (const [name, text] of [...pages.map((p) => [p, html(p)]), ...TEMPLATES.map((t) => [t, strip(source(t))])]) {
     for (const script of ["js/theme.js", "js/main.js", "js/ui.js"]) {
       // Built pages carry a fingerprint (?v=...); the template does not, until it is built.
       assert.match(text, new RegExp(`<script[^>]*src="/?${script.replace(".", "\\.")}(\\?v=[0-9a-f]{10})?"`), `${name}: missing ${script}`);
@@ -226,6 +231,41 @@ test("R&D: every post is listed on the index, dated, and linked to its discussio
     assert.match(text, /href="https:\/\/github\.com\/EmilianoManaloIV\/EmilianoManaloIV\.github\.io\/discussions\/\d+"/, `${path}: needs its Discussions thread`);
     assert.equal((text.match(/<h1\b/g) ?? []).length, 1, `${path}: the title must be the only h1`);
   }
+});
+
+// The fixture marks everything a stranger wrote in an owner-only category this way.
+test("nothing from a stranger's post or project is published", () => {
+  for (const page of pages) assert.doesNotMatch(read(page), /FIXTURE-STRANGER/, page);
+});
+
+// ADR 0006: projects come from Discussions; their "skill:" labels feed the About page.
+test("projects: every page is on the home page, dated, and linked to its discussion", () => {
+  const home = html("index.html");
+  const projects = pages.filter((p) => p.startsWith("projects/"));
+  for (const page of projects) {
+    const path = `/${page.replace(/index\.html$/, "")}`;
+    assert.match(home, new RegExp(`<h3><a href="${path}">`), `${path} has no card on the home page`);
+    const text = html(page);
+    assert.match(text, /<time datetime="\d{4}-\d{2}-\d{2}">/, `${path}: needs a <time datetime>`);
+    assert.match(text, /href="https:\/\/github\.com\/EmilianoManaloIV\/EmilianoManaloIV\.github\.io\/discussions\/\d+"/, `${path}: needs its Discussions thread`);
+    for (const [, href] of text.matchAll(/<a class="tag tag-link" href="([^"]+)">[^<]* link<\/a>/g)) assert.match(href, /^https:\/\//, `${path}: link button must be https`);
+  }
+  const cards = home.match(/<article class="card">[\s\S]*?<\/article>/g) ?? [];
+  assert.equal(cards.filter((c) => /<h3><a href="\/projects\//.test(c)).length, projects.length, "one home card per project page");
+});
+
+test("projects: every skill on a project appears on the About page, and only skills do", () => {
+  const about = html("about/index.html");
+  const list = about.match(/<ul class="tags skill-list">([\s\S]*?)<\/ul>/)?.[1] ?? "";
+  const aboutSkills = [...list.matchAll(/<span class="tag" title="Used in [^"]*">([^<]+?) <span class="tag-count">/g)].map((m) => m[1]);
+  assert.equal(new Set(aboutSkills).size, aboutSkills.length, "a skill is listed twice");
+  const projectSkills = new Set();
+  for (const page of pages.filter((p) => p.startsWith("projects/"))) {
+    const tags = html(page).match(/<h1>[\s\S]*?<ul class="tags">([\s\S]*?)<\/ul>/)?.[1] ?? "";
+    for (const [, skill] of tags.matchAll(/<span class="tag">([^<]+)<\/span>/g)) projectSkills.add(skill);
+  }
+  assert.deepEqual([...projectSkills].sort(), [...aboutSkills].sort(), "About skills must match the projects' skills");
+  for (const name of ["bug", "enhancement", "documentation"]) assert.ok(!aboutSkills.includes(name), `non-skill label ${name} leaked`);
 });
 
 test("guestbook links to GitHub Discussions and explains signing", () => {
@@ -375,6 +415,7 @@ test("deploy workflow builds with tools/build.mjs and tests the result", () => {
   assert.match(workflow, /node --test/);
   assert.match(workflow, /discussions: read/);
   assert.doesNotMatch(workflow, /discussions: write|contents: write/, "the build only reads");
+  assert.match(workflow, /discussion:\s*\n\s*types: \[[^\]]*\blabeled\b[^\]]*\bunlabeled\b/, "adding a skill label must rebuild (ADR 0006)");
 });
 
 // Reported as a todo rather than a failure while content is still pending.

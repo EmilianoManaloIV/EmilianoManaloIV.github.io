@@ -40,7 +40,7 @@ const DISCUSSIONS = `query($owner: String!, $name: String!, $cursor: String, $af
     discussionCategories(first: 50) { nodes { name } }
     discussions(first: 50, after: $cursor, orderBy: { field: CREATED_AT, direction: DESC }) {
       pageInfo { hasNextPage endCursor }
-      nodes { number title url createdAt bodyHTML author { login } category { name } ${COMMENTS} }
+      nodes { number title url createdAt bodyHTML author { login } category { name } labels(first: 20) { nodes { name } } ${COMMENTS} }
     }
   }
 }`;
@@ -88,7 +88,7 @@ async function fetchDiscussions() {
     cursor = repo.discussions.pageInfo.hasNextPage ? repo.discussions.pageInfo.endCursor : null;
   } while (cursor);
   const guestbook = r.findGuestbook(all);
-  for (const discussion of all.filter((d) => r.isPost(d) || d === guestbook)) {
+  for (const discussion of all.filter((d) => r.isPost(d) || r.isProject(d) || d === guestbook)) {
     let { pageInfo } = discussion.comments;
     while (pageInfo.hasNextPage) {
       const thread = (await graphql(auth, MORE_COMMENTS, { owner, name, number: discussion.number, after: pageInfo.endCursor })).repository.discussion;
@@ -212,7 +212,7 @@ async function build() {
   for (const entry of STATIC) cpSync(join(root, entry), join(out, entry), { recursive: true });
 
   const { discussions, categories, images: fixtureImages } = await loadContent();
-  for (const category of [r.POSTS_CATEGORY, r.GUESTBOOK_CATEGORY]) {
+  for (const category of [r.POSTS_CATEGORY, r.PROJECTS_CATEGORY, r.GUESTBOOK_CATEGORY]) {
     if (categories && !categories.includes(category)) warn(`no "${category}" discussion category; create it on GitHub (ADR 0005)`);
   }
   const template = readFileSync(join(root, "templates", "rd-post.html"), "utf8");
@@ -250,6 +250,62 @@ async function build() {
   }
   if (!offline && discussions.length && !posts.length) warn("found discussions but no R&D posts; check the category name and author");
 
+  // Projects (ADR 0006): rendered like posts, then listed on the home page, with
+  // their "skill:" labels collected into the About page's skills.
+  const projectTemplate = readFileSync(join(root, "templates", "project.html"), "utf8");
+  const projects = [];
+  for (const d of discussions.filter(r.isProject)) {
+    const path = r.projectPath(d);
+    const dir = join(out, path);
+    const comments = d.comments?.nodes ?? [];
+    const { href: link, body } = r.extractLink(r.sanitize(d.bodyHTML));
+    const thread = r.renderComments(comments);
+    const images = await downloadImages(body + thread, dir, fixtureImages);
+    const skills = r.skillsOf(d);
+    const first = images.get(r.imageSources(body)[0]);
+    const title = r.escapeHtml(d.title);
+    const project = {
+      ...d,
+      path,
+      link,
+      skills,
+      summary: r.summary(body),
+      minutes: r.readingMinutes(body),
+      image: first ? { src: `${path}${first.file}`, width: first.width, height: first.height } : null,
+    };
+    const actions = [link ? `<li><a class="tag tag-link" href="${link}">${title} link</a></li>` : "", r.projectSkillTags(skills)].filter(Boolean).join("\n          ");
+    write(
+      join(dir, "index.html"),
+      r.fill(projectTemplate, {
+        title,
+        description: r.escapeHtml(project.summary),
+        path,
+        date_iso: r.isoDate(d.createdAt),
+        date: r.formatDate(d.createdAt),
+        minutes: project.minutes,
+        actions,
+        body: r.localizeImages(body, images),
+        comments: r.localizeImages(thread, images),
+        comment_count: r.countComments(comments),
+        discussion_url: r.escapeHtml(d.url),
+      }),
+    );
+    write(join(out, "projects", String(d.number), "index.html"), r.redirectPage(path, SITE));
+    projects.push(project);
+  }
+  projects.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const homeFile = join(out, "index.html");
+  // Empty states are removed here too, not only by CSS :has(), so older browsers never
+  // show "on their way" under real cards or a heading over an empty list.
+  let home = r.insertAt(readFileSync(homeFile, "utf8"), "<!-- PROJECTS -->", projects.map(r.projectCard).join("\n        "));
+  if (projects.length) home = r.insertAt(home, '<p class="empty-state">Projects are on their way.</p>', "");
+  write(homeFile, home);
+  const aboutFile = join(out, "about", "index.html");
+  const skills = r.skillsList(projects);
+  let about = r.insertAt(readFileSync(aboutFile, "utf8"), "<!-- SKILLS -->", skills);
+  if (!skills) about = r.insertAt(about, '<h3 class="list-heading">From my projects</h3>', "");
+  write(aboutFile, about);
+
   posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const indexFile = join(out, "rd", "index.html");
   write(indexFile, r.insertAt(readFileSync(indexFile, "utf8"), "<!-- POSTS -->", posts.map(r.postCard).join("\n          ")));
@@ -272,7 +328,7 @@ async function build() {
   const versions = fingerprint();
 
   const mode = offline ? "offline" : fixturePath ? `fixture ${fixturePath}` : `live ${REPO}`;
-  console.log(`built ${relative(root, out)}/ (${mode}): ${posts.length} posts, ${count} guestbook signatures, ${versions.size} fingerprinted assets`);
+  console.log(`built ${relative(root, out)}/ (${mode}): ${posts.length} posts, ${projects.length} projects, ${count} guestbook signatures, ${versions.size} fingerprinted assets`);
 }
 
 build().catch((error) => {

@@ -7,11 +7,12 @@ Visitors mostly arrive on a phone by scanning a QR code, often on slow Wi-Fi.
 
 Hand-written static HTML, CSS, and a little first-party JavaScript. **Zero dependencies.**
 A zero-dependency build (`tools/build.mjs`) runs in CI and turns GitHub Discussions into R&D posts,
-comments, and the guestbook (ADR 0005). Read the ADRs in `docs/decisions/` (0001 to 0005) before changing this.
+comments, the guestbook, and projects (ADR 0005, 0006). Read the ADRs in `docs/decisions/` (0001 to 0006) before changing this.
 
 - `index.html` is the home page: a fast overview with sections anchored by id.
 - `about/index.html` (About & CV), `rd/index.html` (the R&D blog), and `guestbook/index.html` are subpages.
 - Posts are generated into `_site/rd/<number>-<slug>/` from `templates/rd-post.html`; they are never committed.
+- Projects are generated into `_site/projects/<number>-<slug>/` from `templates/project.html`, and fill the home page's `<!-- PROJECTS -->` and the About page's `<!-- SKILLS -->` markers.
 - The build fingerprints script and stylesheet addresses (`?v=<hash>`) so deploys never mix old and new files. Write plain `js/main.js` or `/styles.css` in source pages; the build adds the fingerprint.
 - `tools/render.mjs` holds the pure build helpers (sanitizer, images, markup), tested in `test/render.test.mjs`.
 - Every page repeats the home page's header and footer exactly; a test enforces it (ADR 0004). Change the nav or footer in every page at once.
@@ -60,6 +61,17 @@ Moderation: delete a comment to remove it within a minute, or hide it to remove 
 The guestbook is the pinned discussion in the **Guestbook** category; each comment is a signature.
 Only discussions written by `EmilianoManaloIV` in R&D become posts (ADR 0005).
 A broken site link inside a post (for example `/no-such-page/`) stops the deploy until fixed; the Actions log names the page.
+
+## Adding a project
+
+Start a discussion in the **Projects** category, written by `EmilianoManaloIV`. Within about a minute it appears as a card
+in the home page's Projects section, newest first, and as a page at `/projects/<number>-<title>/` with its comments.
+
+- **Card text:** the first paragraph. **Card image:** the first image in the body.
+- **Link button:** make the first line `Link: https://…`, with nothing else on that line. It becomes the "<Title> link" button
+  and is removed from the text. Any other first line means no button, and the text stays as written.
+- **Skills:** add labels named `skill: <name>`, for example `skill: C++`. They show on the project and in the About page's
+  "From my projects" list, with a count of how many projects use each. Other labels such as `bug` are ignored (ADR 0006).
 
 ## Git workflow
 

@@ -345,6 +345,85 @@ export function postCard(post) {
           </li>`;
 }
 
+// == Projects (ADR 0006): the owner's discussions in "Projects", with skills from
+// "skill: <name>" labels and an optional first-paragraph "Link: https://…" button.
+
+export const PROJECTS_CATEGORY = "Projects";
+export const isProject = (d) => d?.category?.name === PROJECTS_CATEGORY && d?.author?.login === OWNER;
+export const projectPath = (d) => `/projects/${d.number}-${slugify(d.title)}/`;
+
+// Only labels named "skill: …" are skills, so GitHub's default labels never leak.
+export function skillsOf(d) {
+  const seen = new Set();
+  const skills = [];
+  for (const node of d?.labels?.nodes ?? []) {
+    const match = /^skill:\s*(.+)$/i.exec(String(node?.name ?? "").trim());
+    const skill = match?.[1].trim();
+    if (skill && !seen.has(skill.toLowerCase())) {
+      seen.add(skill.toLowerCase());
+      skills.push(skill);
+    }
+  }
+  return skills;
+}
+
+// Takes a sanitized body. If its first paragraph is "Link: <https URL>", returns that
+// URL (already escaped by the sanitizer) and the body without the line.
+// The link must be alone on the first line. GitHub renders a following line with no
+// blank line between as a <br> in the same paragraph; that text stays as the intro.
+export function extractLink(html) {
+  const match = /^\s*<p>\s*Link:\s*<a href="(https:\/\/[^"]+)"[^>]*>[^<]*<\/a>\s*(<\/p>|<br>\s*)/i.exec(html);
+  if (!match) return { href: null, body: html };
+  const rest = html.slice(match[0].length);
+  return { href: match[1], body: match[2] === "</p>" ? rest : `<p>${rest}` };
+}
+
+const tagList = (skills) => skills.map((s) => `<li><span class="tag">${escapeHtml(s)}</span></li>`).join("\n              ");
+
+// Same markup as the original hand-written cards, so styles and the alternating
+// layout carry over. `image` is { src, width, height } or null for the placeholder.
+export function projectCard(project, index) {
+  const title = escapeHtml(project.title);
+  const button = project.link ? `<li><a class="tag tag-link" href="${project.link}">${title} link</a></li>\n              ` : "";
+  const media = project.image
+    ? `<img src="${project.image.src}" alt="${title}" width="${project.image.width}" height="${project.image.height}" loading="lazy">`
+    : `<div class="slot" aria-hidden="true">${title} image</div>`;
+  return `<article class="card">
+          <div class="card-body">
+            <h3><a href="${project.path}">${title}</a></h3>
+            <p>${escapeHtml(project.summary)}</p>
+            <ul class="tags">
+              ${button}${tagList(project.skills)}
+            </ul>
+            <p class="card-more"><a href="${project.path}">Read the write-up</a></p>
+          </div>
+          <figure class="card-media">
+            <div class="frame">
+              ${media}
+            </div>
+            <figcaption>FIG. 02.${index + 1} / ${title}</figcaption>
+          </figure>
+        </article>`;
+}
+
+export const projectSkillTags = (skills) => tagList(skills);
+
+// Every skill across projects, most used first, each with the projects that use it.
+export function skillsList(projects) {
+  const uses = new Map();
+  for (const project of projects) {
+    for (const skill of project.skills) {
+      const key = skill.toLowerCase();
+      if (!uses.has(key)) uses.set(key, { skill, titles: [] });
+      uses.get(key).titles.push(project.title);
+    }
+  }
+  return [...uses.values()]
+    .sort((a, b) => b.titles.length - a.titles.length || a.skill.localeCompare(b.skill))
+    .map(({ skill, titles }) => `<li><span class="tag" title="Used in ${escapeHtml(titles.join(", "))}">${escapeHtml(skill)} <span class="tag-count">×${titles.length}</span></span></li>`)
+    .join("\n          ");
+}
+
 // Guestbook entries, oldest first and numbered, like the old ones.
 export function guestbookEntries(comments) {
   const items = visible(comments).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
