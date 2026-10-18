@@ -42,60 +42,136 @@ export function findGuestbook(discussions) {
     .sort((a, b) => a.number - b.number)[0];
 }
 
-// == Sanitizing GitHub's pre-rendered HTML (defense in depth: it is already sanitized)
+// == Sanitizing HTML from discussions
+// Strangers write comments and guestbook entries, so this must stand on its own even
+// though GitHub's bodyHTML is already sanitized. It is a small tokenizer, not a
+// find-and-replace: every "<" either starts a complete, allowed tag or is escaped, and
+// open tags are balanced, so a fragment can never break out of the page around it.
+
+// Out-of-range, surrogate, and NUL code points become U+FFFD instead of throwing.
+const codePoint = (n) => (n > 0 && n <= 0x10ffff && !(n >= 0xd800 && n <= 0xdfff) ? String.fromCodePoint(n) : "�");
 
 // Decode before re-escaping, so an attribute is never escaped twice. Numeric entities
 // are decoded too, so "&#106;avascript:" can't slip past the URL check.
 const decodeEntities = (s) =>
   s
-    .replace(/&#(\d+);?/g, (m, n) => String.fromCodePoint(Number(n)))
-    .replace(/&#x([0-9a-f]+);?/gi, (m, n) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&#(\d+);?/g, (m, n) => codePoint(Number(n)))
+    .replace(/&#x([0-9a-f]+);?/gi, (m, n) => codePoint(parseInt(n, 16)))
     .replace(/&quot;/g, '"')
     .replace(/&#39;|&apos;/g, "'")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&amp;/g, "&");
 
-const DROP_WITH_CONTENT = /<(script|style|iframe|object|embed|svg|math|template|noscript|textarea|select)\b[\s\S]*?<\/\1\s*>/gi;
-const ALLOWED = {
-  p: [], br: [], hr: [], h1: [], h2: [], h3: [], h4: [], h5: [], h6: [],
-  ul: [], ol: ["start"], li: [], blockquote: [], pre: [], code: [], kbd: [],
-  em: [], strong: [], b: [], i: [], s: [], del: [], ins: [], sup: [], sub: [],
-  a: ["href", "title"], img: ["src", "alt", "width", "height", "title"],
-  figure: [], figcaption: [], table: [], thead: [], tbody: [], tr: [], th: ["align"], td: ["align"],
-  details: [], summary: [], span: [], div: [],
-};
+// A Map, so names like "constructor" or "__proto__" are never mistaken for tags.
+const ALLOWED = new Map(
+  Object.entries({
+    p: [], br: [], hr: [], h1: [], h2: [], h3: [], h4: [], h5: [], h6: [],
+    ul: [], ol: ["start"], li: [], blockquote: [], pre: [], code: [], kbd: [],
+    em: [], strong: [], b: [], i: [], s: [], del: [], ins: [], sup: [], sub: [],
+    a: ["href", "title"], img: ["src", "alt", "width", "height", "title"],
+    figure: [], figcaption: [], table: [], thead: [], tbody: [], tr: [], th: ["align"], td: ["align"],
+    details: [], summary: [], span: [], div: [],
+  }),
+);
+// Elements whose content is dropped along with them. Unclosed, they drop everything after.
+const DROP_CONTENT = new Set(["script", "style", "iframe", "object", "embed", "svg", "math", "template", "noscript", "textarea", "select", "title", "xmp", "plaintext", "noembed", "noframes"]);
 const VOID = new Set(["br", "hr", "img"]);
 const URL_ATTRS = new Set(["href", "src"]);
 const SAFE_URL = /^(https?:|mailto:|\/|#)/i;
+// One complete tag, quote-aware. Names and unquoted values exclude "<", so a failed
+// match stops at the next "<" and the scan stays linear.
+const TAG = /<(\/?)([a-zA-Z][a-zA-Z0-9-]*)((?:\s+[^\s"'<>\/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*)\s*\/?>/y;
+const MAX_INPUT = 200_000;
 
-function cleanAttributes(tag, raw) {
+function cleanAttributes(name, raw, ugc) {
+  const allowed = ALLOWED.get(name);
   const kept = [];
-  for (const [, name, , dq, sq, bare] of raw.matchAll(/([^\s"'=<>/]+)(\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g)) {
-    const key = name.toLowerCase();
-    if (!ALLOWED[tag].includes(key)) continue;
+  for (const [, attr, , dq, sq, bare] of raw.matchAll(/([^\s"'=<>/]+)(\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g)) {
+    const key = attr.toLowerCase();
+    if (!allowed.includes(key)) continue;
     const value = decodeEntities((dq ?? sq ?? bare ?? "").trim());
     if (URL_ATTRS.has(key) && !SAFE_URL.test(value.replace(/[\u0000- ]/g, ""))) continue;
     kept.push(` ${key}="${escapeHtml(value)}"`);
   }
+  // Links written by visitors earn no search ranking from this site.
+  if (ugc && name === "a") kept.push(' rel="nofollow ugc noopener"');
   return kept.join("");
 }
 
-// Keeps an allowlist of tags and attributes; drops scripts, frames, styles, event
-// handlers, and javascript:/data: URLs. Headings shift down one level, because the
-// post title is the page's only h1.
-export function sanitize(html) {
-  return String(html ?? "")
-    .replace(/<!--[\s\S]*?-->/g, "")
-    .replace(DROP_WITH_CONTENT, "")
-    .replace(/<\/?([a-zA-Z][\w-]*)([^>]*)>/g, (match, name, rest) => {
-      const original = name.toLowerCase();
-      if (!(original in ALLOWED)) return "";
-      const tag = /^h[1-5]$/.test(original) ? `h${Number(original[1]) + 1}` : original;
-      if (match.startsWith("</")) return VOID.has(tag) ? "" : `</${tag}>`;
-      return `<${tag}${cleanAttributes(original, rest.replace(/\/\s*$/, ""))}>`;
-    });
+// Keeps an allowlist of tags and attributes and drops everything else: scripts,
+// frames, styles, event handlers, javascript:/data: URLs, comments, and unfinished
+// tags. Headings move down `shift` levels so the page's own headings stay on top.
+// `ugc` marks visitor-written content (comments, guestbook).
+export function sanitize(html, { shift = 1, ugc = false } = {}) {
+  const input = String(html ?? "").slice(0, MAX_INPUT);
+  const open = [];
+  let out = "";
+  let i = 0;
+  const heading = (name) => (/^h[1-6]$/.test(name) ? `h${Math.min(6, Number(name[1]) + shift)}` : name);
+  while (i < input.length) {
+    const lt = input.indexOf("<", i);
+    if (lt === -1) {
+      out += input.slice(i).replace(/>/g, "&gt;");
+      break;
+    }
+    out += input.slice(i, lt).replace(/>/g, "&gt;");
+    i = lt;
+    if (input.startsWith("<!--", i)) {
+      const end = input.indexOf("-->", i + 4);
+      i = end === -1 ? input.length : end + 3;
+      continue;
+    }
+    TAG.lastIndex = i;
+    const match = TAG.exec(input);
+    if (!match) {
+      out += "&lt;";
+      i += 1;
+      continue;
+    }
+    i = TAG.lastIndex;
+    const [, closing, rawName, rest] = match;
+    const name = rawName.toLowerCase();
+    if (DROP_CONTENT.has(name)) {
+      if (!closing) {
+        const close = new RegExp(`</${name}\\s*>`, "gi");
+        close.lastIndex = i;
+        i = close.exec(input) ? close.lastIndex : input.length;
+      }
+      continue;
+    }
+    if (!ALLOWED.has(name)) continue;
+    const tag = heading(name);
+    if (VOID.has(name)) {
+      if (!closing) out += `<${tag}${cleanAttributes(name, rest, ugc)}>`;
+      continue;
+    }
+    if (closing) {
+      // Close only what this fragment opened; stray closers are dropped.
+      const at = open.lastIndexOf(tag);
+      if (at === -1) continue;
+      while (open.length > at) out += `</${open.pop()}>`;
+      continue;
+    }
+    open.push(tag);
+    out += `<${tag}${cleanAttributes(name, rest, ugc)}>`;
+  }
+  while (open.length) out += `</${open.pop()}>`;
+  return out;
 }
+
+// Inserts text at a marker literally: no "$&"-style patterns and no template syntax
+// are interpreted, whatever a visitor wrote.
+export function insertAt(html, marker, value) {
+  const at = html.indexOf(marker);
+  if (at === -1) throw new Error(`marker missing: ${marker}`);
+  return html.slice(0, at) + value + html.slice(at + marker.length);
+}
+
+// Only GitHub's own image hosts are fetched during the build.
+export const isAllowedImageUrl = (url) =>
+  /^https:\/\/(github\.com\/user-attachments\/|(user-images|private-user-images|camo|raw)\.githubusercontent\.com\/)/.test(url);
+
 
 // == Images
 
@@ -186,6 +262,8 @@ export const isoDate = (iso) => new Date(iso).toISOString().slice(0, 10);
 
 // == Markup
 
+// Visitor content sits under the page's "Comments" heading and links get nofollow.
+const VISITOR = { shift: 2, ugc: true };
 const visible = (nodes) => (nodes ?? []).filter((c) => c && !c.isMinimized);
 const login = (c) => c?.author?.login || "ghost";
 
@@ -194,7 +272,7 @@ function commentItem(comment, { replies = true } = {}) {
   const children = replies ? visible(comment.replies?.nodes) : [];
   return `<li class="comment">
   <p class="comment-meta"><span class="badge" aria-hidden="true">${escapeHtml(name[0].toUpperCase())}</span> <a href="https://github.com/${escapeHtml(name)}">${escapeHtml(name)}</a> · <time datetime="${isoDate(comment.createdAt)}">${formatDate(comment.createdAt)}</time></p>
-  <div class="comment-body prose">${sanitize(comment.bodyHTML)}</div>${
+  <div class="comment-body prose">${sanitize(comment.bodyHTML, VISITOR)}</div>${
     children.length ? `\n  <ol class="comment-replies">\n${children.map((r) => commentItem(r, { replies: false })).join("\n")}\n  </ol>` : ""
   }
 </li>`;
@@ -231,7 +309,7 @@ export function guestbookEntries(comments) {
     .map(
       (c, i) => `<li class="guestbook-entry">
             <p class="guestbook-meta"><span class="guestbook-number">#${String(i + 1).padStart(3, "0")}</span> <a href="https://github.com/${escapeHtml(login(c))}">${escapeHtml(login(c))}</a> · <time datetime="${isoDate(c.createdAt)}">${formatDate(c.createdAt)}</time></p>
-            <div class="prose">${sanitize(c.bodyHTML)}</div>
+            <div class="prose">${sanitize(c.bodyHTML, VISITOR)}</div>
           </li>`,
     )
     .join("\n          ");

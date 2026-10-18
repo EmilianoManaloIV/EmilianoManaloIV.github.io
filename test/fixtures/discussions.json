@@ -1,4 +1,10 @@
 {
+  "categories": [
+    "Announcements",
+    "R&D",
+    "Guestbook",
+    "General"
+  ],
   "discussions": [
     {
       "number": 14,
@@ -6,18 +12,27 @@
       "url": "https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/discussions/14",
       "createdAt": "2026-10-20T15:00:00Z",
       "bodyHTML": "<p dir=\"auto\">Notes from my first week writing fragment shaders for the banner wireframes.</p><h2 dir=\"auto\">What clicked</h2><p dir=\"auto\">Thinking in <code>uv</code> space made everything simpler.</p><p dir=\"auto\"><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://github.com/user-attachments/assets/fixture-pixel.png\"><img src=\"https://github.com/user-attachments/assets/fixture-pixel.png\" alt=\"A rendered triangle\" style=\"max-width: 100%;\"></a></p><script>alert('never')</script>",
-      "author": { "login": "EmilianoManaloIV" },
-      "category": { "name": "R&D" },
+      "author": {
+        "login": "EmilianoManaloIV"
+      },
+      "category": {
+        "name": "R&D"
+      },
       "comments": {
-        "totalCount": 3,
-        "pageInfo": { "hasNextPage": false, "endCursor": null },
+        "totalCount": 4,
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": null
+        },
         "nodes": [
           {
             "url": "https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/discussions/14#discussioncomment-1",
             "createdAt": "2026-10-20T16:00:00Z",
             "isMinimized": false,
             "bodyHTML": "<p dir=\"auto\">Great write-up! Did you try signed distance fields?</p>",
-            "author": { "login": "conference-friend" },
+            "author": {
+              "login": "conference-friend"
+            },
             "replies": {
               "nodes": [
                 {
@@ -25,7 +40,9 @@
                   "createdAt": "2026-10-20T17:00:00Z",
                   "isMinimized": false,
                   "bodyHTML": "<p dir=\"auto\">Next week's entry!</p>",
-                  "author": { "login": "EmilianoManaloIV" }
+                  "author": {
+                    "login": "EmilianoManaloIV"
+                  }
                 }
               ]
             }
@@ -35,8 +52,24 @@
             "createdAt": "2026-10-20T18:00:00Z",
             "isMinimized": true,
             "bodyHTML": "<p dir=\"auto\">FIXTURE-SPAM buy cheap things</p>",
-            "author": { "login": "spammer" },
-            "replies": { "nodes": [] }
+            "author": {
+              "login": "spammer"
+            },
+            "replies": {
+              "nodes": []
+            }
+          },
+          {
+            "url": "u-hostile",
+            "createdAt": "2026-10-20T19:00:00Z",
+            "isMinimized": false,
+            "bodyHTML": "<p>Use {{name}} in Vue, and $&amp; $` $' in regex.</p><p><a href=\"https://visitor.example\">my site</a> <a href=\"javascript:alert(1)\">x</a></p><h1>Visitor heading</h1><constructor a=b>c</constructor><p title=\"&#99999999;\">big entity</p><img src=\"https://evil.example/track.png\" alt=\"tracker\"></div></li></ol><details><div>left open<p>hi</p><img src=x onerror=alert(document.domain)//",
+            "author": {
+              "login": "hostile-visitor"
+            },
+            "replies": {
+              "nodes": []
+            }
           }
         ]
       }
@@ -47,9 +80,20 @@
       "url": "https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/discussions/11",
       "createdAt": "2026-10-18T12:00:00Z",
       "bodyHTML": "<h1 dir=\"auto\">Hello</h1><p dir=\"auto\">A place to think out loud about technology, engineering, and art.</p>",
-      "author": { "login": "EmilianoManaloIV" },
-      "category": { "name": "R&D" },
-      "comments": { "totalCount": 0, "pageInfo": { "hasNextPage": false, "endCursor": null }, "nodes": [] }
+      "author": {
+        "login": "EmilianoManaloIV"
+      },
+      "category": {
+        "name": "R&D"
+      },
+      "comments": {
+        "totalCount": 0,
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": null
+        },
+        "nodes": []
+      }
     },
     {
       "number": 12,
@@ -57,9 +101,20 @@
       "url": "https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/discussions/12",
       "createdAt": "2026-10-19T12:00:00Z",
       "bodyHTML": "<p>Not the owner.</p>",
-      "author": { "login": "someone-else" },
-      "category": { "name": "R&D" },
-      "comments": { "totalCount": 0, "pageInfo": { "hasNextPage": false, "endCursor": null }, "nodes": [] }
+      "author": {
+        "login": "someone-else"
+      },
+      "category": {
+        "name": "R&D"
+      },
+      "comments": {
+        "totalCount": 0,
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": null
+        },
+        "nodes": []
+      }
     },
     {
       "number": 3,
@@ -67,16 +122,79 @@
       "url": "https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/discussions/3",
       "createdAt": "2026-10-18T10:00:00Z",
       "bodyHTML": "<p>Say hi!</p>",
-      "author": { "login": "EmilianoManaloIV" },
-      "category": { "name": "Guestbook" },
+      "author": {
+        "login": "EmilianoManaloIV"
+      },
+      "category": {
+        "name": "Guestbook"
+      },
       "comments": {
-        "totalCount": 4,
-        "pageInfo": { "hasNextPage": false, "endCursor": null },
+        "totalCount": 5,
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": null
+        },
         "nodes": [
-          { "url": "u1", "createdAt": "2026-10-19T09:00:00Z", "isMinimized": false, "bodyHTML": "<p>Met you at the poster session. Cool torus!</p>", "author": { "login": "first-visitor" }, "replies": { "nodes": [] } },
-          { "url": "u2", "createdAt": "2026-10-19T10:00:00Z", "isMinimized": true, "bodyHTML": "<p>FIXTURE-SPAM</p>", "author": { "login": "spammer" }, "replies": { "nodes": [] } },
-          { "url": "u3", "createdAt": "2026-10-19T11:00:00Z", "isMinimized": false, "bodyHTML": "<p>Greetings from the hallway track.</p>", "author": { "login": "second-visitor" }, "replies": { "nodes": [] } },
-          { "url": "u4", "createdAt": "2026-10-20T08:00:00Z", "isMinimized": false, "bodyHTML": "<p>Webmaster, your site rules.</p>", "author": { "login": "third-visitor" }, "replies": { "nodes": [] } }
+          {
+            "url": "u1",
+            "createdAt": "2026-10-19T09:00:00Z",
+            "isMinimized": false,
+            "bodyHTML": "<p>Met you at the poster session. Cool torus!</p>",
+            "author": {
+              "login": "first-visitor"
+            },
+            "replies": {
+              "nodes": []
+            }
+          },
+          {
+            "url": "u2",
+            "createdAt": "2026-10-19T10:00:00Z",
+            "isMinimized": true,
+            "bodyHTML": "<p>FIXTURE-SPAM</p>",
+            "author": {
+              "login": "spammer"
+            },
+            "replies": {
+              "nodes": []
+            }
+          },
+          {
+            "url": "u3",
+            "createdAt": "2026-10-19T11:00:00Z",
+            "isMinimized": false,
+            "bodyHTML": "<p>Greetings from the hallway track.</p>",
+            "author": {
+              "login": "second-visitor"
+            },
+            "replies": {
+              "nodes": []
+            }
+          },
+          {
+            "url": "u4",
+            "createdAt": "2026-10-20T08:00:00Z",
+            "isMinimized": false,
+            "bodyHTML": "<p>Webmaster, your site rules.</p>",
+            "author": {
+              "login": "third-visitor"
+            },
+            "replies": {
+              "nodes": []
+            }
+          },
+          {
+            "url": "u-hostile",
+            "createdAt": "2026-10-20T20:00:00Z",
+            "isMinimized": false,
+            "bodyHTML": "<p>Use {{name}} in Vue, and $&amp; $` $' in regex.</p><p><a href=\"https://visitor.example\">my site</a> <a href=\"javascript:alert(1)\">x</a></p><h1>Visitor heading</h1><constructor a=b>c</constructor><p title=\"&#99999999;\">big entity</p><img src=\"https://evil.example/track.png\" alt=\"tracker\"></div></li></ol><details><div>left open<p>hi</p><img src=x onerror=alert(document.domain)//",
+            "author": {
+              "login": "hostile-visitor"
+            },
+            "replies": {
+              "nodes": []
+            }
+          }
         ]
       }
     }

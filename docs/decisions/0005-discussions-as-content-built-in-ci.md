@@ -17,17 +17,20 @@ GitHub Discussions on this repository holds the content. A zero-dependency Node 
 
 **Security:**
 - **Who can publish:** a post must be in R&D and authored by the owner. Both categories use GitHub's announcement format, so only maintainers can start discussions there. That's two independent checks.
-- **Sanitizing:** post and comment bodies use GitHub's pre-rendered, sanitized HTML, then pass through an allowlist sanitizer that removes scripts, frames, styles, event handlers, and `javascript:` or `data:` URLs. Titles and usernames are escaped.
+- **Sanitizing:** post and comment bodies use GitHub's pre-rendered, sanitized HTML, but the build does not rely on that. A small tokenizer keeps only allowlisted tags and attributes, escapes every `<` that doesn't start a complete allowed tag, drops comments, unfinished tags, scripts, frames, styles, event handlers, and `javascript:` or `data:` URLs, and balances open tags so a fragment can't break the page around it. Titles and usernames are escaped.
+- **Literal insertion:** template values are filled in one pass and markers are replaced literally, so `{{` or `$&` in anything a visitor writes is plain text and can't break a build.
+- **Visitor links:** links in comments and guestbook entries get `rel="nofollow ugc noopener"`.
 - **Read-only build:** the token has only `contents: read` and `discussions: read`.
 
 **Privacy:**
 - **Images:** images are downloaded at build time into the page's folder, with their width and height. Visitors make no requests to GitHub or anyone else.
+  - Only GitHub's image hosts are fetched, over HTTPS, with a 15-second timeout, a 10 MB cap enforced while downloading, and at most 20 images per page. Anything else is dropped with a build warning, so comments can't make the build fetch arbitrary addresses.
 - **Avatars:** commenters show by username with an initial badge, so no avatars load.
 - **Disclosure:** pages say that commenting and signing use a GitHub account.
 
 **Moderation and freshness:**
 - **When it rebuilds:** discussion and comment events (created, edited, deleted) rebuild within about a minute.
-- **Hiding:** hiding a comment fires no event, so an hourly scheduled rebuild drops hidden comments.
+- **Hiding:** hiding a comment fires no event, so an hourly scheduled rebuild drops hidden comments. GitHub pauses scheduled workflows after 60 days without repository activity; any post or comment counts as activity, and a manual run restarts it.
 - **On failure:** a failed build skips the deploy, so the last good site stays live.
 
 **Stable links:**

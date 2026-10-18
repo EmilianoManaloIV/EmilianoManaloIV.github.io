@@ -44,16 +44,45 @@ function target(page, url) {
 }
 
 test("the build produces every source page plus the expected pages", () => {
-  const skip = new Set(["test", "templates", "docs", "tools", "node_modules", ".git", ".github", ".claude", "assets", "js", "_site"]);
-  const sources = list(repo).filter((f) => f.endsWith(".html") && !skip.has(f.split("/")[0]));
+  // Build output folders all start with "_" (tools/build.mjs --out), so none count as source.
+  const skip = new Set(["test", "templates", "docs", "tools", "node_modules", ".git", ".github", ".claude", "assets", "js"]);
+  const sources = list(repo).filter((f) => f.endsWith(".html") && !skip.has(f.split("/")[0]) && !f.startsWith("_"));
   for (const page of [...sources, "index.html", "404.html", "about/index.html", "rd/index.html", "guestbook/index.html"]) {
     assert.ok(allPages.includes(page), `${page} missing from the build`);
   }
 });
 
+// Visitors may legitimately write "{{" in a comment, so only the template's own names count.
 test("no built page has an unfilled template value or build marker", () => {
+  const names = [...source("templates/rd-post.html").matchAll(/\{\{(\w+)\}\}/g), ...source("guestbook/index.html").matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]);
+  const leftover = new RegExp(`\\{\\{(${[...new Set(names)].join("|")})\\}\\}|<!-- (POSTS|ENTRIES) -->`);
+  for (const page of allPages) assert.doesNotMatch(read(page), leftover, `${page}: unfilled template`);
+});
+
+// ADR 0005: strangers write comments and guestbook entries, so check every built page
+// for anything that could run script or load from another site.
+test("no built page carries script hooks or third-party loads", () => {
   for (const page of allPages) {
-    assert.doesNotMatch(read(page), /\{\{|<!-- (POSTS|ENTRIES) -->/, `${page}: unfilled template`);
+    const text = html(page);
+    for (const tag of text.match(/<[a-zA-Z][^>]*>/g) ?? []) {
+      assert.doesNotMatch(tag, /\son[a-z]+\s*=/i, `${page}: event handler in ${tag}`);
+      assert.doesNotMatch(tag, /javascript:|vbscript:|data:text|srcset=/i, `${page}: unsafe attribute in ${tag}`);
+      assert.doesNotMatch(tag, /\s(src|href)="\/\//, `${page}: protocol-relative URL in ${tag}`);
+    }
+    assert.doesNotMatch(text, /<(iframe|object|embed|svg|math)\b/i, `${page}: embedded content`);
+    assert.equal((text.match(/<script\b/gi) ?? []).length, (text.match(/<script\b[^>]*\ssrc="\/?js\/[\w.]+"[^>]*><\/script>/gi) ?? []).length, `${page}: script other than the site's own`);
+  }
+});
+
+test("visitor links are marked nofollow ugc", () => {
+  for (const page of allPages.filter((p) => /^(rd\/.+|guestbook\/)index\.html$/.test(p))) {
+    for (const block of html(page).match(/<div class="(comment-body )?prose">[\s\S]*?<\/div>/g) ?? []) {
+      for (const link of block.match(/<a\b[^>]*>/g) ?? []) {
+        if (/class="comment-body|guestbook/.test(block) || page.startsWith("guestbook/")) {
+          assert.match(link, /rel="nofollow ugc noopener"/, `${page}: visitor link without rel: ${link}`);
+        }
+      }
+    }
   }
 });
 

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  escapeHtml, slugify, postPath, isPost, findGuestbook, sanitize, imageSources, imageSize, localizeImages,
+  escapeHtml, slugify, postPath, isPost, findGuestbook, sanitize, insertAt, isAllowedImageUrl, imageSources, imageSize, localizeImages,
   readingMinutes, summary, formatDate, renderComments, countComments, fill, postCard, guestbookEntries, redirectPage,
 } from "../tools/render.mjs";
 
@@ -43,6 +43,68 @@ test("sanitize drops scripts, frames, styles, handlers, and unsafe URLs", () => 
   assert.doesNotMatch(sanitize('<a href="&#106;avascript:alert(1)">x</a>'), /href/, "numeric-entity javascript: URL");
   assert.match(clean, /<a href="https:\/\/ok\.example">ok<\/a>/);
   assert.match(clean, /<p>Hi /);
+});
+
+// Regression tests from the security review: each input once escaped the old sanitizer.
+test("unfinished tags are escaped, never completed by the markup around them", () => {
+  const wrapped = (html) => `<div>${html}</div>`;
+  const xss = sanitize("<p>hi</p><img src=x onerror=alert(document.domain)//", { ugc: true });
+  // Escaped, it shows as harmless text; what matters is that no real tag exists.
+  assert.doesNotMatch(wrapped(xss), /<img/i);
+  assert.match(xss, /&lt;img src=x onerror/);
+  assert.doesNotMatch(sanitize("<img src=http://evil.example/t.png"), /<img/, "unfinished third-party image");
+  assert.doesNotMatch(guestbookEntries([comment("x", { bodyHTML: "<p>hi</p><img src=x onerror=alert(1)//" })]), /<img/i);
+  assert.doesNotMatch(renderComments([comment("x", { bodyHTML: "<b>hi<img src=x onerror=alert(1)//" })]), /<img/i);
+});
+
+test("an unterminated comment or dropped element only removes the rest of the fragment", () => {
+  assert.equal(sanitize("<p>before</p><!-- hidden forever"), "<p>before</p>");
+  assert.equal(sanitize("<p>a</p><script>alert(1)"), "<p>a</p>");
+  assert.equal(sanitize("<p>a</p><style>p{}</style><p>b</p>"), "<p>a</p><p>b</p>");
+});
+
+test("a > inside a quoted attribute stays inside the attribute", () => {
+  const out = sanitize('<a href="https://ok.example" title="a>b" onclick=alert(1)>x</a>');
+  assert.equal(out, '<a href="https://ok.example" title="a&gt;b">x</a>');
+});
+
+test("fragments can't close or leave open the page's own elements", () => {
+  assert.equal(sanitize("</div></li></ol><p>ok</p>"), "<p>ok</p>");
+  assert.equal(sanitize("<details><div><p>open"), "<details><div><p>open</p></div></details>");
+  assert.equal(sanitize("<b><i>x</b>y"), "<b><i>x</i></b>y");
+});
+
+test("prototype names and impossible character codes don't crash the sanitizer", () => {
+  assert.equal(sanitize("<constructor a=b>x</constructor>y"), "xy");
+  // Not a valid tag name, so it is shown as text rather than parsed.
+  assert.equal(sanitize("<__proto__>y"), "&lt;__proto__&gt;y");
+  assert.equal(sanitize('<a href="/x" title="&#99999999;&#x110000;&#xD800;&#0;">x</a>'), '<a href="/x" title="����">x</a>');
+});
+
+test("visitor links get nofollow ugc, and visitor headings sit under the page's", () => {
+  assert.equal(sanitize('<a href="https://x.example">x</a>', { ugc: true }), '<a href="https://x.example" rel="nofollow ugc noopener">x</a>');
+  assert.equal(sanitize("<h1>A</h1>", { shift: 2 }), "<h3>A</h3>");
+  assert.match(renderComments([comment("x", { bodyHTML: '<h1>T</h1><a href="https://x.example">l</a>' })]), /<h3>T<\/h3>[\s\S]*rel="nofollow ugc noopener"/);
+});
+
+test("sanitizing hostile input stays fast", () => {
+  const started = performance.now();
+  sanitize("<a ".repeat(30000));
+  sanitize('<a title="'.repeat(5000));
+  assert.ok(performance.now() - started < 1000, "sanitize took too long");
+});
+
+test("insertAt inserts text literally, whatever it contains", () => {
+  assert.equal(insertAt("[<!-- X -->]", "<!-- X -->", "$& $` $' {{name}}"), "[$& $` $' {{name}}]");
+  assert.throws(() => insertAt("no marker", "<!-- X -->", "v"), /marker missing/);
+});
+
+test("only GitHub's image hosts are fetched", () => {
+  assert.equal(isAllowedImageUrl("https://github.com/user-attachments/assets/abc"), true);
+  assert.equal(isAllowedImageUrl("https://private-user-images.githubusercontent.com/1/x.png?jwt=y"), true);
+  for (const url of ["http://github.com/user-attachments/assets/abc", "https://169.254.169.254/latest", "https://evil.example/x.png", "https://github.com.evil.example/user-attachments/x", "file:///etc/passwd"]) {
+    assert.equal(isAllowedImageUrl(url), false, url);
+  }
 });
 
 test("sanitize shifts headings down so the title stays the only h1", () => {
