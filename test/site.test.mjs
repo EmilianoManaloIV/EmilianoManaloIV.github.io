@@ -13,15 +13,16 @@ const read = (file) => readFileSync(join(root, file), "utf8");
 
 // Strip comments so commented-out examples are not checked.
 const html = (file) => read(file).replace(/<!--[\s\S]*?-->/g, "");
+// Attribute values, double- or single-quoted.
 const attrs = (source, name) =>
-  [...source.matchAll(new RegExp(`\\s${name}="([^"]*)"`, "g"))].map((m) => m[1]);
+  [...source.matchAll(new RegExp(`\\s${name}=(?:"([^"]*)"|'([^']*)')`, "gi"))].map((m) => m[1] ?? m[2]);
 const isExternal = (url) => /^(https?:|mailto:|tel:)/.test(url);
 
 for (const page of pages) {
   test(`${page}: scripts are local files only, with no inline code`, () => {
     const source = html(page);
     for (const [, attributes, body] of source.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
-      const src = attributes.match(/src="([^"]*)"/)?.[1];
+      const src = attrs(attributes, "src")[0];
       assert.ok(src, "inline scripts are not allowed");
       assert.ok(!isExternal(src), `external script not allowed: ${src}`);
       assert.equal(body.trim(), "", `script with src must be empty: ${src}`);
@@ -30,10 +31,12 @@ for (const page of pages) {
 
   test(`${page}: has no external stylesheets, fonts, or icons`, () => {
     const source = html(page);
+    // Only rel="canonical" may point off-site; every other link must be local.
     for (const tag of source.match(/<link\b[^>]*>/gi) ?? []) {
-      const href = tag.match(/href="([^"]*)"/)?.[1] ?? "";
-      if (/rel="(stylesheet|preload|modulepreload|icon)"/.test(tag)) {
-        assert.ok(!isExternal(href), `external resource not allowed: ${href}`);
+      const href = attrs(tag, "href")[0] ?? "";
+      const rel = (attrs(tag, "rel")[0] ?? "").toLowerCase();
+      if (rel !== "canonical") {
+        assert.ok(!isExternal(href) && !href.startsWith("//"), `external ${rel} not allowed: ${href}`);
       }
     }
   });
@@ -84,19 +87,44 @@ test("index.html: has Open Graph tags for link previews", () => {
   }
 });
 
-test("styles.css: loads no external resources", () => {
+test("styles.css: loads no external resources and every url() exists", () => {
   const css = read("styles.css");
   assert.doesNotMatch(css, /@import/, "@import is not allowed");
-  assert.doesNotMatch(css, /url\(\s*["']?https?:/, "external url() is not allowed");
+  for (const [, url] of css.matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/g)) {
+    assert.ok(!isExternal(url) && !url.startsWith("//"), `external url() not allowed: ${url}`);
+    assert.ok(existsSync(join(root, url)), `missing file in styles.css: ${url}`);
+  }
 });
 
-const scripts = readdirSync(join(root, "js")).filter((f) => f.endsWith(".js"));
+test("index.html: motion and theme controls follow ADR 0002", () => {
+  const page = html("index.html");
+  for (const id of ["motion-toggle", "theme-toggle"]) {
+    assert.match(page, new RegExp(`<button[^>]*id="${id}"[^>]*aria-pressed=`), `${id} button missing`);
+  }
+  assert.match(read("styles.css"), /html:not\(\.js-ready\) \.toggle/, "toggles must hide until main.js runs");
+  assert.match(read("js/theme.js"), /classList\.add\("js"\)/);
+  const main = read("js/main.js");
+  assert.match(main, /classList\.add\("js-ready"\)/);
+  assert.match(
+    main,
+    /prefers-reduced-motion: reduce[\s\S]*let motion = !reducedMotion\.matches/,
+    "motion must start paused under reduced motion",
+  );
+});
+
+// Walk js/ recursively so nested or .mjs files cannot escape the checks.
+const scripts = readdirSync(join(root, "js"), { recursive: true }).filter((f) => /\.m?js$/.test(f));
 
 test("js: makes no network requests and loads no remote code", () => {
   for (const file of scripts) {
     const code = read(join("js", file));
     assert.doesNotMatch(code, /https?:\/\//, `${file}: URLs are not allowed`);
-    assert.doesNotMatch(code, /\bfetch\s*\(|XMLHttpRequest|WebSocket|EventSource/, `${file}: network API`);
+    assert.doesNotMatch(code, /["'`]\/\/[\w.-]/, `${file}: protocol-relative URLs are not allowed`);
+    assert.doesNotMatch(
+      code,
+      /\bfetch\s*\(|XMLHttpRequest|WebSocket|EventSource|sendBeacon|\bWorker\s*\(|importScripts|\.src\s*=/,
+      `${file}: network API`,
+    );
     assert.doesNotMatch(code, /\bimport\s*\(/, `${file}: dynamic import is not allowed`);
     for (const [, spec] of code.matchAll(/^\s*import\b[^"']*["']([^"']+)["']/gm)) {
       assert.match(spec, /^\.\//, `${file}: only relative imports allowed, got ${spec}`);

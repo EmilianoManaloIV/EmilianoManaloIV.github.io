@@ -7,7 +7,8 @@
   <meta name="description" content="Aspiring creative technologist, technical artist, and software engineer bridging technology, engineering, and art.">
   <link rel="canonical" href="https://emilianomanaloiv.github.io/">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <meta name="theme-color" content="#efebe3">
+  <meta name="theme-color" content="#f1eee5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#292927" media="(prefers-color-scheme: dark)">
 
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://emilianomanaloiv.github.io/">
@@ -20,6 +21,7 @@
   <link rel="preload" href="assets/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="assets/fonts/ibm-plex-mono-latin-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="styles.css">
+  <link rel="modulepreload" href="js/geometry.js">
   <script type="module" src="js/main.js"></script>
 </head>
 <body>
@@ -46,7 +48,7 @@
           <li><a href="https://x.com/TODO" aria-label="X">X</a></li>
           <li><a href="https://github.com/EmilianoManaloIV" aria-label="GitHub">GH</a></li>
         </ul>
-        <button class="toggle" type="button" id="theme-toggle" aria-pressed="false">Theme: light</button>
+        <button class="toggle" type="button" id="theme-toggle" aria-pressed="false">Dark mode<span data-state aria-hidden="true">: off</span></button>
       </div>
     </div>
   </header>
@@ -80,7 +82,7 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
           <div class="tech-label" aria-hidden="true"><strong>System Core V7</strong>Module sector 128<br>Inspect due 2026-07</div>
           <div class="tech-label" aria-hidden="true"><strong>Batch</strong>05-77</div>
           <div class="tech-label" aria-hidden="true"><strong>Serial</strong>09-2087-4</div>
-          <button class="toggle" type="button" id="motion-toggle" aria-pressed="true">Motion: on</button>
+          <button class="toggle" type="button" id="motion-toggle" aria-pressed="true">Motion<span data-state aria-hidden="true">: on</span></button>
         </div>
       </div>
     </section>

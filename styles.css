@@ -249,8 +249,10 @@ button {
   cursor: pointer;
 }
 
-/* Toggles do nothing without JavaScript, so hide them until it runs. */
-html:not(.js) .toggle {
+/* Toggles need js/main.js, so hide them until it has run.
+   Canvases stay empty without JavaScript, so hide them in that case too. */
+html:not(.js-ready) .toggle,
+html:not(.js) canvas[data-scene] {
   display: none;
 }
 

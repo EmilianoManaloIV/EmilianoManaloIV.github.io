@@ -83,10 +83,14 @@ function tick(now) {
   schedule();
 }
 
+// Single gate for all motion: canvases and the terminal run only when motion is on,
+// the tab is visible, and their element is on screen.
 function schedule() {
   const running = motion && !document.hidden && scenes.some((s) => s.visible);
   if (running && !frame) frame = requestAnimationFrame(tick);
   if (!running) last = 0;
+  if (motion && !document.hidden && terminalVisible) startTerminal();
+  else stopTerminal();
 }
 
 const resizer = new ResizeObserver((entries) => {
@@ -96,9 +100,13 @@ const resizer = new ResizeObserver((entries) => {
     draw(scene);
   }
 });
+const terminal = document.querySelector(".terminal");
+let terminalVisible = false;
+
 const watcher = new IntersectionObserver((entries) => {
   for (const entry of entries) {
-    scenes.find((s) => s.canvas === entry.target).visible = entry.isIntersecting;
+    if (entry.target === terminal) terminalVisible = entry.isIntersecting;
+    else scenes.find((s) => s.canvas === entry.target).visible = entry.isIntersecting;
   }
   schedule();
 });
@@ -106,11 +114,11 @@ for (const scene of scenes) {
   resizer.observe(scene.canvas);
   watcher.observe(scene.canvas);
 }
+if (terminal) watcher.observe(terminal);
 document.addEventListener("visibilitychange", schedule);
 
 /* ---------- Live terminal ---------- */
 
-const terminal = document.querySelector(".terminal");
 const cursor = document.createElement("span");
 cursor.className = "cursor";
 const pad = (n, len = 2) => String(n).padStart(len, "0");
@@ -139,7 +147,6 @@ function renderTerminal() {
 
 function type() {
   typing = 0;
-  if (!motion) return;
   if (current.length < target.length) {
     current = target.slice(0, current.length + 1);
   } else {
@@ -161,17 +168,26 @@ function startTerminal() {
   type();
 }
 
+function stopTerminal() {
+  clearTimeout(typing);
+  typing = 0;
+}
+
 /* ---------- Toggles ---------- */
+// Each button has a fixed accessible name; aria-pressed carries the state and the
+// visible ": on/off" suffix is aria-hidden so the state is not announced twice.
 
 const motionButton = document.getElementById("motion-toggle");
 const themeButton = document.getElementById("theme-toggle");
+const showState = (button, on) => {
+  button.setAttribute("aria-pressed", String(on));
+  button.querySelector("[data-state]").textContent = on ? ": on" : ": off";
+};
 
 function setMotion(on) {
   motion = on;
   root.classList.toggle("motion-off", !on);
-  motionButton.setAttribute("aria-pressed", String(on));
-  motionButton.textContent = `Motion: ${on ? "on" : "off"}`;
-  if (on) startTerminal();
+  showState(motionButton, on);
   schedule();
 }
 
@@ -181,9 +197,7 @@ function isDark() {
 }
 
 function syncThemeButton() {
-  const dark = isDark();
-  themeButton.setAttribute("aria-pressed", String(dark));
-  themeButton.textContent = dark ? "Theme: dark" : "Theme: light";
+  showState(themeButton, isDark());
 }
 
 motionButton.addEventListener("click", () => setMotion(!motion));
@@ -208,3 +222,4 @@ systemDark.addEventListener("change", () => {
 syncThemeButton();
 setMotion(motion);
 refreshColors();
+root.classList.add("js-ready");

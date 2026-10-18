@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: pages-${{ github.ref }}
-  cancel-in-progress: true
+  group: pages-${{ github.event_name == 'pull_request' && github.ref || 'deploy' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:
@@ -34,7 +34,6 @@ jobs:
           mkdir _site
           cp index.html 404.html styles.css favicon.svg emiliano-manalo.vcf _site/
           cp -r assets js _site/
-      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
           path: _site
