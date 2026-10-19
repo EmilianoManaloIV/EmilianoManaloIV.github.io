@@ -1,6 +1,6 @@
 # 0003: Interactive UI elements for conference visitors
 
-Status: Accepted (2026-10-18). Builds on 0002. Amended 2026-10-18: the talk status chip and js/status.js were removed with the Talk section.
+Status: Accepted (2026-10-18). Builds on 0002. Amended 2026-10-18: the talk status chip and js/status.js were removed with the Talk section. Amended by 0009: the budget is now 32 KB gzipped.
 
 ## Context
 

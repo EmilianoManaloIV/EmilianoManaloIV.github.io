@@ -21,6 +21,7 @@
   <link rel="preload" href="/assets/fonts/ibm-plex-mono-latin-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/styles.css">
   <link rel="modulepreload" href="/js/geometry.js">
+  <link rel="modulepreload" href="/js/models.js">
   <script type="module" src="/js/main.js"></script>
   <script type="module" src="/js/ui.js"></script>
 </head>
@@ -28,6 +29,8 @@
   <a class="skip-link" href="#main">Skip to content</a>
 
   <header class="site-header">
+    <div class="read-progress" aria-hidden="true"></div>
+    <canvas class="ambient-scene" data-scene="ambient" aria-hidden="true"></canvas>
     <div class="container">
       <a class="monogram" href="/" aria-label="Emiliano Panday Manalo IV, home">EM</a>
       <nav id="site-nav" aria-label="Primary">
@@ -53,15 +56,24 @@
   </header>
 
   <main id="main">
-    <section id="rd" class="page-hero">
+    <section id="rd" class="page-hero hero-split">
+      <!-- A faint copy of the site telemetry, filled by js/main.js (ADR 0008, 0009). -->
+      <pre class="terminal-echo" aria-hidden="true"></pre>
       <div class="container">
-        <p class="eyebrow"><a href="/">Home</a> / R&amp;D</p>
-        <h1>R&amp;D</h1>
-        <p class="lede">Notes on what I'm learning, researching, and want to discuss. Research and development, in the open.</p>
+        <div>
+          <p class="eyebrow"><a href="/">Home</a> / R&amp;D</p>
+          <h1>R&amp;D</h1>
+          <p class="lede">Notes on what I'm learning, researching, and want to discuss. Research and development, in the open.</p>
+        </div>
+        <figure class="model model-headset">
+          <canvas class="headset-scene" data-scene="headset" tabindex="0" role="img" aria-roledescription="3D model" aria-label="VR headset wireframe"></canvas>
+          <figcaption>FIG. 03.1 / VR headset, wireframe</figcaption>
+          <p class="model-controls"><span class="model-hint" aria-hidden="true">Drag or use arrow keys</span> <button class="toggle model-reset" type="button" data-reset>Reset view</button></p>
+        </figure>
       </div>
     </section>
 
-    <section id="entries" class="section">
+    <section id="entries" class="section" data-label="01 — Entries">
       <div class="container">
         <h2 class="section-title"><span class="section-index" aria-hidden="true">01 /</span> Entries</h2>
         <!-- The build (tools/build.mjs) fills this list from GitHub Discussions, newest first. -->
@@ -70,7 +82,7 @@
       </div>
     </section>
 
-    <section id="how" class="section">
+    <section id="how" class="section" data-label="02 — How this works">
       <div class="container">
         <h2 class="section-title"><span class="section-index" aria-hidden="true">02 /</span> How this works</h2>
         <div class="prose">
@@ -95,7 +107,10 @@
           <li><a href="https://github.com/EmilianoManaloIV" aria-label="GitHub">GH</a></li>
         </ul>
       </div>
-      <canvas class="torus-scene" data-scene="torus" aria-hidden="true"></canvas>
+      <div class="model model-torus">
+        <canvas class="torus-scene" data-scene="torus" tabindex="0" role="img" aria-roledescription="3D model" aria-label="Torus wireframe"></canvas>
+        <p class="model-controls"><span class="model-hint" aria-hidden="true">Drag or use arrow keys</span> <button class="toggle model-reset" type="button" data-reset>Reset view</button></p>
+      </div>
     </div>
   </footer>
 </body>

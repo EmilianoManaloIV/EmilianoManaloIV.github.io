@@ -7,7 +7,7 @@ Visitors mostly arrive on a phone by scanning a QR code, often on slow Wi-Fi.
 
 Hand-written static HTML, CSS, and a little first-party JavaScript. **Zero dependencies.**
 A zero-dependency build (`tools/build.mjs`) runs in CI and turns GitHub Discussions into R&D posts,
-comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 0007). Read the ADRs in `docs/decisions/` (0001 to 0008) before changing this.
+comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 0007). Read the ADRs in `docs/decisions/` (0001 to 0009) before changing this.
 
 - `index.html` is the home page: a fast overview with sections anchored by id.
 - `about/index.html` (About & CV), `rd/index.html` (the R&D blog), and `guestbook/index.html` are subpages.
@@ -19,6 +19,10 @@ comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 00
 - `styles.css` holds design tokens in `:root` at the top, then components.
 - `js/theme.js` applies a saved theme in `<head>`. `js/main.js` runs the canvas wireframes, terminal, and toggles.
 - `js/geometry.js` is pure mesh and projection math, unit-tested in `test/geometry.test.mjs`.
+- `js/models.js` holds model data (the Utah teapot's Bézier patches, ADR 0009). Credit it as a Utah Teapot. The VR headset is built in code by `headset()` in `geometry.js`.
+- The shared header holds the reading-progress bar and the big-screen ambient canvas (ADR 0009).
+- Screens 1600px and up scale the layout (`--content-max: 80rem`, larger root font). Titled sections carry `data-label="NN — Title"` for their margin label; keep it in step with the title (a test checks).
+- Hands-on canvases are `tabindex="0" role="img" aria-roledescription="3D model"` with a visible hint and a `data-reset` button; decorative ones stay `aria-hidden` (ADR 0009).
 - `js/ui.js` runs wayfinding and share and copy. It reads sections from `main section[id]` on any page.
 - `assets/fonts/` holds self-hosted `.woff2` files with their OFL licenses. Never link a font CDN.
 - `assets/img/` holds images.
@@ -28,8 +32,8 @@ Colors come from the Figma "Branding Guide" variables, in Light and Dark modes. 
 Design source of truth: Figma Sites file "Personal Website"
 https://www.figma.com/site/uuMSVAiWUYtckwg7fJRxfF/Personal-Website?node-id=0-1
 
-Breakpoints match the Figma frames: mobile below 800px, tablet 800 to 1279px, desktop 1280px and up.
-CSS is mobile-first with `min-width` queries at those two widths.
+Breakpoints match the Figma frames: mobile below 800px, tablet 800 to 1279px, desktop 1280px and up, plus a big-screen step at 1600px.
+CSS is mobile-first with `min-width` queries at those widths (800px, 1280px, and 1600px).
 
 ## Commands
 
@@ -44,7 +48,7 @@ py -m http.server 8000 --directory _site                      # preview the buil
 ## Rules
 
 - No npm packages, CDNs, or external stylesheet, script, or font URLs. No inline scripts.
-- JavaScript lives in `js/`, makes no network requests, uses only relative imports, and stays under 10 KB gzipped in total (ADR 0003).
+- JavaScript lives in `js/`, makes no network requests, uses only relative imports, and stays under 32 KB gzipped in total (ADR 0003, 0009).
 - The page must work without JavaScript. Motion must be pausable and start paused under reduced motion.
 - Looping CSS animations go under `html.js-ready:not(.motion-off)` (both set by `main.js`); scroll-linked ones go inside
   `@media screen and (prefers-reduced-motion: no-preference)` and `html:not(.motion-off)` (ADR 0008). The tests check both.

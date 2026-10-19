@@ -22,6 +22,7 @@
   <link rel="preload" href="/assets/fonts/ibm-plex-mono-latin-400.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/styles.css">
   <link rel="modulepreload" href="/js/geometry.js">
+  <link rel="modulepreload" href="/js/models.js">
   <script type="module" src="/js/main.js"></script>
   <script type="module" src="/js/ui.js"></script>
 </head>
@@ -29,6 +30,8 @@
   <a class="skip-link" href="#main">Skip to content</a>
 
   <header class="site-header">
+    <div class="read-progress" aria-hidden="true"></div>
+    <canvas class="ambient-scene" data-scene="ambient" aria-hidden="true"></canvas>
     <div class="container">
       <a class="monogram" href="/" aria-label="Emiliano Panday Manalo IV, home">EM</a>
       <nav id="site-nav" aria-label="Primary">
@@ -54,11 +57,24 @@
   </header>
 
   <main id="main">
-    <section id="not-found" class="page-hero">
+    <section id="not-found" class="page-hero hero-split">
       <div class="container">
-        <p class="eyebrow">Error 404</p>
-        <h1>Page not found</h1>
-        <p class="lede">This page does not exist. Try the <a href="/">home page</a> or the <a href="/rd/">R&amp;D entries</a>.</p>
+        <div>
+          <p class="eyebrow">Error 404 <span aria-hidden="true">/ or 418-ish</span></p>
+          <h1>Page not found</h1>
+          <p class="lede">I'm a teapot, and this page isn't here. It may have moved or never existed. One of these will get you back on track:</p>
+          <!-- Error recovery (ADR 0009): three large, plainly named ways back. -->
+          <ul class="tags way-back">
+            <li><a class="tag tag-link" href="/">Home</a></li>
+            <li><a class="tag tag-link" href="/#projects">Projects</a></li>
+            <li><a class="tag tag-link" href="/rd/">R&amp;D entries</a></li>
+          </ul>
+        </div>
+        <figure class="model model-teapot">
+          <canvas class="teapot-scene" data-scene="teapot" tabindex="0" role="img" aria-roledescription="3D model" aria-label="Utah teapot wireframe"></canvas>
+          <figcaption>FIG. 418 / Utah teapot, Newell 1975</figcaption>
+          <p class="model-controls"><span class="model-hint" aria-hidden="true">Drag or use arrow keys</span> <button class="toggle model-reset" type="button" data-reset>Reset view</button></p>
+        </figure>
       </div>
     </section>
   </main>
@@ -78,7 +94,10 @@
           <li><a href="https://github.com/EmilianoManaloIV" aria-label="GitHub">GH</a></li>
         </ul>
       </div>
-      <canvas class="torus-scene" data-scene="torus" aria-hidden="true"></canvas>
+      <div class="model model-torus">
+        <canvas class="torus-scene" data-scene="torus" tabindex="0" role="img" aria-roledescription="3D model" aria-label="Torus wireframe"></canvas>
+        <p class="model-controls"><span class="model-hint" aria-hidden="true">Drag or use arrow keys</span> <button class="toggle model-reset" type="button" data-reset>Reset view</button></p>
+      </div>
     </div>
   </footer>
 </body>

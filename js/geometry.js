@@ -101,6 +101,139 @@ export function cube(n = 1) {
   return { vertices, edges };
 }
 
+// Wireframe of bicubic Bezier patches, drawn as iso-lines: lines + 1 curves in each
+// direction per patch, each split into `steps` segments. `points` is a flat x, y, z
+// list and `patches` lists 16 point indices per patch, row by row (as in models.js).
+export function bezierPatches(points, patches, lines = 3, steps = 6) {
+  const vertices = [];
+  const edges = [];
+  const bern = (t) => [(1 - t) ** 3, 3 * t * (1 - t) ** 2, 3 * t * t * (1 - t), t ** 3];
+  for (let p = 0; p < patches.length; p += 16) {
+    const at = (u, v) => {
+      const bu = bern(u);
+      const bv = bern(v);
+      const out = [0, 0, 0];
+      for (let k = 0; k < 16; k++) {
+        const w = bu[k >> 2] * bv[k & 3];
+        const i = patches[p + k] * 3;
+        for (let c = 0; c < 3; c++) out[c] += w * points[i + c];
+      }
+      return out;
+    };
+    for (let k = 0; k <= lines; k++) {
+      for (const flip of [false, true]) {
+        const start = vertices.length;
+        for (let s = 0; s <= steps; s++) {
+          vertices.push(flip ? at(s / steps, k / lines) : at(k / lines, s / steps));
+          if (s) edges.push([start + s - 1, start + s]);
+        }
+      }
+    }
+  }
+  return { vertices, edges };
+}
+
+// Turns a z-up mesh y-up, centres it on its bounding box, and scales its largest
+// half-extent to 1, so imported models match the hand-built meshes' size.
+export function uprightUnit({ vertices, edges }) {
+  return fitUnit({ vertices: vertices.map(([x, y, z]) => [x, z, -y]), edges });
+}
+
+// Centres a mesh on its bounding box and scales its largest half-extent to 1.
+export function fitUnit({ vertices, edges }) {
+  const lo = [0, 1, 2].map((c) => Math.min(...vertices.map((v) => v[c])));
+  const hi = [0, 1, 2].map((c) => Math.max(...vertices.map((v) => v[c])));
+  const half = Math.max(...hi.map((h, c) => (h - lo[c]) / 2));
+  return { vertices: vertices.map((v) => v.map((n, c) => (n - (lo[c] + hi[c]) / 2) / half)), edges };
+}
+
+// Geodesic sphere of radius 1: an icosahedron whose triangles are split into four
+// `levels` times, with new points pushed out to the sphere. Level 1 has 42 vertices
+// and 120 edges.
+export function icosphere(levels = 1) {
+  const g = (1 + Math.sqrt(5)) / 2;
+  const unit = (v) => v.map((n) => n / Math.hypot(...v));
+  let vertices = [
+    [-1, g, 0], [1, g, 0], [-1, -g, 0], [1, -g, 0],
+    [0, -1, g], [0, 1, g], [0, -1, -g], [0, 1, -g],
+    [g, 0, -1], [g, 0, 1], [-g, 0, -1], [-g, 0, 1],
+  ].map(unit);
+  let faces = [
+    [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
+    [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+    [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
+    [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1],
+  ];
+  for (let l = 0; l < levels; l++) {
+    const middle = new Map();
+    const mid = (a, b) => {
+      const key = a < b ? `${a},${b}` : `${b},${a}`;
+      if (!middle.has(key)) middle.set(key, vertices.push(unit(vertices[a].map((n, c) => n + vertices[b][c]))) - 1);
+      return middle.get(key);
+    };
+    faces = faces.flatMap(([a, b, c]) => {
+      const [ab, bc, ca] = [mid(a, b), mid(b, c), mid(c, a)];
+      return [[a, ab, ca], [b, bc, ab], [c, ca, bc], [ab, bc, ca]];
+    });
+  }
+  const seen = new Set();
+  const edges = [];
+  for (const face of faces) {
+    for (let i = 0; i < 3; i++) {
+      const [a, b] = [face[i], face[(i + 1) % 3]].sort((x, y) => x - y);
+      if (!seen.has(`${a},${b}`)) {
+        seen.add(`${a},${b}`);
+        edges.push([a, b]);
+      }
+    }
+  }
+  return { vertices, edges };
+}
+
+// A VR headset, built from simple parts (ADR 0009): a rounded visor shell lofted
+// from superellipse rings, four front sensors, two lenses on the face side, and a
+// head band with a top strap reaching back. y is up, the front faces -z (toward
+// the viewer in project()), and the wearer's head is behind it at +z.
+export function headset() {
+  const vertices = [];
+  const edges = [];
+  // A polyline through `points`, closed into a loop if asked.
+  const line = (points, closed = false) => {
+    const start = vertices.length;
+    vertices.push(...points);
+    for (let i = 1; i < points.length; i++) edges.push([start + i - 1, start + i]);
+    if (closed) edges.push([start + points.length - 1, start]);
+    return start;
+  };
+  const ring = (n, f) => Array.from({ length: n }, (_, i) => f((i / n) * TAU));
+  // Visor: rounded-rectangle rings (superellipse, exponent 4), smaller at the front
+  // edge for a bevel, joined lengthwise.
+  const pow = (c) => Math.sign(c) * Math.abs(c) ** 0.5;
+  const N = 24;
+  const rings = [[-0.45, 0.86, 0.8], [-0.4, 0.96, 0.94], [-0.25, 1, 1], [0.15, 1, 1], [0.3, 0.97, 0.95]];
+  const starts = rings.map(([z, sx, sy]) => line(ring(N, (a) => [sx * pow(Math.cos(a)), 0.55 * sy * pow(Math.sin(a)), z]), true));
+  for (let r = 1; r < starts.length; r++) for (let i = 0; i < N; i++) edges.push([starts[r - 1] + i, starts[r] + i]);
+  // Front sensors and the lenses on the face side.
+  const circle = (cx, cy, z, radius, n) => line(ring(n, (a) => [cx + radius * Math.cos(a), cy + radius * Math.sin(a), z]), true);
+  for (const x of [-0.6, 0.6]) for (const y of [-0.28, 0.28]) circle(x, y, -0.46, 0.07, 8);
+  for (const x of [-0.42, 0.42]) circle(x, 0, 0.3, 0.24, 16);
+  // Head band: two half-ellipses from the visor's sides around the back, tied together.
+  const S = 16;
+  const band = [-0.12, 0.12].map((y) => line(Array.from({ length: S + 1 }, (_, i) => {
+    const a = (i / S) * Math.PI;
+    return [0.98 * Math.cos(a), y, 0.05 + 1.6 * Math.sin(a)];
+  })));
+  for (let i = 0; i <= S; i += 4) edges.push([band[0] + i, band[1] + i]);
+  // Top strap: two arcs from the visor top over to the back of the band.
+  const T = 10;
+  const top = [-0.12, 0.12].map((x) => line(Array.from({ length: T + 1 }, (_, i) => {
+    const a = (i / T) * Math.PI;
+    return [x, 0.55 + 0.35 * Math.sin(a) - 0.43 * (i / T), 0.05 + 0.8 * (1 - Math.cos(a))];
+  })));
+  for (let i = 0; i <= T; i += 5) edges.push([top[0] + i, top[1] + i]);
+  return { vertices, edges };
+}
+
 // Flat n-by-n grid of lines spanning -1..1 on x and z. Heights are set per frame.
 export function grid(n) {
   const vertices = [];
@@ -132,6 +265,15 @@ export function rotate([x, y, z], ax, ay) {
   const cy = Math.cos(ay);
   const sy = Math.sin(ay);
   return [x * cy + z1 * sy, y1, -x * sy + z1 * cy];
+}
+
+// The largest projection scale, as a fraction of half the frame's shorter side, at
+// which a mesh can never leave its frame, however it is turned. A point at radius r
+// projects no further out than r * d / sqrt(d^2 - r^2) (the sight line tangent to its
+// bounding sphere), so dividing by that bound keeps every orientation inside.
+export function fitScale({ vertices }, distance = 4) {
+  const r = Math.max(...vertices.map((v) => Math.hypot(...v)));
+  return Math.sqrt(distance * distance - r * r) / (r * distance);
 }
 
 // Perspective projection to screen space. Larger distance means a flatter view.
