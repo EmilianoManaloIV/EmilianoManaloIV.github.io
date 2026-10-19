@@ -5,7 +5,7 @@ import {
   videoSources, clipInfo, isPlayableClip, clipLabel, localizeVideos,
   versionUrls, versionImports, importsOf, isProject, projectPath, skillsOf, extractLink, projectCard, skillsList,
   readingMinutes, summary, formatDate, renderComments, countComments, fill, postCard, guestbookEntries, redirectPage,
-  parseSiteText, readSiteText, renderInline, applySiteText, applyVcard, SITE_TEXT,
+  parseSiteText, readSiteText, renderInline, applySiteText, applyVcard, SITE_TEXT, headExtras, sitemapXml, robotsTxt,
 } from "../tools/render.mjs";
 
 const owner = { login: "EmilianoManaloIV" };
@@ -515,4 +515,24 @@ test("site text: inline formatting edge cases", () => {
   assert.equal(renderInline("[wiki](https://en.wikipedia.org/wiki/A_(b))"), '<a href="https://en.wikipedia.org/wiki/A_(b)">wiki</a>');
   assert.equal(renderInline("[x](https://x.example/a*b*c) and *y*"), '<a href="https://x.example/a*b*c">x</a> and <em>y</em>');
   assert.equal(renderInline("[x](HTTPS://x.example)"), '<a href="HTTPS://x.example">x</a>');
+});
+
+// == Launch polish (ADR 0011)
+
+test("preview and touch-icon tags appear only for images that exist", () => {
+  const head = '<link rel="icon" href="/favicon.svg" type="image/svg+xml">\n  <meta name="twitter:card" content="summary">';
+  assert.equal(headExtras(head, { site: "https://s.example" }), head);
+  const both = headExtras(head, { site: "https://s.example", shareImage: true, touchIcon: true });
+  assert.match(both, /<meta name="twitter:card" content="summary_large_image">/);
+  assert.match(both, /<meta property="og:image" content="https:\/\/s\.example\/assets\/img\/share\.png">/);
+  assert.match(both, /<meta property="og:image:alt" content="[^"]+">/);
+  assert.match(both, /<link rel="icon"[^>]*>\n  <link rel="apple-touch-icon" href="\/assets\/img\/apple-touch-icon\.png">/);
+});
+
+test("the sitemap is sorted, escaped, and dated where known; robots points at it", () => {
+  const xml = sitemapXml([{ loc: "https://s.example/rd/", lastmod: "2026-10-18" }, { loc: "https://s.example/?a=1&b=2" }]);
+  assert.match(xml, /^<\?xml version="1\.0" encoding="UTF-8"\?>\n<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9">/);
+  assert.ok(xml.indexOf("s.example/?a=1&amp;b=2") < xml.indexOf("s.example/rd/"));
+  assert.match(xml, /<url><loc>https:\/\/s\.example\/rd\/<\/loc><lastmod>2026-10-18<\/lastmod><\/url>/);
+  assert.equal(robotsTxt("https://s.example"), "User-agent: *\nAllow: /\n\nSitemap: https://s.example/sitemap.xml\n");
 });

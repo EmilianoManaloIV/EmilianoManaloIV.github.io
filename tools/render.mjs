@@ -803,3 +803,37 @@ export function applyVcard(vcf, { links }) {
   lines.splice(end, 0, ...extra);
   return lines.map((line) => (line.startsWith("EMAIL;TYPE=INTERNET:") ? `EMAIL;TYPE=INTERNET:${links.email}` : line)).join(eol);
 }
+
+// == Launch polish (ADR 0011)
+
+// Link-preview and home-screen tags, added only for images that exist, so no page
+// points at a missing file. The share image is 1200 x 630, exported from Figma.
+export function headExtras(html, { site, shareImage = false, touchIcon = false }) {
+  let out = html;
+  if (shareImage) {
+    out = out.replace(/<meta name="twitter:card" content="summary">/, () =>
+      [
+        '<meta name="twitter:card" content="summary_large_image">',
+        `<meta property="og:image" content="${site}/assets/img/share.png">`,
+        '<meta property="og:image:width" content="1200">',
+        '<meta property="og:image:height" content="630">',
+        '<meta property="og:image:alt" content="Emiliano Panday Manalo IV: creative technologist, technical artist, and software engineer">',
+        `<meta name="twitter:image" content="${site}/assets/img/share.png">`,
+      ].join("\n  "),
+    );
+  }
+  if (touchIcon) out = out.replace(/(<link rel="icon"[^>]*>)/, (tag) => `${tag}\n  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">`);
+  return out;
+}
+
+const xmlEscape = (text) => String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+// A sitemap of the given pages ({ loc, lastmod? }), in a stable order.
+export function sitemapXml(entries) {
+  const urls = [...entries]
+    .sort((a, b) => a.loc.localeCompare(b.loc))
+    .map(({ loc, lastmod }) => `  <url><loc>${xmlEscape(loc)}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ""}</url>`);
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>\n`;
+}
+
+export const robotsTxt = (site) => `User-agent: *\nAllow: /\n\nSitemap: ${site}/sitemap.xml\n`;

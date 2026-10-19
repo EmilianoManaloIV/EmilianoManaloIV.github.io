@@ -1792,3 +1792,117 @@ html.js-ready:not(.motion-off) .terminal-echo {
     mask-image: linear-gradient(90deg, #000 calc(50% - var(--content-max) / 2 - 3rem), transparent calc(50% - var(--content-max) / 2 + 3rem), transparent calc(50% + var(--content-max) / 2 - 3rem), #000 calc(50% + var(--content-max) / 2 + 3rem));
   }
 }
+
+/* ==========================================================================
+   Conference QR card (ADR 0011): /card/. On a phone held up at a booth the code
+   comes first and as large as the screen allows; its own white quiet zone keeps it
+   scannable in either theme. Printed, it becomes a 4 x 3 in badge insert.
+   ========================================================================== */
+.card-page .container {
+  display: grid;
+  gap: var(--space-8);
+  justify-items: center;
+  text-align: center;
+}
+
+.qr-code {
+  width: min(100%, 70vh, 26rem);
+  margin: 0;
+}
+
+.qr-code img {
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+}
+
+.qr-code figcaption {
+  margin-top: var(--space-3);
+  color: var(--color-ink-muted);
+  font-size: var(--text-small);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.card-id .tags {
+  justify-content: center;
+}
+
+.card-url {
+  margin-top: var(--space-3);
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+}
+
+@media (min-width: 800px) {
+  .card-page .container {
+    grid-template-columns: minmax(0, 26rem) minmax(0, 1fr);
+    align-items: center;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .card-id .tags {
+    justify-content: flex-start;
+  }
+}
+
+@media print {
+  :root:has(.card-page) body {
+    background: #fff;
+    color: #000;
+  }
+
+  :root:has(.card-page) :is(.site-header, .site-footer, .skip-link, .section-rail, .section-bar) {
+    display: none;
+  }
+
+  /* The page grid prints if "background graphics" is on; the badge stays plain. */
+  :root:has(.card-page) body::before {
+    display: none;
+  }
+
+  .card-page {
+    padding: 0;
+    border: 0;
+  }
+
+  .card-page .container {
+    grid-template-columns: 1.6in 1fr;
+    gap: 0.2in;
+    width: 4in;
+    height: 3in;
+    max-width: none;
+    margin: 0;
+    padding: 0.2in;
+    border: 1px solid #000;
+    align-items: center;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .qr-code {
+    width: 1.6in;
+  }
+
+  .qr-code figcaption {
+    color: #000;
+    font-size: 7pt;
+  }
+
+  .card-page :is(.eyebrow, .tags, .copy-status, .note) {
+    display: none;
+  }
+
+  .card-page h1 {
+    font-size: 15pt;
+  }
+
+  .card-page .lede {
+    font-size: 9pt;
+  }
+
+  .card-url {
+    font-size: 8pt;
+  }
+}
