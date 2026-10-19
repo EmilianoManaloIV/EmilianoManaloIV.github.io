@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { torus, lathe, dome, grid, sphere, cube, waveHeight, rotate, project } from "../js/geometry.js";
+import { torus, lathe, dome, grid, sphere, cube, waveHeight, rotate, project, bezierPatches, uprightUnit } from "../js/geometry.js";
+import { teapotPoints, teapotPatches } from "../js/models.js";
 
 const length = ([x, y, z]) => Math.hypot(x, y, z);
 
@@ -79,4 +80,37 @@ test("wave height stays within +-0.3, the bound ADR 0008 states", () => {
   for (let t = 0; t < 20; t += 0.7) {
     for (let x = -1; x <= 1; x += 0.1) for (let z = -1; z <= 1; z += 0.1) assert.ok(Math.abs(waveHeight(x, z, t)) <= 0.3);
   }
+});
+
+test("Bezier patch corners land exactly on their corner control points", () => {
+  // One flat patch whose 16 control points sit on a 4x4 grid in the z = 0 plane.
+  const points = [];
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) points.push(r, c, 0);
+  const mesh = bezierPatches(points, [...Array(16).keys()], 1, 2);
+  // lines = 1: curves at u = 0 and 1 and at v = 0 and 1, each 3 points long.
+  assert.equal(mesh.vertices.length, 2 * 2 * 3);
+  assert.equal(mesh.edges.length, 2 * 2 * 2);
+  assert.deepEqual(mesh.vertices[0], [0, 0, 0]);
+  assert.deepEqual(mesh.vertices[2], [0, 3, 0]);
+  assert.deepEqual(mesh.vertices.at(-1), [3, 3, 0]);
+  for (const [, , z] of mesh.vertices) assert.equal(z, 0);
+});
+
+test("the Utah teapot data is 32 patches over 290 points", () => {
+  assert.equal(teapotPoints.length, 290 * 3);
+  assert.equal(teapotPatches.length, 32 * 16);
+  assert.ok(teapotPatches.every((i) => Number.isInteger(i) && i >= 0 && i < 290));
+  const mesh = uprightUnit(bezierPatches(teapotPoints, teapotPatches, 3, 6));
+  assert.equal(mesh.vertices.length, 32 * 2 * 4 * 7);
+  assert.equal(mesh.edges.length, 32 * 2 * 4 * 6);
+  // Upright and unmirrored: the teapot is longer (spout to handle, x) than it is deep
+  // (z), and deeper than it is tall (y); the lid knob is its highest point, near the
+  // middle; and the spout tip, its +x extreme, points up.
+  const span = (c) => Math.max(...mesh.vertices.map((v) => v[c])) - Math.min(...mesh.vertices.map((v) => v[c]));
+  assert.ok(Math.abs(span(0) - 2) < 1e-9, "x spans the unit box");
+  assert.ok(span(0) > span(2) && span(2) > span(1), "x is length, z depth, y height");
+  const top = mesh.vertices.reduce((a, v) => (v[1] > a[1] ? v : a));
+  assert.ok(Math.abs(top[0]) < 0.2 && Math.abs(top[2]) < 0.2, "the lid knob is the top, near the middle");
+  const tip = mesh.vertices.reduce((a, v) => (v[0] > a[0] ? v : a));
+  assert.ok(tip[1] > 0, "the spout tip points up");
 });

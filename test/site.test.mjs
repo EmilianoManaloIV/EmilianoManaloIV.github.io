@@ -67,7 +67,7 @@ test("no built page has an unfilled template value or build marker", () => {
 const SAFE_TAGS = new Set(("a article b blockquote body br button canvas code del details div em figcaption figure footer " +
   "h1 h2 h3 h4 h5 h6 head header hr html i img ins kbd li link main meta nav ol p pre s script section span strong " +
   "sub summary sup table tbody td th thead time title tr ul video").split(" "));
-const SAFE_ATTRS = /^(alt|align|as|charset|class|content|controls|crossorigin|datetime|download|height|href|http-equiv|id|lang|loading|loop|media|muted|name|playsinline|preload|property|rel|role|src|start|title|type|width|aria-[a-z]+|data-[a-z-]+)$/;
+const SAFE_ATTRS = /^(alt|align|as|charset|class|content|controls|crossorigin|datetime|download|height|href|http-equiv|id|lang|loading|loop|media|muted|name|playsinline|preload|property|rel|role|src|start|tabindex|title|type|width|aria-[a-z]+|data-[a-z-]+)$/;
 // No "//host" or "/\host" (both leave the site), and any scheme must be http(s) or mailto.
 // Decoded first, as a browser would: "javascript&colon;" and "java&#9;script:" are schemes too.
 const TEMPLATES = ["templates/rd-post.html", "templates/project.html"];
@@ -439,17 +439,53 @@ test("styles.css: looping animations run only under html.js-ready:not(.motion-of
 test("styles.css: scroll-linked motion is screen-only, no-preference, and stops with the toggle (ADR 0008)", () => {
   const css = withoutComments(read("styles.css"));
   const safe = blocksAt(css, "@media screen and (prefers-reduced-motion: no-preference)");
-  const uses = [...css.matchAll(/animation-timeline\s*:/g)].map((m) => m.index);
-  assert.ok(uses.length >= 2, "the grid parallax and reveals should be found");
-  for (const at of uses) {
-    assert.ok(safe.some(([from, to]) => at > from && at < to), `animation-timeline outside a screen no-preference block at offset ${at}`);
-  }
-  for (const [, selector, body] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+  // The reading-progress bar is a status display, not decoration (ADR 0009): it
+  // reports scroll position, so it stays on under reduced motion and motion off.
+  const statusDisplays = new Set([".read-progress"]);
+  let rules = 0;
+  for (const match of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const [, selector, body] = match;
     if (!/animation-(timeline|range)\s*:/.test(body)) continue;
-    for (const part of selectorList(selector)) {
+    const parts = selectorList(selector);
+    if (parts.every((part) => statusDisplays.has(part))) continue;
+    rules++;
+    const at = match.index + selector.length;
+    assert.ok(safe.some(([from, to]) => at > from && at < to), `scroll-linked rule outside a screen no-preference block: ${selector.trim()}`);
+    for (const part of parts) {
       assert.ok(/^html(\.js-ready)?:not\(\.motion-off\)\s/.test(part), `scroll-linked motion not stopped by the toggle: ${part}`);
     }
   }
+  assert.ok(rules >= 2, "the grid parallax and reveals should be found");
+});
+
+test("the reading-progress bar sits in the shared header of every page (ADR 0009)", () => {
+  for (const page of pages.filter((p) => p.endsWith(".html") && !isRedirect(p))) {
+    assert.match(html(page), /<header class="site-header">\s*<div class="read-progress" aria-hidden="true"><\/div>/, page);
+  }
+});
+
+test("hands-on models are focusable, labelled, and resettable (ADR 0009)", () => {
+  let models = 0;
+  for (const page of pages.filter((p) => p.endsWith(".html"))) {
+    for (const [canvas] of html(page).matchAll(/<canvas\b[^>]*>/g)) {
+      if (!/tabindex="0"/.test(canvas)) {
+        continue;
+      }
+      models++;
+      assert.match(canvas, /role="img"/, `${page}: ${canvas}`);
+      assert.match(canvas, /aria-roledescription="3D model"/, `${page}: ${canvas}`);
+      assert.match(canvas, /aria-label="[^"]+"/, `${page}: ${canvas}`);
+      assert.doesNotMatch(canvas, /aria-hidden/, `${page}: a focusable canvas must not be hidden`);
+    }
+    // Every hands-on model shows how to use it and how to undo it.
+    const turnable = (html(page).match(/<canvas\b[^>]*tabindex="0"/g) ?? []).length;
+    const resets = (html(page).match(/data-reset>Reset view<\/button>/g) ?? []).length;
+    const hints = (html(page).match(/<span class="model-hint" aria-hidden="true">Drag or use arrow keys<\/span>/g) ?? []).length;
+    assert.equal(resets, turnable, `${page}: every hands-on model needs a Reset view button`);
+    assert.equal(hints, turnable, `${page}: every hands-on model needs a visible hint`);
+  }
+  assert.ok(models >= 2, "the torus and teapot should be found");
+  assert.match(html("index.html"), /data-scene="teapot"/);
 });
 
 test("console echoes are decorative and hidden from screen readers", () => {
@@ -496,9 +532,9 @@ test("js: makes no network requests and loads no remote code", () => {
 });
 
 // Budget tracks bytes over the network: each file gzipped, as GitHub Pages serves it.
-test("js: total gzipped size stays under the 10 KB budget (ADR 0003)", () => {
+test("js: total gzipped size stays under the 32 KB budget (ADR 0003, amended by 0009)", () => {
   const bytes = scripts.reduce((sum, f) => sum + gzipSync(readFileSync(join(site, "js", f)), { level: 9 }).length, 0);
-  assert.ok(bytes < 10 * 1024, `js/ is ${bytes} bytes gzipped`);
+  assert.ok(bytes < 32 * 1024, `js/ is ${bytes} bytes gzipped`);
 });
 
 test("js: every file parses", () => {

@@ -101,6 +101,48 @@ export function cube(n = 1) {
   return { vertices, edges };
 }
 
+// Wireframe of bicubic Bezier patches, drawn as iso-lines: lines + 1 curves in each
+// direction per patch, each split into `steps` segments. `points` is a flat x, y, z
+// list and `patches` lists 16 point indices per patch, row by row (as in models.js).
+export function bezierPatches(points, patches, lines = 3, steps = 6) {
+  const vertices = [];
+  const edges = [];
+  const bern = (t) => [(1 - t) ** 3, 3 * t * (1 - t) ** 2, 3 * t * t * (1 - t), t ** 3];
+  for (let p = 0; p < patches.length; p += 16) {
+    const at = (u, v) => {
+      const bu = bern(u);
+      const bv = bern(v);
+      const out = [0, 0, 0];
+      for (let k = 0; k < 16; k++) {
+        const w = bu[k >> 2] * bv[k & 3];
+        const i = patches[p + k] * 3;
+        for (let c = 0; c < 3; c++) out[c] += w * points[i + c];
+      }
+      return out;
+    };
+    for (let k = 0; k <= lines; k++) {
+      for (const flip of [false, true]) {
+        const start = vertices.length;
+        for (let s = 0; s <= steps; s++) {
+          vertices.push(flip ? at(s / steps, k / lines) : at(k / lines, s / steps));
+          if (s) edges.push([start + s - 1, start + s]);
+        }
+      }
+    }
+  }
+  return { vertices, edges };
+}
+
+// Turns a z-up mesh y-up, centres it on its bounding box, and scales its largest
+// half-extent to 1, so imported models match the hand-built meshes' size.
+export function uprightUnit({ vertices, edges }) {
+  const turned = vertices.map(([x, y, z]) => [x, z, -y]);
+  const lo = [0, 1, 2].map((c) => Math.min(...turned.map((v) => v[c])));
+  const hi = [0, 1, 2].map((c) => Math.max(...turned.map((v) => v[c])));
+  const half = Math.max(...hi.map((h, c) => (h - lo[c]) / 2));
+  return { vertices: turned.map((v) => v.map((n, c) => (n - (lo[c] + hi[c]) / 2) / half)), edges };
+}
+
 // Flat n-by-n grid of lines spanning -1..1 on x and z. Heights are set per frame.
 export function grid(n) {
   const vertices = [];

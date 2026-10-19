@@ -7,7 +7,7 @@ Visitors mostly arrive on a phone by scanning a QR code, often on slow Wi-Fi.
 
 Hand-written static HTML, CSS, and a little first-party JavaScript. **Zero dependencies.**
 A zero-dependency build (`tools/build.mjs`) runs in CI and turns GitHub Discussions into R&D posts,
-comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 0007). Read the ADRs in `docs/decisions/` (0001 to 0008) before changing this.
+comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 0007). Read the ADRs in `docs/decisions/` (0001 to 0009) before changing this.
 
 - `index.html` is the home page: a fast overview with sections anchored by id.
 - `about/index.html` (About & CV), `rd/index.html` (the R&D blog), and `guestbook/index.html` are subpages.
@@ -19,6 +19,8 @@ comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 00
 - `styles.css` holds design tokens in `:root` at the top, then components.
 - `js/theme.js` applies a saved theme in `<head>`. `js/main.js` runs the canvas wireframes, terminal, and toggles.
 - `js/geometry.js` is pure mesh and projection math, unit-tested in `test/geometry.test.mjs`.
+- `js/models.js` holds model data (the Utah teapot's Bézier patches, ADR 0009). Credit it as a Utah Teapot.
+- Hands-on canvases are `tabindex="0" role="img" aria-roledescription="3D model"` with a visible hint and a `data-reset` button; decorative ones stay `aria-hidden` (ADR 0009).
 - `js/ui.js` runs wayfinding and share and copy. It reads sections from `main section[id]` on any page.
 - `assets/fonts/` holds self-hosted `.woff2` files with their OFL licenses. Never link a font CDN.
 - `assets/img/` holds images.
@@ -44,7 +46,7 @@ py -m http.server 8000 --directory _site                      # preview the buil
 ## Rules
 
 - No npm packages, CDNs, or external stylesheet, script, or font URLs. No inline scripts.
-- JavaScript lives in `js/`, makes no network requests, uses only relative imports, and stays under 10 KB gzipped in total (ADR 0003).
+- JavaScript lives in `js/`, makes no network requests, uses only relative imports, and stays under 32 KB gzipped in total (ADR 0003, 0009).
 - The page must work without JavaScript. Motion must be pausable and start paused under reduced motion.
 - Looping CSS animations go under `html.js-ready:not(.motion-off)` (both set by `main.js`); scroll-linked ones go inside
   `@media screen and (prefers-reduced-motion: no-preference)` and `html:not(.motion-off)` (ADR 0008). The tests check both.

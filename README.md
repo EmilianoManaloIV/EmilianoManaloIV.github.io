@@ -112,6 +112,11 @@ After any change, browsers may show the old page for up to 10 minutes.
 
 The hourly rebuild pauses after 60 days without any activity in the repository. Any post, comment, or manual run starts it again.
 
+## Things visitors can do
+
+- **Turn the 3D models:** drag the teapot in Contact or the torus at the bottom of every page, or click one and use the arrow keys. **Reset view** or the Home key puts it back.
+- **Pause all motion:** the **Motion** button in the footer stops every animation, and the site remembers the choice.
+
 ## For developers
 
 How the site is built, tested, and changed is in [`CLAUDE.md`](CLAUDE.md) and the decision records in [`docs/decisions/`](docs/decisions/), especially [0005](docs/decisions/0005-discussions-as-content-built-in-ci.md), [0006](docs/decisions/0006-projects-and-skills-from-discussions.md), and [0007](docs/decisions/0007-video-clips-instead-of-gifs.md).

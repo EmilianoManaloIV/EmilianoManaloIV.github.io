@@ -276,6 +276,43 @@ button {
   top: var(--space-4);
 }
 
+/* Reading progress (ADR 0009): visibility of system status. It reports where the
+   reader is, so it is a status display rather than decorative motion: it follows
+   scrolling under reduced motion and with motion off too. Browsers without scroll
+   timelines simply don't show it. */
+.read-progress {
+  display: none;
+}
+
+@supports (animation-timeline: scroll()) {
+  .read-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    display: block;
+    height: 3px;
+    background: linear-gradient(90deg, var(--brand-red), var(--brand-amber), var(--brand-yellow));
+    transform-origin: 0 50%;
+    pointer-events: none;
+    animation: read-progress linear both;
+    animation-timeline: scroll(root);
+  }
+}
+
+@keyframes read-progress {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@media print {
+  .read-progress {
+    display: none;
+  }
+}
+
 .container {
   width: 100%;
   max-width: calc(var(--content-max) + 2 * var(--gutter));
@@ -317,7 +354,8 @@ html:not(.js-ready) .toggle,
 html:not(.ui-ready) .action,
 html:not(.ui-ready) .section-rail,
 html:not(.ui-ready) .section-bar,
-html:not(.js) canvas[data-scene] {
+html:not(.js) canvas[data-scene],
+html:not(.js) .model {
   display: none;
 }
 
@@ -889,6 +927,12 @@ html.js-ready:not(.motion-off) .terminal-echo {
       animation-range: entry 40% entry 100%;
     }
 
+    html:not(.motion-off) .section > .container > .section-title {
+      animation: reveal linear both, rule-draw linear both;
+      animation-timeline: view(), view();
+      animation-range: entry 0% entry 70%, entry 10% entry 100%;
+    }
+
     html:not(.motion-off) .values .value h3 {
       animation: wipe linear both;
       animation-timeline: view();
@@ -901,6 +945,12 @@ html.js-ready:not(.motion-off) .terminal-echo {
   from {
     opacity: 0;
     transform: translateY(2rem);
+  }
+}
+
+@keyframes rule-draw {
+  from {
+    background-size: 0 1px;
   }
 }
 
@@ -918,10 +968,15 @@ html.js-ready:not(.motion-off) .terminal-echo {
 }
 
 /* Numbered mono section labels: "01 / ABOUT". */
+/* Section markers (ADR 0009): wayfinding in the FIG-label style. Each title ends in
+   a registration mark, and its rule draws in during the reveal. (A counted section
+   code was tried and dropped: unnumbered panels made it disagree with the "04 /"
+   index beside it, and a wrong number is worse than none.) */
 .section-title {
+  position: relative;
   margin-bottom: var(--space-8);
   padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--color-rule);
+  background: linear-gradient(var(--color-rule), var(--color-rule)) left bottom / 100% 1px no-repeat;
   font-family: var(--font-mono);
   font-size: var(--text-small);
   font-weight: 500;
@@ -933,6 +988,24 @@ html.js-ready:not(.motion-off) .terminal-echo {
 .section-index {
   margin-right: var(--space-2);
   color: var(--color-ink);
+}
+
+/* High-contrast mode and print drop backgrounds, so the rule falls back to a border. */
+@media (forced-colors: active), print {
+  .section-title {
+    border-bottom: 1px solid;
+  }
+}
+
+.section-title::after {
+  content: "+";
+  content: "+" / "";
+  position: absolute;
+  right: 0;
+  bottom: -0.55em;
+  color: var(--color-ink-muted);
+  font-size: var(--text-body);
+  line-height: 1;
 }
 
 .card {
@@ -972,7 +1045,19 @@ html.js-ready:not(.motion-off) .terminal-echo {
     var(--bracket) top left / 14px 1px no-repeat,
     var(--bracket) top left / 1px 14px no-repeat,
     var(--bracket) bottom right / 14px 1px no-repeat,
-    var(--bracket) bottom right / 1px 14px no-repeat;
+    var(--bracket) bottom right / 1px 14px no-repeat,
+    var(--bracket) bottom left / 0 1px no-repeat,
+    var(--bracket) bottom left / 1px 0 no-repeat,
+    var(--bracket) top right / 0 1px no-repeat,
+    var(--bracket) top right / 1px 0 no-repeat;
+  transition: background-size 0.25s ease-out;
+}
+
+/* Affordance and feedback (ADR 0009): pointing at or tabbing into a card closes its
+   frame brackets in, so it is clear the card responds. */
+.card:hover .frame,
+.card:focus-within .frame {
+  background-size: 28px 1px, 1px 28px, 28px 1px, 1px 28px, 28px 1px, 1px 28px, 28px 1px, 1px 28px;
 }
 
 .frame::after {
@@ -1036,10 +1121,18 @@ html.js-ready:not(.motion-off) .terminal-echo {
 .tag-link::before {
   content: "\2192\00a0";
   content: "\2192\00a0" / "";
+  display: inline-block;
+  transition: transform 0.2s ease-out;
 }
 
 .tag-link:hover {
   text-decoration: underline;
+}
+
+/* The arrow nudges forward on hover or keyboard focus: this goes somewhere. */
+.tag-link:hover::before,
+.tag-link:focus-visible::before {
+  transform: translateX(3px);
 }
 
 .contact-list {
@@ -1173,12 +1266,24 @@ html.js-ready:not(.motion-off) .terminal-echo {
   display: none;
 }
 
+/* The underline grows in from the left on hover or keyboard focus. */
 .card h3 a {
   text-decoration: none;
+  background: linear-gradient(currentColor, currentColor) left bottom / 0 1px no-repeat;
+  transition: background-size 0.25s ease-out;
 }
 
-.card h3 a:hover {
-  text-decoration: underline;
+.card h3 a:hover,
+.card h3 a:focus-visible {
+  background-size: 100% 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame,
+  .tag-link::before,
+  .card h3 a {
+    transition: none;
+  }
 }
 
 .card-more {
@@ -1303,10 +1408,121 @@ html.js-ready:not(.motion-off) .terminal-echo {
 
 .torus-scene {
   width: 100%;
-  max-width: 26rem;
   aspect-ratio: 1;
-  justify-self: center;
   color: var(--color-ink);
+}
+
+/* Hands-on models (ADR 0009). The grab cursor and focus ring say "you can move
+   this"; sideways drags turn the model while vertical swipes still scroll. */
+.model {
+  position: relative;
+  width: 100%;
+  margin: 0;
+}
+
+.model-torus {
+  max-width: 26rem;
+  justify-self: center;
+}
+
+.model canvas {
+  display: block;
+  cursor: grab;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+  border-radius: 4px;
+}
+
+.model canvas:active {
+  cursor: grabbing;
+}
+
+.model canvas:focus-visible {
+  outline-offset: 4px;
+}
+
+/* The hint and Reset sit under the model, never over it. Where a pointer can hover
+   they appear on hover or focus (their space is kept, so nothing jumps); on touch
+   screens they always show, since there is no hover to discover them. */
+.model-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin: var(--space-2) 0 0;
+  color: var(--color-ink-muted);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.model:hover .model-controls,
+.model:focus-within .model-controls {
+  opacity: 1;
+}
+
+.model-reset {
+  min-height: 44px;
+}
+
+@media (hover: none) {
+  .model-controls {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .model-controls {
+    transition: none;
+  }
+}
+
+.teapot-scene {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  color: var(--color-ink);
+}
+
+.model-teapot {
+  max-width: 24rem;
+  margin-top: var(--space-8);
+}
+
+/* 404 (ADR 0009): ways back sized as real targets, at least 44px tall. */
+.way-back {
+  margin-top: var(--space-6);
+}
+
+.way-back .tag-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding-inline: var(--space-4);
+}
+
+@media (min-width: 800px) {
+  .not-found .container {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 22rem);
+    gap: var(--space-12);
+    align-items: center;
+  }
+
+  .not-found .model-teapot {
+    margin-top: 0;
+  }
+}
+
+.model-teapot figcaption {
+  margin-top: var(--space-2);
+  color: var(--color-ink-muted);
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 /* ==========================================================================
@@ -1400,8 +1616,30 @@ html.js-ready:not(.motion-off) .terminal-echo {
     gap: var(--space-24);
   }
 
-  .torus-scene {
+  .model-torus {
     justify-self: end;
+  }
+
+  /* Contact: details on the left, the teapot beside them. */
+  #contact .container {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 22rem);
+    column-gap: var(--space-12);
+    align-items: start;
+  }
+
+  #contact .container > * {
+    grid-column: 1;
+  }
+
+  #contact .section-title {
+    grid-column: 1 / -1;
+  }
+
+  #contact .model-teapot {
+    grid-column: 2;
+    grid-row: 2 / span 3;
+    margin-top: 0;
   }
 }
 

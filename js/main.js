@@ -1,5 +1,6 @@
 // Motion, console, headline, device readout, and toggles; see ADR 0002. No network use.
-import { torus, dome, grid, cube, sphere, waveHeight, rotate, project } from "./geometry.js";
+import { torus, dome, grid, cube, sphere, waveHeight, rotate, project, bezierPatches, uprightUnit } from "./geometry.js";
+import { teapotPoints, teapotPatches } from "./models.js";
 
 const root = document.documentElement;
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
@@ -33,6 +34,7 @@ const meshes = {
   torus: torus(1, 0.42, 36, 16),
   cube: cube(4),
   globe: sphere(10, 7),
+  teapot: uprightUnit(bezierPatches(teapotPoints, teapotPatches, 3, 6)),
 };
 
 function strokeMesh(ctx, mesh, transform) {
@@ -54,7 +56,11 @@ const poses = {
   cube: (t) => [0.55 + t * 0.12, t * 0.22],
   globe: (t) => [0.35, t * 0.6],
   torus: (t) => [1 + Math.sin(t * 0.3) * 0.25, t * 0.4],
+  teapot: (t) => [0.35 + Math.sin(t * 0.25) * 0.15, t * 0.3],
 };
+// Hands-on models (ADR 0009): a visitor's own turn, added on top of the pose.
+const turns = {};
+const posed = (name) => poses[name](time).map((a, i) => a + (turns[name]?.[i] || 0));
 
 // Banner layout: the dome and wave at their designed spots, shrunk and nudged only
 // when they would spill past the canvas (narrow phones). Measured once per size
@@ -112,9 +118,13 @@ const painters = {
     const [ax, ay] = poses.globe(t);
     strokeMesh(ctx, meshes.globe, (p) => project(rotate(p, ax, ay), w / 2, h / 2, w * 0.44, 6));
   },
-  torus(ctx, w, h, t) {
-    const [ax, ay] = poses.torus(t);
+  torus(ctx, w, h) {
+    const [ax, ay] = posed("torus");
     strokeMesh(ctx, meshes.torus, (p) => project(rotate(p, ax, ay), w / 2, h / 2, Math.min(w, h) * 0.3));
+  },
+  teapot(ctx, w, h) {
+    const [ax, ay] = posed("teapot");
+    strokeMesh(ctx, meshes.teapot, (p) => project(rotate(p, ax, ay), w / 2, h / 2, Math.min(w, h) * 0.6, 5));
   },
 };
 
@@ -184,7 +194,7 @@ function tick(now) {
 const cursor = document.createElement("span");
 cursor.className = "cursor";
 const angle = (a) => (((a % TAU) + TAU) % TAU).toFixed(3);
-const pose = (name) => poses[name](time).map((a, i) => `${i ? "RY" : "RX"} ${angle(a)}`).join("  ");
+const pose = (name) => posed(name).map((a, i) => `${i ? "RY" : "RX"} ${angle(a)}`).join("  ");
 const shown = (name) => (scenes.find((s) => s.canvas.dataset.scene === name)?.visible ? 1 : 0);
 const script = [
   () => `DOME   ${pose("dome")}  VTX ${meshes.dome.vertices.length}`,
@@ -192,6 +202,7 @@ const script = [
   () => `CUBE   ${pose("cube")}  EDG ${meshes.cube.edges.length}`,
   () => `GLOBE  RY ${angle(poses.globe(time)[1])}  VTX ${meshes.globe.vertices.length}`,
   () => `TORUS  ${pose("torus")}  VIS ${shown("torus")}`,
+  () => `TEAPOT ${pose("teapot")}  PATCH ${teapotPatches.length / 16}`,
   () => `FRAME  ${frames}  DT ${dt.toFixed(1)}ms  FPS ${Math.round(1000 / dt)}`,
   () => `SCENE  BANNER ${shown("banner")}  CUBE ${shown("cube")}  GLOBE ${shown("globe")}  TORUS ${shown("torus")}`,
 ];
@@ -404,6 +415,70 @@ if (terminal) resizer.observe(terminal);
 if (banner) watcher.observe(banner);
 document.addEventListener("visibilitychange", schedule);
 addEventListener("resize", showDevice);
+
+// == Hands-on models (ADR 0009): direct manipulation with visible feedback.
+// Focusable canvases turn by drag or arrow keys; Home or "Reset view" undoes it.
+// Redraws happen even with motion paused, since the visitor drives this motion,
+// at most once per frame however fast the pointer reports.
+
+function redraw(scene) {
+  scene.pending ||= requestAnimationFrame(() => {
+    scene.pending = 0;
+    draw(scene);
+  });
+}
+
+// The model follows the hand: dragging right brings its front to the right, and
+// dragging down brings it down. (rotate() puts the near side at -z.)
+function turn(scene, dx, dy) {
+  const t = (turns[scene.canvas.dataset.scene] ||= [0, 0]);
+  t[0] -= dy;
+  t[1] -= dx;
+  redraw(scene);
+}
+
+function reset(scene) {
+  const name = scene.canvas.dataset.scene;
+  delete turns[name];
+  redraw(scene);
+  log(`USER RESET ${name.toUpperCase()}`);
+}
+
+const KEYS = { ArrowUp: [0, -0.2], ArrowDown: [0, 0.2], ArrowLeft: [-0.2, 0], ArrowRight: [0.2, 0] };
+for (const scene of scenes.filter((s) => s.canvas.tabIndex >= 0)) {
+  const { canvas } = scene;
+  const name = canvas.dataset.scene.toUpperCase();
+  let drag = null; // { id, x, y } for the one pointer turning the model
+  canvas.addEventListener("pointerdown", (e) => {
+    // Primary button or a touch only, one pointer at a time.
+    if (drag || !e.isPrimary || e.button !== 0) return;
+    drag = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    if (drag?.id !== e.pointerId) return;
+    turn(scene, (e.clientX - drag.x) / 90, (e.clientY - drag.y) / 90);
+    drag.x = e.clientX;
+    drag.y = e.clientY;
+  });
+  const release = (e) => {
+    if (drag?.id !== e.pointerId) return;
+    log(`USER ROTATE ${name}`);
+    drag = null;
+  };
+  for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) canvas.addEventListener(type, release);
+  canvas.addEventListener("keydown", (e) => {
+    // Leave browser shortcuts (Alt+Left is Back) alone.
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (e.key === "Home") reset(scene);
+    else if (KEYS[e.key]) turn(scene, ...KEYS[e.key]);
+    else return;
+    e.preventDefault();
+    // One log line per press, so a held key can't push other events out of the queue.
+    if (KEYS[e.key] && !e.repeat) log(`USER ROTATE ${name}`);
+  });
+  canvas.closest(".model").querySelector("[data-reset]")?.addEventListener("click", () => reset(scene));
+}
 
 // == Toggles
 // Fixed accessible names; aria-pressed carries the state, and the visible
