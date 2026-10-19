@@ -30,6 +30,7 @@
 
   <header class="site-header">
     <div class="read-progress" aria-hidden="true"></div>
+    <div class="scroll-ruler" aria-hidden="true"><span data-ruler></span></div>
     <div class="container">
       <a class="monogram" href="/" aria-label="Emiliano Panday Manalo IV, home">EM</a>
       <nav id="site-nav" aria-label="Primary">
@@ -56,6 +57,8 @@
 
   <main id="main">
     <section id="bio" class="page-hero">
+      <!-- A faint copy of the site telemetry, filled by js/main.js (ADR 0008, 0009). -->
+      <pre class="terminal-echo" aria-hidden="true"></pre>
       <div class="container">
         <p class="eyebrow"><a href="/">Home</a> / About &amp; CV</p>
         <h1>About &amp; CV</h1>

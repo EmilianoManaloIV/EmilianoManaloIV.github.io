@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { torus, lathe, dome, grid, sphere, cube, waveHeight, rotate, project, bezierPatches, uprightUnit } from "../js/geometry.js";
+import { torus, lathe, dome, grid, sphere, cube, waveHeight, rotate, project, bezierPatches, uprightUnit, fitUnit, headset } from "../js/geometry.js";
 import { teapotPoints, teapotPatches } from "../js/models.js";
 
 const length = ([x, y, z]) => Math.hypot(x, y, z);
@@ -113,4 +113,28 @@ test("the Utah teapot data is 32 patches over 290 points", () => {
   assert.ok(Math.abs(top[0]) < 0.2 && Math.abs(top[2]) < 0.2, "the lid knob is the top, near the middle");
   const tip = mesh.vertices.reduce((a, v) => (v[0] > a[0] ? v : a));
   assert.ok(tip[1] > 0, "the spout tip points up");
+});
+
+test("the VR headset is symmetric, wider than tall, with its strap behind the visor", () => {
+  const raw = headset();
+  // 5 visor rings of 24, 4 sensors of 8, 2 lenses of 16, 2 band arcs of 17, 2 top arcs of 11.
+  assert.equal(raw.vertices.length, 5 * 24 + 4 * 8 + 2 * 16 + 2 * 17 + 2 * 11);
+  for (const [a, b] of raw.edges) assert.ok(raw.vertices[a] && raw.vertices[b] && a !== b);
+  const mesh = fitUnit(raw);
+  // Mirror symmetry: every vertex has a twin at -x.
+  const key = (v) => v.map((n) => (Math.abs(n) < 1e-6 ? 0 : n).toFixed(5)).join();
+  const all = new Set(mesh.vertices.map(key));
+  for (const [x, y, z] of mesh.vertices) assert.ok(all.has(key([-x || 0, y, z])), `no mirror for ${x}`);
+  const span = (c) => Math.max(...mesh.vertices.map((v) => v[c])) - Math.min(...mesh.vertices.map((v) => v[c]));
+  assert.ok(Math.abs(Math.max(span(0), span(1), span(2)) - 2) < 1e-9, "fits the unit box");
+  assert.ok(span(0) > span(1), "wider than tall");
+  // The visor is at the front (-z) and the band reaches well behind it.
+  const front = Math.min(...mesh.vertices.map((v) => v[2]));
+  const back = Math.max(...mesh.vertices.map((v) => v[2]));
+  assert.ok(back - front > 1.5, "the strap reaches behind the visor");
+  // The visor (the widest, tallest part) is at the front: points level with the
+  // top of the shell are all in the front third.
+  const tallest = Math.max(...mesh.vertices.map((v) => Math.abs(v[0])));
+  const sides = mesh.vertices.filter((v) => Math.abs(v[0]) > tallest - 1e-6);
+  assert.ok(sides.every((v) => v[2] < front + (back - front) / 3), "the widest points belong to the visor at the front");
 });

@@ -313,6 +313,66 @@ button {
   }
 }
 
+/* Scroll ruler (ADR 0009): a drawing-style ruler in the empty right margin of wide
+   screens, with ticks, a marker at the reader's position, and a readout from
+   ui.js. Like the progress bar it reports status, so it stays on with motion off. */
+.scroll-ruler {
+  display: none;
+}
+
+@media screen and (min-width: 1440px) {
+  .scroll-ruler {
+    position: fixed;
+    top: 15vh;
+    right: 1.5rem;
+    z-index: 5;
+    display: block;
+    width: 1.25rem;
+    height: 70vh;
+    border-right: 1px solid var(--color-rule);
+    background:
+      repeating-linear-gradient(var(--color-rule) 0 1px, transparent 1px 40px) right top / 1.25rem 100% no-repeat,
+      repeating-linear-gradient(var(--color-rule) 0 1px, transparent 1px 8px) right top / 0.5rem 100% no-repeat;
+    pointer-events: none;
+  }
+
+  /* A page-coloured backing keeps the readout legible where it crosses dark panels. */
+  .scroll-ruler span {
+    position: absolute;
+    top: 0;
+    right: calc(100% + 0.5rem);
+    padding: var(--space-2) 2px;
+    background: var(--color-bg);
+    color: var(--color-ink-muted);
+    font-size: var(--text-xs);
+    letter-spacing: 0.12em;
+    white-space: nowrap;
+    writing-mode: vertical-rl;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  @media screen and (min-width: 1440px) {
+    .scroll-ruler::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: -4px;
+      width: calc(1.25rem + 8px);
+      height: 2px;
+      background: var(--brand-red);
+      animation: ruler-mark linear both;
+      animation-timeline: scroll(root);
+    }
+  }
+}
+
+@keyframes ruler-mark {
+  to {
+    transform: translateY(calc(70vh - 2px));
+  }
+}
+
 .container {
   width: 100%;
   max-width: calc(var(--content-max) + 2 * var(--gutter));
@@ -679,6 +739,7 @@ html:not(.js) .model {
 /* clip, not hidden: a hidden overflow would become the scroll container that the
    scroll reveals measure against, and they would stop following the page. */
 .hero,
+.page-hero,
 .values {
   position: relative;
   isolation: isolate;
@@ -1481,13 +1542,15 @@ html.js-ready:not(.motion-off) .terminal-echo {
   }
 }
 
-.teapot-scene {
+.teapot-scene,
+.headset-scene {
   width: 100%;
   aspect-ratio: 4 / 3;
   color: var(--color-ink);
 }
 
-.model-teapot {
+.model-teapot,
+.model-headset {
   max-width: 24rem;
   margin-top: var(--space-8);
 }
@@ -1504,20 +1567,21 @@ html.js-ready:not(.motion-off) .terminal-echo {
   padding-inline: var(--space-4);
 }
 
+/* Headings with a model beside them: the 404 teapot and the R&D headset. */
 @media (min-width: 800px) {
-  .not-found .container {
+  .hero-split .container {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 22rem);
     gap: var(--space-12);
     align-items: center;
   }
 
-  .not-found .model-teapot {
+  .hero-split .model {
     margin-top: 0;
   }
 }
 
-.model-teapot figcaption {
+.model figcaption {
   margin-top: var(--space-2);
   color: var(--color-ink-muted);
   font-size: var(--text-xs);
@@ -1669,6 +1733,23 @@ html.js-ready:not(.motion-off) .terminal-echo {
   .hero .terminal-echo + .terminal-echo {
     left: auto;
     right: var(--space-6);
+    text-align: right;
+  }
+
+  /* At 1440px and up the ruler takes the right margin, so the echo stays clear of it. */
+  @media (min-width: 1440px) {
+    .hero .terminal-echo + .terminal-echo {
+      right: 6rem;
+    }
+  }
+
+  /* Subpage headings: the echo fills the empty right half (behind the R&D headset). */
+  .page-hero .terminal-echo {
+    display: block;
+    top: 0;
+    bottom: 0;
+    right: max(var(--gutter), (100% - var(--content-max)) / 2);
+    width: 24rem;
     text-align: right;
   }
 

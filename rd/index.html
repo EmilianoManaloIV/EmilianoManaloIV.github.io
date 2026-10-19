@@ -30,6 +30,7 @@
 
   <header class="site-header">
     <div class="read-progress" aria-hidden="true"></div>
+    <div class="scroll-ruler" aria-hidden="true"><span data-ruler></span></div>
     <div class="container">
       <a class="monogram" href="/" aria-label="Emiliano Panday Manalo IV, home">EM</a>
       <nav id="site-nav" aria-label="Primary">
@@ -55,11 +56,20 @@
   </header>
 
   <main id="main">
-    <section id="rd" class="page-hero">
+    <section id="rd" class="page-hero hero-split">
+      <!-- A faint copy of the site telemetry, filled by js/main.js (ADR 0008, 0009). -->
+      <pre class="terminal-echo" aria-hidden="true"></pre>
       <div class="container">
-        <p class="eyebrow"><a href="/">Home</a> / R&amp;D</p>
-        <h1>R&amp;D</h1>
-        <p class="lede">Notes on what I'm learning, researching, and want to discuss. Research and development, in the open.</p>
+        <div>
+          <p class="eyebrow"><a href="/">Home</a> / R&amp;D</p>
+          <h1>R&amp;D</h1>
+          <p class="lede">Notes on what I'm learning, researching, and want to discuss. Research and development, in the open.</p>
+        </div>
+        <figure class="model model-headset">
+          <canvas class="headset-scene" data-scene="headset" tabindex="0" role="img" aria-roledescription="3D model" aria-label="VR headset wireframe"></canvas>
+          <p class="model-controls"><span class="model-hint" aria-hidden="true">Drag or use arrow keys</span> <button class="toggle model-reset" type="button" data-reset>Reset view</button></p>
+          <figcaption>FIG. 03.1 / VR headset, wireframe</figcaption>
+        </figure>
       </div>
     </section>
 

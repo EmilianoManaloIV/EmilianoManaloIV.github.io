@@ -19,7 +19,8 @@ comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 00
 - `styles.css` holds design tokens in `:root` at the top, then components.
 - `js/theme.js` applies a saved theme in `<head>`. `js/main.js` runs the canvas wireframes, terminal, and toggles.
 - `js/geometry.js` is pure mesh and projection math, unit-tested in `test/geometry.test.mjs`.
-- `js/models.js` holds model data (the Utah teapot's Bézier patches, ADR 0009). Credit it as a Utah Teapot.
+- `js/models.js` holds model data (the Utah teapot's Bézier patches, ADR 0009). Credit it as a Utah Teapot. The VR headset is built in code by `headset()` in `geometry.js`.
+- The shared header holds the reading-progress bar and the wide-screen scroll ruler; `ui.js` writes the ruler's readout (ADR 0009).
 - Hands-on canvases are `tabindex="0" role="img" aria-roledescription="3D model"` with a visible hint and a `data-reset` button; decorative ones stay `aria-hidden` (ADR 0009).
 - `js/ui.js` runs wayfinding and share and copy. It reads sections from `main section[id]` on any page.
 - `assets/fonts/` holds self-hosted `.woff2` files with their OFL licenses. Never link a font CDN.

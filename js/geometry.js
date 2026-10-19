@@ -136,11 +136,59 @@ export function bezierPatches(points, patches, lines = 3, steps = 6) {
 // Turns a z-up mesh y-up, centres it on its bounding box, and scales its largest
 // half-extent to 1, so imported models match the hand-built meshes' size.
 export function uprightUnit({ vertices, edges }) {
-  const turned = vertices.map(([x, y, z]) => [x, z, -y]);
-  const lo = [0, 1, 2].map((c) => Math.min(...turned.map((v) => v[c])));
-  const hi = [0, 1, 2].map((c) => Math.max(...turned.map((v) => v[c])));
+  return fitUnit({ vertices: vertices.map(([x, y, z]) => [x, z, -y]), edges });
+}
+
+// Centres a mesh on its bounding box and scales its largest half-extent to 1.
+export function fitUnit({ vertices, edges }) {
+  const lo = [0, 1, 2].map((c) => Math.min(...vertices.map((v) => v[c])));
+  const hi = [0, 1, 2].map((c) => Math.max(...vertices.map((v) => v[c])));
   const half = Math.max(...hi.map((h, c) => (h - lo[c]) / 2));
-  return { vertices: turned.map((v) => v.map((n, c) => (n - (lo[c] + hi[c]) / 2) / half)), edges };
+  return { vertices: vertices.map((v) => v.map((n, c) => (n - (lo[c] + hi[c]) / 2) / half)), edges };
+}
+
+// A VR headset, built from simple parts (ADR 0009): a rounded visor shell lofted
+// from superellipse rings, four front sensors, two lenses on the face side, and a
+// head band with a top strap reaching back. y is up, the front faces -z (toward
+// the viewer in project()), and the wearer's head is behind it at +z.
+export function headset() {
+  const vertices = [];
+  const edges = [];
+  // A polyline through `points`, closed into a loop if asked.
+  const line = (points, closed = false) => {
+    const start = vertices.length;
+    vertices.push(...points);
+    for (let i = 1; i < points.length; i++) edges.push([start + i - 1, start + i]);
+    if (closed) edges.push([start + points.length - 1, start]);
+    return start;
+  };
+  const ring = (n, f) => Array.from({ length: n }, (_, i) => f((i / n) * TAU));
+  // Visor: rounded-rectangle rings (superellipse, exponent 4), smaller at the front
+  // edge for a bevel, joined lengthwise.
+  const pow = (c) => Math.sign(c) * Math.abs(c) ** 0.5;
+  const N = 24;
+  const rings = [[-0.45, 0.86, 0.8], [-0.4, 0.96, 0.94], [-0.25, 1, 1], [0.15, 1, 1], [0.3, 0.97, 0.95]];
+  const starts = rings.map(([z, sx, sy]) => line(ring(N, (a) => [sx * pow(Math.cos(a)), 0.55 * sy * pow(Math.sin(a)), z]), true));
+  for (let r = 1; r < starts.length; r++) for (let i = 0; i < N; i++) edges.push([starts[r - 1] + i, starts[r] + i]);
+  // Front sensors and the lenses on the face side.
+  const circle = (cx, cy, z, radius, n) => line(ring(n, (a) => [cx + radius * Math.cos(a), cy + radius * Math.sin(a), z]), true);
+  for (const x of [-0.6, 0.6]) for (const y of [-0.28, 0.28]) circle(x, y, -0.46, 0.07, 8);
+  for (const x of [-0.42, 0.42]) circle(x, 0, 0.3, 0.24, 16);
+  // Head band: two half-ellipses from the visor's sides around the back, tied together.
+  const S = 16;
+  const band = [-0.12, 0.12].map((y) => line(Array.from({ length: S + 1 }, (_, i) => {
+    const a = (i / S) * Math.PI;
+    return [0.98 * Math.cos(a), y, 0.05 + 1.6 * Math.sin(a)];
+  })));
+  for (let i = 0; i <= S; i += 4) edges.push([band[0] + i, band[1] + i]);
+  // Top strap: two arcs from the visor top over to the back of the band.
+  const T = 10;
+  const top = [-0.12, 0.12].map((x) => line(Array.from({ length: T + 1 }, (_, i) => {
+    const a = (i / T) * Math.PI;
+    return [x, 0.55 + 0.35 * Math.sin(a) - 0.43 * (i / T), 0.05 + 0.8 * (1 - Math.cos(a))];
+  })));
+  for (let i = 0; i <= T; i += 5) edges.push([top[0] + i, top[1] + i]);
+  return { vertices, edges };
 }
 
 // Flat n-by-n grid of lines spanning -1..1 on x and z. Heights are set per frame.

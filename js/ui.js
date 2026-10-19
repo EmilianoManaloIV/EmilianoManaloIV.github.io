@@ -24,6 +24,13 @@ function setCurrent(id) {
   if (barLabel) barLabel.textContent = navText;
 }
 
+// The scroll ruler's readout in the right margin on wide screens (ADR 0009):
+// the reader's position, the page length, and the section number, as on a drawing.
+// It is written only where the ruler shows, and only when the numbers change.
+const ruler = document.querySelector("[data-ruler]");
+const wide = matchMedia("(min-width: 1440px)");
+const five = (n) => String(Math.max(0, Math.round(n))).padStart(5, "0");
+
 // Current = the last section whose top has passed 40% of the screen. Unnamed panels
 // (banner, values) count as the section above them, so there are no gaps; the
 // page bottom always means the last section, even if it is short.
@@ -35,9 +42,16 @@ function updateCurrent() {
   setCurrent(id);
   // The phone bar appears only once the first section has scrolled away above the screen.
   bar?.classList.toggle("is-visible", sections[0].getBoundingClientRect().bottom < 0);
+  // Reads above, the one write last, so a scroll costs a single layout.
+  if (!ruler || !wide.matches) return;
+  const sec = String(sections.findIndex((s) => s.id === id) + 1).padStart(2, "0");
+  const readout = `Y ${five(scrollY)} / ${five(document.documentElement.scrollHeight - innerHeight)} · SEC ${sec}`;
+  if (ruler.textContent !== readout) ruler.textContent = readout;
 }
 addEventListener("scroll", updateCurrent, { passive: true });
 addEventListener("resize", updateCurrent);
+// Late layout changes (fonts, images, comments) change the page length too.
+new ResizeObserver(updateCurrent).observe(document.body);
 updateCurrent();
 
 // == Share and copy, with one polite status line for feedback

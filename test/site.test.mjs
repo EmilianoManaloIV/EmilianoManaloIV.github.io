@@ -439,9 +439,10 @@ test("styles.css: looping animations run only under html.js-ready:not(.motion-of
 test("styles.css: scroll-linked motion is screen-only, no-preference, and stops with the toggle (ADR 0008)", () => {
   const css = withoutComments(read("styles.css"));
   const safe = blocksAt(css, "@media screen and (prefers-reduced-motion: no-preference)");
-  // The reading-progress bar is a status display, not decoration (ADR 0009): it
-  // reports scroll position, so it stays on under reduced motion and motion off.
-  const statusDisplays = new Set([".read-progress"]);
+  // The reading-progress bar and the scroll ruler's marker are status displays, not
+  // decoration (ADR 0009): they report scroll position, so they stay on under
+  // reduced motion and with motion off.
+  const statusDisplays = new Set([".read-progress", ".scroll-ruler::after"]);
   let rules = 0;
   for (const match of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
     const [, selector, body] = match;
@@ -458,10 +459,21 @@ test("styles.css: scroll-linked motion is screen-only, no-preference, and stops 
   assert.ok(rules >= 2, "the grid parallax and reveals should be found");
 });
 
-test("the reading-progress bar sits in the shared header of every page (ADR 0009)", () => {
-  for (const page of pages.filter((p) => p.endsWith(".html") && !isRedirect(p))) {
-    assert.match(html(page), /<header class="site-header">\s*<div class="read-progress" aria-hidden="true"><\/div>/, page);
+test("the reading-progress bar and scroll ruler sit in the shared header of every page (ADR 0009)", () => {
+  for (const page of pages.filter((p) => p.endsWith(".html"))) {
+    assert.match(
+      html(page),
+      /<header class="site-header">\s*<div class="read-progress" aria-hidden="true"><\/div>\s*<div class="scroll-ruler" aria-hidden="true"><span data-ruler><\/span><\/div>/,
+      page,
+    );
   }
+  assert.match(read("js/ui.js"), /querySelector\("\[data-ruler\]"\)/, "ui.js writes the ruler readout");
+  // The ruler only has room in a wide margin: hidden by default, shown on screens
+  // 1440px and up, so it never prints or crowds a phone.
+  const css = withoutComments(read("styles.css"));
+  assert.match(css, /\.scroll-ruler \{\s*display: none;\s*\}/);
+  const wide = blocksAt(css, "@media screen and (min-width: 1440px)");
+  assert.ok(wide.some(([from, to]) => /\.scroll-ruler \{[^}]*display: block/.test(css.slice(from, to))), "shown only at 1440px and up");
 });
 
 test("hands-on models are focusable, labelled, and resettable (ADR 0009)", () => {
@@ -484,14 +496,18 @@ test("hands-on models are focusable, labelled, and resettable (ADR 0009)", () =>
     assert.equal(resets, turnable, `${page}: every hands-on model needs a Reset view button`);
     assert.equal(hints, turnable, `${page}: every hands-on model needs a visible hint`);
   }
-  assert.ok(models >= 2, "the torus and teapot should be found");
+  assert.ok(models >= 3, "the torus, teapot, and headset should be found");
   assert.match(html("index.html"), /data-scene="teapot"/);
+  assert.match(html("rd/index.html"), /data-scene="headset"/);
 });
 
 test("console echoes are decorative and hidden from screen readers", () => {
   const echoes = pages.flatMap((p) => html(p).match(/<pre class="terminal-echo"[^>]*>/g) ?? []);
-  assert.ok(echoes.length >= 3, "the home page has three echoes");
+  assert.ok(echoes.length >= 6, "three on the home page, one on each subpage heading");
   for (const tag of echoes) assert.match(tag, /aria-hidden="true"/, tag);
+  for (const page of ["about/index.html", "rd/index.html", "guestbook/index.html"]) {
+    assert.match(html(page), /class="page-hero[^"]*">\s*(?:<!--[^>]*-->\s*)?<pre class="terminal-echo" aria-hidden="true"><\/pre>/, page);
+  }
 });
 
 test("every media figure has a numbered caption", () => {

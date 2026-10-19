@@ -1,5 +1,5 @@
 // Motion, console, headline, device readout, and toggles; see ADR 0002. No network use.
-import { torus, dome, grid, cube, sphere, waveHeight, rotate, project, bezierPatches, uprightUnit } from "./geometry.js";
+import { torus, dome, grid, cube, sphere, waveHeight, rotate, project, bezierPatches, uprightUnit, fitUnit, headset } from "./geometry.js";
 import { teapotPoints, teapotPatches } from "./models.js";
 
 const root = document.documentElement;
@@ -35,6 +35,7 @@ const meshes = {
   cube: cube(4),
   globe: sphere(10, 7),
   teapot: uprightUnit(bezierPatches(teapotPoints, teapotPatches, 3, 6)),
+  headset: fitUnit(headset()),
 };
 
 function strokeMesh(ctx, mesh, transform) {
@@ -57,6 +58,7 @@ const poses = {
   globe: (t) => [0.35, t * 0.6],
   torus: (t) => [1 + Math.sin(t * 0.3) * 0.25, t * 0.4],
   teapot: (t) => [0.35 + Math.sin(t * 0.25) * 0.15, t * 0.3],
+  headset: (t) => [0.3 + Math.sin(t * 0.2) * 0.12, 2.6 + t * 0.28],
 };
 // Hands-on models (ADR 0009): a visitor's own turn, added on top of the pose.
 const turns = {};
@@ -125,6 +127,10 @@ const painters = {
   teapot(ctx, w, h) {
     const [ax, ay] = posed("teapot");
     strokeMesh(ctx, meshes.teapot, (p) => project(rotate(p, ax, ay), w / 2, h / 2, Math.min(w, h) * 0.6, 5));
+  },
+  headset(ctx, w, h) {
+    const [ax, ay] = posed("headset");
+    strokeMesh(ctx, meshes.headset, (p) => project(rotate(p, ax, ay), w / 2, h / 2, Math.min(w, h) * 0.55, 5));
   },
 };
 
@@ -196,16 +202,26 @@ cursor.className = "cursor";
 const angle = (a) => (((a % TAU) + TAU) % TAU).toFixed(3);
 const pose = (name) => posed(name).map((a, i) => `${i ? "RY" : "RX"} ${angle(a)}`).join("  ");
 const shown = (name) => (scenes.find((s) => s.canvas.dataset.scene === name)?.visible ? 1 : 0);
+// Each line names the scene it reports on. The home console reports everything; a
+// subpage's echo reports only what is on that page (ADR 0009).
+const sceneOf = (mesh) => (mesh === "dome" || mesh === "wave" ? "banner" : mesh);
+const onPage = (scene) => !scene || scenes.some((s) => s.canvas.dataset.scene === scene);
+// Console names fit the 6-character column; the headset is an HMD (head-mounted display).
+const label = (mesh) => (mesh === "headset" ? "HMD" : mesh.toUpperCase());
 const script = [
-  () => `DOME   ${pose("dome")}  VTX ${meshes.dome.vertices.length}`,
-  () => `WAVE   PHASE ${angle(time * 2.2)}  CTR ${(Math.round(waveHeight(0, 0, time) * 1000) / 1000 || 0).toFixed(3)}`,
-  () => `CUBE   ${pose("cube")}  EDG ${meshes.cube.edges.length}`,
-  () => `GLOBE  RY ${angle(poses.globe(time)[1])}  VTX ${meshes.globe.vertices.length}`,
-  () => `TORUS  ${pose("torus")}  VIS ${shown("torus")}`,
-  () => `TEAPOT ${pose("teapot")}  PATCH ${teapotPatches.length / 16}`,
-  () => `FRAME  ${frames}  DT ${dt.toFixed(1)}ms  FPS ${Math.round(1000 / dt)}`,
-  () => `SCENE  BANNER ${shown("banner")}  CUBE ${shown("cube")}  GLOBE ${shown("globe")}  TORUS ${shown("torus")}`,
-];
+  ["banner", () => `DOME   ${pose("dome")}  VTX ${meshes.dome.vertices.length}`],
+  ["banner", () => `WAVE   PHASE ${angle(time * 2.2)}  CTR ${(Math.round(waveHeight(0, 0, time) * 1000) / 1000 || 0).toFixed(3)}`],
+  ["cube", () => `CUBE   ${pose("cube")}  EDG ${meshes.cube.edges.length}`],
+  ["globe", () => `GLOBE  RY ${angle(poses.globe(time)[1])}  VTX ${meshes.globe.vertices.length}`],
+  ["torus", () => `TORUS  ${pose("torus")}  VIS ${shown("torus")}`],
+  ["teapot", () => `TEAPOT ${pose("teapot")}  PATCH ${teapotPatches.length / 16}`],
+  ["headset", () => `HMD    ${pose("headset")}  VTX ${meshes.headset.vertices.length}`],
+  // Before any frame is drawn, DT and FPS would be placeholders; say so instead.
+  [null, () => (frames ? `FRAME  ${frames}  DT ${dt.toFixed(1)}ms  FPS ${Math.round(1000 / dt)}` : "FRAME  IDLE  NO SCENE ON SCREEN")],
+  ["banner", () => `SCENE  BANNER ${shown("banner")}  CUBE ${shown("cube")}  GLOBE ${shown("globe")}  TORUS ${shown("torus")}`],
+]
+  .filter(([scene]) => onPage(scene))
+  .map(([, line]) => line);
 // Events jump the queue so they type next; capped so a long pause can't pile them up.
 const events = [];
 const log = (line) => events.push(line) > 4 && events.shift();
@@ -218,9 +234,13 @@ let step = 0;
 let typing = 0;
 
 function fitTerminal() {
-  const style = getComputedStyle(terminal);
-  const inner = terminal.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
-  maxLines = Math.max(3, Math.floor(inner / parseFloat(style.lineHeight)) - 1);
+  if (terminal) {
+    const style = getComputedStyle(terminal);
+    const inner = terminal.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+    maxLines = Math.max(3, Math.floor(inner / parseFloat(style.lineHeight)) - 1);
+  } else {
+    maxLines = 12; // subpages: the echoes alone, which show about a dozen lines
+  }
   while (lines.length > maxLines) lines.shift();
   if (!target) target = next();
   fillTerminal();
@@ -231,7 +251,7 @@ function fitTerminal() {
 function fillTerminal() {
   if (!lines.length) {
     for (const [name, mesh] of Object.entries(meshes)) {
-      lines.push(`LOAD   ${name.toUpperCase().padEnd(6)} VTX ${mesh.vertices.length}  EDG ${mesh.edges.length}`);
+      if (onPage(sceneOf(name))) lines.push(`LOAD   ${label(name).padEnd(6)} VTX ${mesh.vertices.length}  EDG ${mesh.edges.length}`);
     }
     for (let i = 0; i < script.length; i++) lines.push(next());
   }
@@ -239,30 +259,43 @@ function fillTerminal() {
   renderTerminal();
 }
 
-// Faint copies of the console behind empty areas (ADR 0008), refreshed per finished line.
+// Faint copies of the console behind empty areas (ADR 0008), refreshed per finished
+// line. Subpages have echoes but no console; the same telemetry runs for them alone.
 const echoes = document.querySelectorAll(".terminal-echo");
+let echoSeen = false;
+let lineAt = 0;
 function renderTerminal() {
-  terminal.textContent = lines.concat(current).join("\n");
-  terminal.append(cursor);
+  if (terminal) {
+    terminal.textContent = lines.concat(current).join("\n");
+    terminal.append(cursor);
+  }
   if (!current) for (const echo of echoes) echo.textContent = lines.join("\n");
 }
 
 function type() {
   typing = 0;
   if (current.length < target.length) {
-    current = target.slice(0, current.length + 1);
+    // Typed a character at a time where someone can read it; whole lines otherwise.
+    current = terminal ? target.slice(0, current.length + 1) : target;
   } else {
     lines.push(current);
     while (lines.length > maxLines) lines.shift();
+    // On a subpage with no model on screen, no frames advance the shapes' clock, so
+    // the echo would repeat frozen readings; keep the clock running in real time.
+    if (!terminal) {
+      const now = performance.now();
+      if (!frame) time += Math.min((now - (lineAt || now)) / 1000, 3);
+      lineAt = now;
+    }
     target = next();
     current = "";
   }
   renderTerminal();
-  typing = setTimeout(type, current === "" ? 260 : 22);
+  typing = setTimeout(type, current !== "" ? 22 : terminal ? 260 : 1800);
 }
 
 function startTerminal() {
-  if (!terminal || typing) return;
+  if (typing || !(terminal || echoes.length)) return;
   if (!target) fitTerminal();
   type();
 }
@@ -374,13 +407,16 @@ function schedule() {
   } else {
     last = 0;
   }
-  if (awake && bannerVisible) {
+  if (awake && (bannerVisible || echoSeen)) {
     startTerminal();
-    startScramble();
-    if (!clockTimer && field("clock")) tickClock();
   } else {
     clearTimeout(typing);
     typing = 0;
+  }
+  if (awake && bannerVisible) {
+    startScramble();
+    if (!clockTimer && field("clock")) tickClock();
+  } else {
     stopScramble();
     clearTimeout(clockTimer);
     clockTimer = 0;
@@ -402,6 +438,7 @@ const watcher = new IntersectionObserver((entries) => {
   for (const entry of entries) {
     if (entry.target === banner) bannerVisible = entry.isIntersecting;
     else if (entry.target.localName === "video") entry.target.seen = entry.isIntersecting;
+    else if (entry.target.localName === "pre") echoSeen = entry.isIntersecting;
     else scenes.find((s) => s.canvas === entry.target).visible = entry.isIntersecting;
   }
   schedule();
@@ -411,6 +448,8 @@ for (const scene of scenes) {
   watcher.observe(scene.canvas);
 }
 for (const clip of clips) watcher.observe(clip);
+// On subpages the echo is what's on screen; on the home page the banner gates it.
+if (!terminal) for (const echo of echoes) watcher.observe(echo);
 if (terminal) resizer.observe(terminal);
 if (banner) watcher.observe(banner);
 document.addEventListener("visibilitychange", schedule);
