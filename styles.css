@@ -83,9 +83,18 @@
   --color-panel-ink-muted: rgb(241 238 229 / 0.75);
   --color-panel-rule: var(--brand-slate);
   --color-tag-primary: var(--brand-accent-light);
-  --color-tag: var(--brand-accent-dark);
+  /* Text on the orange link buttons is near-black: cream on #d7882b is only 2.4:1,
+     near-black is 6.2:1 (WCAG AA 4.5:1). Pre-launch audit, ADR 0012. */
+  --color-tag-primary-ink: #1a1a1a;
+  /* The accent-dark tag background, darkened slightly so cream text passes AA:
+     #a65e1e gives 4.27:1, #9c581c gives 4.73:1. */
+  --color-tag: #9c581c;
   --color-tag-ink: #f1eee5;
   --color-focus: var(--brand-blue);
+  /* Current-position cues (nav underline, active rail dot) and the other rail dots.
+     Each keeps 3:1 against the page and the charcoal banner (WCAG 1.4.11, ADR 0012). */
+  --color-marker: var(--brand-accent-dark);
+  --color-rail: var(--brand-slate);
 
   /* Families */
   --font-display: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -127,6 +136,8 @@
   --brand-text-flipped: #292927;
   --brand-text-flipped-light: rgb(41 41 39 / 0.75);
   --color-slot: #3a3a37;
+  --color-marker: var(--brand-accent-light);
+  --color-rail: var(--brand-silver);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -138,6 +149,8 @@
     --brand-text-flipped: #292927;
     --brand-text-flipped-light: rgb(41 41 39 / 0.75);
     --color-slot: #3a3a37;
+    --color-marker: var(--brand-accent-light);
+    --color-rail: var(--brand-silver);
   }
 }
 
@@ -307,9 +320,69 @@ button {
   }
 }
 
+/* Print (pre-launch audit, ADR 0012). Browsers drop page backgrounds when printing,
+   so cream text (dark theme, dark panels) would vanish on white paper. Print is
+   always black on white, decoration and controls are left out, and outside links
+   show their address, so a printed About & CV page stays useful. The roles are set
+   with a high-specificity selector to beat both theme blocks. */
 @media print {
-  .read-progress {
-    display: none;
+  :root:root:root {
+    color-scheme: light;
+    --color-bg: #fff;
+    --color-ink: #000;
+    --color-ink-muted: #333;
+    --color-rule: #999;
+    --color-slot: #eee;
+    --color-panel: #fff;
+    --color-panel-ink: #000;
+    --color-panel-ink-muted: #333;
+    --color-panel-rule: #999;
+    /* Signal colours (value headings, labels) print as plain black. */
+    --brand-mint: #000;
+    --brand-magenta: #000;
+    --brand-blue: #000;
+    --brand-red: #000;
+    --brand-amber: #000;
+    --brand-yellow: #000;
+    /* Tags lose their coloured background on paper, so they print as outlines. */
+    --color-tag: #fff;
+    --color-tag-ink: #000;
+    --color-tag-primary: #fff;
+    --color-tag-primary-ink: #000;
+  }
+
+  .tag {
+    border: 1px solid #000;
+  }
+
+  body::before,
+  .read-progress,
+  .ambient-scene,
+  .skip-link,
+  .site-header,
+  .section-rail,
+  .section-bar,
+  .banner,
+  .terminal-echo,
+  .model,
+  .toggle,
+  .action,
+  .barcode-strip,
+  .ticks,
+  .footer-motion,
+  .torus-scene {
+    display: none !important;
+  }
+
+  :is(.prose, .entry-list, .socials, .card-body) a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    word-break: break-all;
+  }
+
+  .card,
+  .entry-list li {
+    break-inside: avoid;
   }
 }
 
@@ -402,13 +475,13 @@ html:not(.js) .model {
     transform: translateY(-50%);
   }
 
-  /* 6px dots inside 24px targets (WCAG 2.5.8). Slate and deep amber keep 3:1
-     against both the paper background and the charcoal banner. */
+  /* 6px dots inside 24px targets (WCAG 2.5.8). Their colours keep 3:1 against
+     the page in either theme and the charcoal banner (tested, ADR 0012). */
   .section-rail a {
     width: 24px;
     height: 24px;
     padding: 9px;
-    background: var(--brand-slate);
+    background: var(--color-rail);
     background-clip: content-box;
     border-radius: 12px;
     transition: height 0.2s;
@@ -416,7 +489,7 @@ html:not(.js) .model {
 
   .section-rail a[aria-current="true"] {
     height: 40px;
-    background-color: var(--brand-accent-dark);
+    background-color: var(--color-marker);
   }
 }
 
@@ -503,7 +576,7 @@ html:not(.js) .model {
 
 .nav-list a[aria-current] {
   text-decoration: underline;
-  text-decoration-color: var(--brand-accent-light);
+  text-decoration-color: var(--color-marker);
   text-decoration-thickness: 2px;
   text-underline-offset: 0.35em;
 }
@@ -1115,6 +1188,7 @@ html.js-ready:not(.motion-off) .terminal-echo {
 .tag-link {
   padding: var(--space-2) var(--space-3);
   background: var(--color-tag-primary);
+  color: var(--color-tag-primary-ink);
   text-decoration: none;
 }
 
@@ -1294,7 +1368,6 @@ html.js-ready:not(.motion-off) .terminal-echo {
 
 .tag-count {
   margin-left: 0.25em;
-  opacity: 0.8;
 }
 
 /* Comments and guestbook entries (ADR 0005). Usernames get a mono initial badge

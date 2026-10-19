@@ -7,7 +7,7 @@ Visitors mostly arrive on a phone by scanning a QR code, often on slow Wi-Fi.
 
 Hand-written static HTML, CSS, and a little first-party JavaScript. **Zero dependencies.**
 A zero-dependency build (`tools/build.mjs`) runs in CI and turns GitHub Discussions into R&D posts,
-comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 0007). Read the ADRs in `docs/decisions/` (0001 to 0011) before changing this.
+comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 0007). Read the ADRs in `docs/decisions/` (0001 to 0012) before changing this.
 
 - `index.html` is the home page: a fast overview with sections anchored by id.
 - `about/index.html` (About & CV), `rd/index.html` (the R&D blog), and `guestbook/index.html` are subpages.
@@ -56,6 +56,7 @@ py -m http.server 8000 --directory _site                      # preview the buil
   `@media screen and (prefers-reduced-motion: no-preference)` and `html:not(.motion-off)` (ADR 0008). The tests check both.
 - The tests enforce these rules. Do not weaken them to make a change pass.
 - Every `<img>` needs `alt`, `width`, and `height`.
+- Colours must pass WCAG AA in both themes, and print is black on white; both are tested from the tokens (ADR 0012). Each page stays under 200 KB gzipped.
 - Clips (`<video data-clip>`) are local, sized, muted, and never `autoplay` in markup; `js/main.js` plays them only while motion is on (ADR 0007).
 - Every in-page `href="#..."` must match an element id.
 - Placeholder content is marked with `TODO` so it is easy to find before launch.
