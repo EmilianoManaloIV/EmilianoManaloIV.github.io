@@ -16,10 +16,11 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = "https://emilianomanaloiv.github.io";
 const REPO = process.env.GITHUB_REPOSITORY || "EmilianoManaloIV/EmilianoManaloIV.github.io";
 const STATIC = ["index.html", "404.html", "styles.css", "favicon.svg", "emiliano-manalo.vcf", "assets", "js", "about", "rd", "guestbook"];
-// Limits for images found in posts and comments, which strangers can write.
+// Limits for images and clips found in posts and comments, which strangers can write.
 // Attempts count against maxPerPage whether they succeed or not, so a comment full of
-// dead links can't stall the build; pageBytes keeps a page's images well under Pages limits.
-const IMAGE = { maxBytes: 10 * 1024 * 1024, pageBytes: 25 * 1024 * 1024, maxPerPage: 20, maxSide: 20000, timeoutMs: 15000 };
+// dead links can't stall the build; pageBytes keeps a page's media well under Pages limits.
+// 10 MB matches GitHub's free-plan video upload limit; heavyClip only warns (ADR 0007).
+const MEDIA = { maxBytes: 10 * 1024 * 1024, pageBytes: 25 * 1024 * 1024, heavyClip: 4 * 1024 * 1024, maxPerPage: 20, maxSide: 20000, timeoutMs: 15000 };
 const API_TIMEOUT_MS = 30000;
 
 const args = process.argv.slice(2);
@@ -97,24 +98,24 @@ async function fetchDiscussions() {
       pageInfo = thread.comments.pageInfo;
     }
   }
-  return { discussions: all, categories, images: null };
+  return { discussions: all, categories, media: null };
 }
 
 async function loadContent() {
-  if (offline) return { discussions: [], categories: null, images: null };
+  if (offline) return { discussions: [], categories: null, media: null };
   if (fixturePath) {
     const data = JSON.parse(readFileSync(resolve(root, fixturePath), "utf8"));
-    return { discussions: data.discussions, categories: data.categories ?? null, images: data.images ?? {} };
+    return { discussions: data.discussions, categories: data.categories ?? null, media: data.media ?? {} };
   }
   return fetchDiscussions();
 }
 
-// == Images: copied into the page's folder so visitors make no outside requests.
-// Only GitHub's image hosts are fetched, with a timeout and a size cap while reading.
+// == Images and clips: copied into the page's folder so visitors make no outside requests.
+// Only GitHub's image and attachment hosts are fetched, with a timeout and a size cap while reading.
 
 async function readCapped(response) {
   const declared = Number(response.headers.get("content-length"));
-  if (declared > IMAGE.maxBytes) throw new Error("larger than 10 MB");
+  if (declared > MEDIA.maxBytes) throw new Error("larger than 10 MB");
   const reader = response.body.getReader();
   const chunks = [];
   let total = 0;
@@ -122,7 +123,7 @@ async function readCapped(response) {
     const { done, value } = await reader.read();
     if (done) break;
     total += value.length;
-    if (total > IMAGE.maxBytes) {
+    if (total > MEDIA.maxBytes) {
       await reader.cancel();
       throw new Error("larger than 10 MB");
     }
@@ -131,42 +132,63 @@ async function readCapped(response) {
   return Buffer.concat(chunks);
 }
 
-async function downloadImages(html, dir, fixtureImages) {
-  const images = new Map();
+// Checks a downloaded file and names it, or throws why it can't be used.
+function mediaFile(kind, bytes, count) {
+  if (kind === "image") {
+    const size = r.imageSize(bytes);
+    if (!size) throw new Error("not a PNG, JPEG, GIF, or WebP");
+    return { ...size, file: `img-${count}.${size.type === "jpeg" ? "jpg" : size.type}` };
+  }
+  const clip = r.clipInfo(bytes);
+  if (!clip) throw new Error("not an MP4, MOV, or WebM video");
+  if (!r.isPlayableClip(clip)) throw new Error(`its ${clip.codec ?? "unknown"} video won't play in every browser; export it as an H.264 MP4`);
+  // MOV holds the same boxes as MP4, and browsers play its H.264 as video/mp4.
+  return { ...clip, clip: true, file: `clip-${count}.${clip.type}` };
+}
+
+async function downloadMedia(html, dir, fixtureMedia) {
+  const media = new Map();
+  const counts = { image: 0, clip: 0 };
   let attempts = 0;
-  let saved = 0;
   let pageBytes = 0;
-  for (const src of new Set(r.imageSources(html))) {
+  // Clips come only from the owner's text; the sanitizer drops them from comments.
+  const sources = new Map([...r.imageSources(html).map((src) => [src, "image"]), ...r.videoSources(html).map((src) => [src, "clip"])]);
+  for (const [src, kind] of sources) {
     try {
-      if (!r.isAllowedImageUrl(src)) throw new Error("not a GitHub image host");
-      if (++attempts > IMAGE.maxPerPage) throw new Error(`more than ${IMAGE.maxPerPage} images on one page`);
+      if (!r.isAllowedMediaUrl(src)) throw new Error("not a GitHub image or attachment host");
+      if (++attempts > MEDIA.maxPerPage) throw new Error(`more than ${MEDIA.maxPerPage} images and clips on one page`);
       let bytes;
-      if (fixtureImages) {
-        if (!(src in fixtureImages)) throw new Error("not in fixture");
-        bytes = Buffer.from(fixtureImages[src], "base64");
+      if (fixtureMedia) {
+        if (!(src in fixtureMedia)) throw new Error("not in fixture");
+        bytes = Buffer.from(fixtureMedia[src], "base64");
       } else {
-        const response = await fetch(src, { redirect: "follow", signal: AbortSignal.timeout(IMAGE.timeoutMs) });
+        const response = await fetch(src, { redirect: "follow", signal: AbortSignal.timeout(MEDIA.timeoutMs) });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         // GitHub redirects attachments to its CDN; anything else after a redirect is refused.
-        if (!r.isAllowedImageUrl(response.url) && !/^https:\/\/[\w.-]+\.githubusercontent\.com\//.test(response.url)) {
+        if (!r.isAllowedMediaUrl(response.url) && !/^https:\/\/[\w.-]+\.githubusercontent\.com\//.test(response.url)) {
           throw new Error(`redirected off GitHub to ${response.url.slice(0, 80)}`);
         }
         bytes = await readCapped(response);
       }
-      const size = r.imageSize(bytes);
-      if (!size) throw new Error("not a PNG, JPEG, GIF, or WebP");
-      if (!(size.width > 0 && size.height > 0 && size.width <= IMAGE.maxSide && size.height <= IMAGE.maxSide)) throw new Error("implausible size");
-      if ((pageBytes += bytes.length) > IMAGE.pageBytes) throw new Error("page image budget of 25 MB used up");
-      const file = `img-${++saved}.${size.type === "jpeg" ? "jpg" : size.type}`;
+      const found = mediaFile(kind, bytes, counts[kind] + 1);
+      if (!(found.width > 0 && found.height > 0 && found.width <= MEDIA.maxSide && found.height <= MEDIA.maxSide)) throw new Error("implausible size");
+      if ((pageBytes += bytes.length) > MEDIA.pageBytes) throw new Error("page media budget of 25 MB used up");
+      if (found.clip && bytes.length > MEDIA.heavyClip) {
+        warn(`clip ${src.slice(0, 120)} is ${(bytes.length / 1048576).toFixed(1)} MB; under 4 MB loads faster on conference Wi-Fi`);
+      }
+      counts[kind]++;
       mkdirSync(dir, { recursive: true });
-      writeFileSync(join(dir, file), bytes);
-      images.set(src, { file, width: size.width, height: size.height });
+      writeFileSync(join(dir, found.file), bytes);
+      media.set(src, { file: found.file, width: found.width, height: found.height, clip: Boolean(found.clip) });
     } catch (error) {
-      warn(`dropped image ${src.slice(0, 120)}: ${error.message}`);
+      warn(`dropped ${kind} ${src.slice(0, 120)}: ${error.message}`);
     }
   }
-  return images;
+  return media;
 }
+
+// Local files in place of GitHub's addresses, for images and clips alike.
+const localize = (html, media) => r.localizeVideos(r.localizeImages(html, media), media);
 
 // == Cache-busting: fingerprint scripts and the stylesheet, then point every page at
 // the fingerprinted addresses, so each deploy loads fresh files (see render.mjs).
@@ -211,7 +233,7 @@ async function build() {
   mkdirSync(out, { recursive: true });
   for (const entry of STATIC) cpSync(join(root, entry), join(out, entry), { recursive: true });
 
-  const { discussions, categories, images: fixtureImages } = await loadContent();
+  const { discussions, categories, media: fixtureMedia } = await loadContent();
   for (const category of [r.POSTS_CATEGORY, r.PROJECTS_CATEGORY, r.GUESTBOOK_CATEGORY]) {
     if (categories && !categories.includes(category)) warn(`no "${category}" discussion category; create it on GitHub (ADR 0005)`);
   }
@@ -226,7 +248,7 @@ async function build() {
     const comments = d.comments?.nodes ?? [];
     const body = r.sanitize(d.bodyHTML);
     const thread = r.renderComments(comments);
-    const images = await downloadImages(body + thread, dir, fixtureImages);
+    const media = await downloadMedia(body + thread, dir, fixtureMedia);
     const commentCount = r.countComments(comments);
     const post = { ...d, path, summary: r.summary(body), minutes: r.readingMinutes(body), commentCount };
     write(
@@ -238,8 +260,8 @@ async function build() {
         date_iso: r.isoDate(d.createdAt),
         date: r.formatDate(d.createdAt),
         minutes: post.minutes,
-        body: r.localizeImages(body, images),
-        comments: r.localizeImages(thread, images),
+        body: localize(body, media),
+        comments: localize(thread, media),
         comment_count: commentCount,
         discussion_url: r.escapeHtml(d.url),
       }),
@@ -260,9 +282,11 @@ async function build() {
     const comments = d.comments?.nodes ?? [];
     const { href: link, body } = r.extractLink(r.sanitize(d.bodyHTML));
     const thread = r.renderComments(comments);
-    const images = await downloadImages(body + thread, dir, fixtureImages);
+    const media = await downloadMedia(body + thread, dir, fixtureMedia);
     const skills = r.skillsOf(d);
-    const first = images.get(r.imageSources(body)[0]);
+    // The card shows the first image; a clip only when there is none, since the home
+    // page is where visitors land on conference Wi-Fi (ADR 0007).
+    const first = media.get(r.imageSources(body)[0]) ?? media.get(r.videoSources(body)[0]);
     const title = r.escapeHtml(d.title);
     const project = {
       ...d,
@@ -271,7 +295,7 @@ async function build() {
       skills,
       summary: r.summary(body),
       minutes: r.readingMinutes(body),
-      image: first ? { src: `${path}${first.file}`, width: first.width, height: first.height } : null,
+      media: first ? { src: `${path}${first.file}`, width: first.width, height: first.height, clip: first.clip } : null,
     };
     const actions = [link ? `<li><a class="tag tag-link" href="${link}">${title} link</a></li>` : "", r.projectSkillTags(skills)].filter(Boolean).join("\n          ");
     write(
@@ -284,8 +308,8 @@ async function build() {
         date: r.formatDate(d.createdAt),
         minutes: project.minutes,
         actions,
-        body: r.localizeImages(body, images),
-        comments: r.localizeImages(thread, images),
+        body: localize(body, media),
+        comments: localize(thread, media),
         comment_count: r.countComments(comments),
         discussion_url: r.escapeHtml(d.url),
       }),
@@ -315,7 +339,7 @@ async function build() {
   const signatures = guestbook?.comments?.nodes ?? [];
   const guestbookDir = join(out, "guestbook");
   const entries = r.guestbookEntries(signatures);
-  const guestbookImages = await downloadImages(entries, guestbookDir, fixtureImages);
+  const guestbookMedia = await downloadMedia(entries, guestbookDir, fixtureMedia);
   const count = signatures.filter((c) => !c.isMinimized).length;
   const guestbookFile = join(guestbookDir, "index.html");
   const page = r.fill(readFileSync(guestbookFile, "utf8"), {
@@ -323,7 +347,7 @@ async function build() {
     signature_label: count === 1 ? "signature" : "signatures",
     guestbook_url: r.escapeHtml(guestbook?.url ?? `https://github.com/${REPO}/discussions/categories/guestbook`),
   });
-  write(guestbookFile, r.insertAt(page, "<!-- ENTRIES -->", r.localizeImages(entries, guestbookImages)));
+  write(guestbookFile, r.insertAt(page, "<!-- ENTRIES -->", localize(entries, guestbookMedia)));
 
   const versions = fingerprint();
 

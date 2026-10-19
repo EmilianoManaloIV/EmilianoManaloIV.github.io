@@ -6,6 +6,8 @@ const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const systemDark = matchMedia("(prefers-color-scheme: dark)");
 const banner = document.querySelector(".banner");
 const terminal = document.querySelector(".terminal");
+// Clips in posts and project cards (ADR 0007) play only under the motion gate below.
+const clips = document.querySelectorAll("video[data-clip]");
 // Motion runs only where the visitor can pause it (WCAG 2.2.2). Every page has a
 // toggle in the shared footer, plus one in the home banner; all share one state.
 // A remembered choice wins; otherwise reduced-motion visitors start paused.
@@ -346,6 +348,13 @@ function tickClock() {
 
 function schedule() {
   const awake = motion && !document.hidden;
+  // Clips change only when their gate does, so a visitor's own play or pause holds
+  // until motion, visibility, or the clip's place on screen changes.
+  for (const clip of clips) {
+    const want = awake && clip.seen === true;
+    if (want !== clip.want) want ? clip.play().catch(() => {}) : clip.pause();
+    clip.want = want;
+  }
   if (awake && scenes.some((s) => s.visible)) {
     if (!frame) frame = requestAnimationFrame(tick);
   } else {
@@ -378,6 +387,7 @@ const resizer = new ResizeObserver((entries) => {
 const watcher = new IntersectionObserver((entries) => {
   for (const entry of entries) {
     if (entry.target === banner) bannerVisible = entry.isIntersecting;
+    else if (entry.target.localName === "video") entry.target.seen = entry.isIntersecting;
     else scenes.find((s) => s.canvas === entry.target).visible = entry.isIntersecting;
   }
   schedule();
@@ -386,6 +396,7 @@ for (const scene of scenes) {
   resizer.observe(scene.canvas);
   watcher.observe(scene.canvas);
 }
+for (const clip of clips) watcher.observe(clip);
 if (terminal) resizer.observe(terminal);
 if (banner) watcher.observe(banner);
 document.addEventListener("visibilitychange", schedule);

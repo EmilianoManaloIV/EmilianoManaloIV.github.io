@@ -71,9 +71,11 @@ const ALLOWED = new Map(
     em: [], strong: [], b: [], i: [], s: [], del: [], ins: [], sup: [], sub: [],
     a: ["href", "title"], img: ["src", "alt", "width", "height", "title"],
     figure: [], figcaption: [], table: [], thead: [], tbody: [], tr: [], th: ["align"], td: ["align"],
-    details: [], summary: [], span: [], div: [],
+    details: [], summary: [], span: [], div: [], video: ["src"],
   }),
 );
+// Only the owner's posts and projects may show video clips (ADR 0007).
+const OWNER_ONLY = new Set(["video"]);
 // Elements whose content is dropped along with them. Unclosed, they drop everything after.
 const DROP_CONTENT = new Set(["script", "style", "iframe", "object", "embed", "svg", "math", "template", "noscript", "textarea", "select", "title", "xmp", "plaintext", "noembed", "noframes"]);
 const VOID = new Set(["br", "hr", "img"]);
@@ -98,6 +100,7 @@ function cleanAttributes(name, raw, ugc) {
     if (!allowed.includes(key)) continue;
     const value = decodeEntities((dq ?? sq ?? bare ?? "").trim());
     if (URL_ATTRS.has(key) && !(ugc ? VISITOR_URL : OWNER_URL).test(value.replace(/[\u0000-  ]/g, ""))) continue;
+    if (name === "video" && !isAllowedMediaUrl(value)) continue;
     kept.push(` ${key}="${escapeHtml(value)}"`);
   }
   // Links written by visitors earn no search ranking from this site.
@@ -157,7 +160,7 @@ export function sanitize(html, { shift = 1, ugc = false } = {}) {
       }
       continue;
     }
-    if (!ALLOWED.has(name)) continue;
+    if (!ALLOWED.has(name) || (ugc && OWNER_ONLY.has(name))) continue;
     const tag = heading(name);
     if (VOID.has(name)) {
       if (!closing) out += `<${tag}${cleanAttributes(name, rest, ugc)}>`;
@@ -175,11 +178,14 @@ export function sanitize(html, { shift = 1, ugc = false } = {}) {
     // no tables at all from visitors, and no table inside a table.
     if (name === "li" && !["ul", "ol"].includes(open.at(-1))) continue;
     if (TABLE.has(name) && (ugc || (name === "table" ? inside("table") : !inside("table")))) continue;
+    if (name === "video" && inside("video")) continue;
     push(tag);
     out += `<${tag}${cleanAttributes(name, rest, ugc)}>`;
   }
   while (open.length) out += `</${pop()}>`;
-  return out;
+  // A visitor's video leaves GitHub's box behind with only the file name in it; a
+  // disclosure with nothing to disclose is dropped, so no dead control remains.
+  return ugc ? out.replace(/<details>\s*<summary>(?:(?!<\/?(?:summary|details)\b)[\s\S])*<\/summary>\s*<\/details>/g, "") : out;
 }
 
 // Inserts text at a marker literally: no "$&"-style patterns and no template syntax
@@ -211,8 +217,8 @@ export function versionImports(code, versions) {
 
 export const importsOf = (code) => [...code.matchAll(/\bfrom\s+"\.\/([\w.-]+\.js)"/g)].map((m) => `js/${m[1]}`);
 
-// Only GitHub's own image hosts are fetched during the build.
-export const isAllowedImageUrl = (url) =>
+// Only GitHub's own image and attachment hosts are fetched during the build.
+export const isAllowedMediaUrl = (url) =>
   /^https:\/\/(github\.com\/user-attachments\/|(user-images|private-user-images|camo|raw)\.githubusercontent\.com\/)/.test(url);
 
 
@@ -262,7 +268,7 @@ export function localizeImages(html, images) {
     .replace(/<img\b([^>]*)>/gi, (tag, rest) => {
       const src = (rest.match(/\ssrc="([^"]+)"/) || [])[1]?.replace(/&amp;/g, "&");
       const local = images.get(src);
-      if (!local) return "";
+      if (!local || local.clip) return "";
       const alt = (rest.match(/\salt="([^"]*)"/) || [])[1] ?? "";
       return `<img src="${local.file}" alt="${alt}" width="${local.width}" height="${local.height}" loading="lazy">`;
     })
@@ -270,6 +276,149 @@ export function localizeImages(html, images) {
       const local = images.get(href.replace(/&amp;/g, "&"));
       return local ? `<a${before} href="${local.file}"${after}>` : tag;
     });
+}
+
+// == Video clips (ADR 0007): short, silent loops in the owner's posts and projects,
+// lighter than GIFs and paused with the rest of the site's motion.
+
+export const videoSources = (html) => [...String(html).matchAll(/<video\b[^>]*\ssrc="([^"]+)"/gi)].map((m) => m[1].replace(/&amp;/g, "&"));
+
+// Codecs every current browser plays: H.264 in MP4 or MOV, VP8 or VP9 in WebM.
+// An iPhone's HEVC .MOV is refused, since Chrome and Firefox can't play it everywhere.
+const PLAYABLE = new Set(["avc1", "avc3", "V_VP8", "V_VP9"]);
+export const isPlayableClip = (clip) => PLAYABLE.has(clip?.codec);
+
+// MP4 and MOV are trees of boxes; the video track's tkhd has its size, stsd its codec.
+const MP4_CONTAINERS = new Set(["moov", "trak", "mdia", "minf", "stbl"]);
+
+function mp4Info(b, u32, ascii) {
+  const tracks = [];
+  let track = null;
+  const walk = (start, end) => {
+    for (let i = start; i + 8 <= end; ) {
+      let size = u32(i);
+      let header = 8;
+      if (size === 1) {
+        size = u32(i + 8) * 2 ** 32 + u32(i + 12);
+        header = 16;
+      } else if (size === 0) size = end - i;
+      if (size < header || i + size > end) return;
+      const type = ascii(i + 4, 4);
+      const p = i + header;
+      const stop = i + size;
+      if (type === "trak") {
+        track = {};
+        tracks.push(track);
+        walk(p, stop);
+        track = null;
+      } else if (MP4_CONTAINERS.has(type)) walk(p, stop);
+      else if (track && type === "hdlr" && p + 12 <= stop) track.handler = ascii(p + 8, 4);
+      else if (track && type === "stsd" && p + 16 <= stop) track.codec = ascii(p + 12, 4);
+      else if (track && type === "tkhd") {
+        // Version 1 has 64-bit times; the matrix and the 16.16 size follow them.
+        const at = b[p] === 1 ? 52 : 40;
+        if (p + at + 44 > stop) return;
+        const turned = u32(p + at) === 0 && u32(p + at + 16) === 0; // rotated 90° or 270°
+        const w = Math.round(u32(p + at + 36) / 65536);
+        const h = Math.round(u32(p + at + 40) / 65536);
+        [track.width, track.height] = turned ? [h, w] : [w, h];
+      }
+      i = stop;
+    }
+  };
+  walk(0, b.length);
+  const video = tracks.find((t) => t.handler === "vide");
+  return video ? { type: "mp4", codec: video.codec ?? null, width: video.width ?? 0, height: video.height ?? 0 } : null;
+}
+
+// WebM is EBML: variable-length ids and sizes. Segment > Tracks > TrackEntry > Video.
+const EBML_CONTAINERS = new Set([0x18538067, 0x1654ae6b, 0xae, 0xe0]);
+
+function webmInfo(b, ascii) {
+  // A vint's length is its leading zero bits plus one; ids keep the marker bit, sizes don't.
+  const vint = (i, id) => {
+    const len = Math.clz32(b[i]) - 23;
+    if (len < 1 || len > 8 || i + len > b.length) return null;
+    let value = id ? b[i] : b[i] & (0xff >> len);
+    let unknown = value === 0xff >> len;
+    for (let k = 1; k < len; k++) {
+      value = value * 256 + b[i + k];
+      if (b[i + k] !== 0xff) unknown = false;
+    }
+    return { value, len, unknown: !id && unknown };
+  };
+  const uint = (i, n) => b.subarray(i, i + n).reduce((v, x) => v * 256 + x, 0);
+  const found = [];
+  let entry = null;
+  const walk = (start, end) => {
+    for (let i = start; i < end; ) {
+      const id = vint(i, true);
+      const size = id && vint(i + id.len, false);
+      if (!size) return;
+      const p = i + id.len + size.len;
+      const stop = size.unknown ? end : Math.min(end, p + size.value);
+      if (id.value === 0x1f43b675) return; // First Cluster: the tracks are behind us.
+      if (id.value === 0xae) {
+        entry = {};
+        found.push(entry);
+        walk(p, stop);
+        entry = null;
+      } else if (EBML_CONTAINERS.has(id.value)) walk(p, stop);
+      else if (entry && id.value === 0x86) entry.codec = ascii(p, stop - p);
+      else if (entry && id.value === 0x83) entry.kind = uint(p, stop - p);
+      else if (entry && id.value === 0xb0) entry.width = uint(p, stop - p);
+      else if (entry && id.value === 0xba) entry.height = uint(p, stop - p);
+      i = stop;
+    }
+  };
+  const header = vint(0, true);
+  const headerSize = header && vint(header.len, false);
+  if (!headerSize) return null;
+  walk(header.len + headerSize.len + headerSize.value, b.length);
+  const video = found.find((t) => t.kind === 1);
+  return video ? { type: "webm", codec: video.codec ?? null, width: video.width ?? 0, height: video.height ?? 0 } : null;
+}
+
+// Reads the container, codec, and display size of an MP4, MOV, or WebM. Returns null otherwise,
+// including for hostile files nested deep enough to exhaust the stack.
+export function clipInfo(bytes) {
+  const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  const u32 = (i) => (i + 4 <= b.length ? ((b[i] << 24) >>> 0) + (b[i + 1] << 16) + (b[i + 2] << 8) + b[i + 3] : 0);
+  // Codec names and box types are short; a capped read never spreads a huge array.
+  const ascii = (i, n) => String.fromCharCode(...b.subarray(i, i + Math.min(n, 32)));
+  try {
+    if (b.length >= 12 && ascii(4, 4) === "ftyp") return mp4Info(b, u32, ascii);
+    if (b.length >= 4 && u32(0) === 0x1a45dfa3) return webmInfo(b, ascii);
+  } catch {
+    // A RangeError from recursion: not a clip worth showing.
+  }
+  return null;
+}
+
+// "orbit-demo.mp4" reads as "orbit demo". Camera and recorder defaults
+// (IMG_1234.MOV, Screenrecording_2026…) say nothing, so they become "Video clip".
+export function clipLabel(fileName) {
+  const name = String(fileName ?? "").trim().replace(/\.[a-z0-9]{2,4}$/i, "").replace(/[_\-.\s]+/g, " ").trim();
+  if (!/[a-z]{2}/i.test(name) || /^(img|vid|mov|pxl|dsc|mvi|video|clip|recording|screen ?(recording|shot|capture))\b ?\d/i.test(name)) return "Video clip";
+  return name;
+}
+
+// GitHub wraps each upload in a <details> whose summary is the file name. Both that
+// wrapper and a bare <video> become one clip with its local file and size. The markup
+// never autoplays: js/main.js plays clips only while motion is on (ADR 0002, 0007),
+// and without JavaScript the controls still work. Clips missing from the map are removed.
+const CLIP = /<details>\s*<summary>((?:(?!<\/?(?:summary|details)\b)[\s\S])*)<\/summary>\s*<video\b([^>]*)>[\s\S]*?<\/video>\s*<\/details>|<video\b([^>]*)>[\s\S]*?<\/video>/gi;
+
+export const clipTag = ({ src, width, height, label, controls = true }) =>
+  `<video src="${src}#t=0.001" width="${width}" height="${height}" aria-label="${escapeHtml(label)}"${controls ? " controls" : ""} muted loop playsinline preload="metadata" data-clip></video>`;
+
+export function localizeVideos(html, clips) {
+  return String(html).replace(CLIP, (tag, summaryHtml, wrapped, bare) => {
+    const src = ((wrapped ?? bare).match(/\ssrc="([^"]+)"/) || [])[1]?.replace(/&amp;/g, "&");
+    const local = clips.get(src);
+    if (!local?.clip) return "";
+    return clipTag({ src: local.file, width: local.width, height: local.height, label: clipLabel(plainText(summaryHtml ?? "")) });
+  });
 }
 
 // == Text helpers
@@ -381,13 +530,17 @@ export function extractLink(html) {
 const tagList = (skills) => skills.map((s) => `<li><span class="tag">${escapeHtml(s)}</span></li>`).join("\n              ");
 
 // Same markup as the original hand-written cards, so styles and the alternating
-// layout carry over. `image` is { src, width, height } or null for the placeholder.
+// layout carry over. `media` is { src, width, height, clip } or null for the placeholder;
+// a clip on a card has no controls and plays only while motion is on (ADR 0007).
 export function projectCard(project, index) {
   const title = escapeHtml(project.title);
   const button = project.link ? `<li><a class="tag tag-link" href="${project.link}">${title} link</a></li>\n              ` : "";
-  const media = project.image
-    ? `<img src="${project.image.src}" alt="${title}" width="${project.image.width}" height="${project.image.height}" loading="lazy">`
-    : `<div class="slot" aria-hidden="true">${title} image</div>`;
+  const m = project.media;
+  const media = !m
+    ? `<div class="slot" aria-hidden="true">${title} image</div>`
+    : m.clip
+      ? clipTag({ ...m, label: project.title, controls: false })
+      : `<img src="${m.src}" alt="${title}" width="${m.width}" height="${m.height}" loading="lazy">`;
   return `<article class="card">
           <div class="card-body">
             <h3><a href="${project.path}">${title}</a></h3>

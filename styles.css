@@ -814,10 +814,16 @@ html:not(.js) canvas[data-scene] {
   line-height: 1;
 }
 
-.card-media img {
+.card-media img,
+.card-media video {
+  display: block;
   width: 100%;
   height: auto;
   border-radius: var(--radius-md);
+}
+
+.card-media video {
+  background: var(--color-slot);
 }
 
 .card-body > p {
@@ -1080,6 +1086,15 @@ html:not(.js) canvas[data-scene] {
 .prose img {
   height: auto;
   border-radius: var(--radius-sm);
+}
+
+/* Clips (ADR 0007) keep their aspect ratio from width and height before they load. */
+.prose video {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  background: var(--color-slot);
 }
 
 .post-footer {
