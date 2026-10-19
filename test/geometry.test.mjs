@@ -74,3 +74,9 @@ test("sphere is rings-1 latitude rings on the unit sphere", () => {
 test("wave height changes over time", () => {
   assert.notEqual(waveHeight(0.3, 0.2, 0), waveHeight(0.3, 0.2, 1));
 });
+
+test("wave height stays within +-0.3, the bound ADR 0008 states", () => {
+  for (let t = 0; t < 20; t += 0.7) {
+    for (let x = -1; x <= 1; x += 0.1) for (let z = -1; z <= 1; z += 0.1) assert.ok(Math.abs(waveHeight(x, z, t)) <= 0.3);
+  }
+});

@@ -48,7 +48,7 @@ function strokeMesh(ctx, mesh, transform) {
 const TAU = Math.PI * 2;
 const poses = {
   dome: (t) => [0.45, t * 0.35],
-  wave: () => [0.55, -0.6], // the surface itself ripples with phase t * 1.6
+  wave: () => [0.55, -0.6], // the surface itself ripples with phase t * 2.2
   cube: (t) => [0.55 + t * 0.12, t * 0.22],
   globe: (t) => [0.35, t * 0.6],
   torus: (t) => [1 + Math.sin(t * 0.3) * 0.25, t * 0.4],
@@ -186,7 +186,7 @@ const pose = (name) => poses[name](time).map((a, i) => `${i ? "RY" : "RX"} ${ang
 const shown = (name) => (scenes.find((s) => s.canvas.dataset.scene === name)?.visible ? 1 : 0);
 const script = [
   () => `DOME   ${pose("dome")}  VTX ${meshes.dome.vertices.length}`,
-  () => `WAVE   PHASE ${angle(time * 1.6)}  CTR ${(Math.round(waveHeight(0, 0, time) * 1000) / 1000 || 0).toFixed(3)}`,
+  () => `WAVE   PHASE ${angle(time * 2.2)}  CTR ${(Math.round(waveHeight(0, 0, time) * 1000) / 1000 || 0).toFixed(3)}`,
   () => `CUBE   ${pose("cube")}  EDG ${meshes.cube.edges.length}`,
   () => `GLOBE  RY ${angle(poses.globe(time)[1])}  VTX ${meshes.globe.vertices.length}`,
   () => `TORUS  ${pose("torus")}  VIS ${shown("torus")}`,
@@ -226,9 +226,12 @@ function fillTerminal() {
   renderTerminal();
 }
 
+// Faint copies of the console behind empty areas (ADR 0008), refreshed per finished line.
+const echoes = document.querySelectorAll(".terminal-echo");
 function renderTerminal() {
   terminal.textContent = lines.concat(current).join("\n");
   terminal.append(cursor);
+  if (!current) for (const echo of echoes) echo.textContent = lines.join("\n");
 }
 
 function type() {
@@ -414,6 +417,7 @@ function setMotion(on) {
   }
   motion = on;
   root.classList.toggle("motion-off", !on);
+  root.classList.toggle("motion-on", on); // CSS loops run only under this (ADR 0008)
   for (const button of motionButtons) showState(button, on);
   schedule();
 }

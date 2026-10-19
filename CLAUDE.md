@@ -7,7 +7,7 @@ Visitors mostly arrive on a phone by scanning a QR code, often on slow Wi-Fi.
 
 Hand-written static HTML, CSS, and a little first-party JavaScript. **Zero dependencies.**
 A zero-dependency build (`tools/build.mjs`) runs in CI and turns GitHub Discussions into R&D posts,
-comments, the guestbook, and projects (ADR 0005, 0006). Read the ADRs in `docs/decisions/` (0001 to 0006) before changing this.
+comments, the guestbook, and projects (ADR 0005, 0006). Read the ADRs in `docs/decisions/` (0001 to 0006, and 0008) before changing this.
 
 - `index.html` is the home page: a fast overview with sections anchored by id.
 - `about/index.html` (About & CV), `rd/index.html` (the R&D blog), and `guestbook/index.html` are subpages.
@@ -46,6 +46,8 @@ py -m http.server 8000 --directory _site                      # preview the buil
 - No npm packages, CDNs, or external stylesheet, script, or font URLs. No inline scripts.
 - JavaScript lives in `js/`, makes no network requests, uses only relative imports, and stays under 10 KB gzipped in total (ADR 0003).
 - The page must work without JavaScript. Motion must be pausable and start paused under reduced motion.
+- Looping CSS animations go under `html.motion-on` (set by `main.js`); scroll-linked ones go inside
+  `@media screen and (prefers-reduced-motion: no-preference)` and `html:not(.motion-off)` (ADR 0008). The tests check both.
 - The tests enforce these rules. Do not weaken them to make a change pass.
 - Every `<img>` needs `alt`, `width`, and `height`.
 - Every in-page `href="#..."` must match an element id.

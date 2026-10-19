@@ -119,7 +119,8 @@ export function grid(n) {
 // Rippling height field used for the wave surface. t is time in seconds.
 export function waveHeight(x, z, t) {
   const r = Math.hypot(x, z);
-  return 0.18 * Math.sin(r * 6 - t * 1.6) * Math.exp(-r * 1.2) + 0.05 * Math.sin(x * 3 + t);
+  // A ripple from the centre plus a diagonal travelling swell; |height| <= 0.29.
+  return 0.22 * Math.sin(r * 6 - t * 2.2) * Math.exp(-r) + 0.07 * Math.sin(x * 3 + z * 2 + t * 1.4);
 }
 
 // Rotate a point around the x axis, then the y axis.
