@@ -381,6 +381,83 @@ test("styles.css: ADR 0003 aids hide without ui.js and respect reduced motion", 
   assert.match(read("js/ui.js"), /classList\.add\("ui-ready"\)/);
 });
 
+// ADR 0008: looping CSS motion runs only while main.js says motion is on, so the
+// motion toggle stops it, reduced motion starts it off, and it never runs without
+// JavaScript. Scroll-linked effects stay inside a no-preference media block.
+const withoutComments = (css) => css.replace(/\/\*[\s\S]*?\*\//g, "");
+function blocksAt(css, opener) {
+  const found = [];
+  for (let at = css.indexOf(opener); at !== -1; at = css.indexOf(opener, at + 1)) {
+    let depth = 0;
+    let i = css.indexOf("{", at);
+    for (; i < css.length; i++) {
+      if (css[i] === "{") depth++;
+      else if (css[i] === "}" && --depth === 0) break;
+    }
+    found.push([at, i + 1]);
+  }
+  return found;
+}
+
+// Splits a selector list on top-level commas only, so `:is(a, b)` stays whole.
+function selectorList(selector) {
+  const parts = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < selector.length; i++) {
+    if (selector[i] === "(") depth++;
+    else if (selector[i] === ")") depth--;
+    else if (selector[i] === "," && depth === 0) {
+      parts.push(selector.slice(start, i).trim());
+      start = i + 1;
+    }
+  }
+  return [...parts, selector.slice(start).trim()];
+}
+
+// main.js adds js-ready once it has run and sets motion-off from the toggle and
+// reduced motion, so "js-ready but not motion-off" means motion is on.
+test("styles.css: looping animations run only under html.js-ready:not(.motion-off) (ADR 0008)", () => {
+  const css = withoutComments(read("styles.css"));
+  // The console cursor is made by main.js and stops under .motion-off.
+  const allowed = new Set([".terminal .cursor"]);
+  let loops = 0;
+  for (const [, selector, body] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    if (!/animation[^:;]*:[^;]*\binfinite\b/.test(body)) continue;
+    loops++;
+    // Every selector in the list must be gated, not just one of them.
+    for (const part of selectorList(selector)) {
+      assert.ok(/^html\.js-ready:not\(\.motion-off\)\s/.test(part) || allowed.has(part), `infinite animation not gated by motion: ${part}`);
+    }
+  }
+  assert.ok(loops >= 3, "the grid drift, dot shimmer, and echo drift should be found");
+  const main = read("js/main.js");
+  assert.match(main, /classList\.toggle\("motion-off", !on\)/);
+  assert.match(main, /classList\.add\("js-ready"\)/);
+});
+
+test("styles.css: scroll-linked motion is screen-only, no-preference, and stops with the toggle (ADR 0008)", () => {
+  const css = withoutComments(read("styles.css"));
+  const safe = blocksAt(css, "@media screen and (prefers-reduced-motion: no-preference)");
+  const uses = [...css.matchAll(/animation-timeline\s*:/g)].map((m) => m.index);
+  assert.ok(uses.length >= 2, "the grid parallax and reveals should be found");
+  for (const at of uses) {
+    assert.ok(safe.some(([from, to]) => at > from && at < to), `animation-timeline outside a screen no-preference block at offset ${at}`);
+  }
+  for (const [, selector, body] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    if (!/animation-(timeline|range)\s*:/.test(body)) continue;
+    for (const part of selectorList(selector)) {
+      assert.ok(/^html(\.js-ready)?:not\(\.motion-off\)\s/.test(part), `scroll-linked motion not stopped by the toggle: ${part}`);
+    }
+  }
+});
+
+test("console echoes are decorative and hidden from screen readers", () => {
+  const echoes = pages.flatMap((p) => html(p).match(/<pre class="terminal-echo"[^>]*>/g) ?? []);
+  assert.ok(echoes.length >= 3, "the home page has three echoes");
+  for (const tag of echoes) assert.match(tag, /aria-hidden="true"/, tag);
+});
+
 test("every media figure has a numbered caption", () => {
   for (const page of pages) {
     for (const figure of html(page).match(/<figure class="card-media">[\s\S]*?<\/figure>/g) ?? []) {

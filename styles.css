@@ -169,6 +169,58 @@ body {
   line-height: 1.5;
 }
 
+/* Page-wide drafting grid (ADR 0008), fixed behind the page; dark panels cover it.
+   While motion is on it drifts one cell diagonally every 40 seconds, which loops
+   seamlessly, and it moves slower than the page while scrolling. The two use the
+   separate `translate` and `transform` properties, so they combine. */
+body::before {
+  content: "";
+  position: fixed;
+  top: -48px;
+  left: 0;
+  right: -48px;
+  z-index: -1;
+  height: calc(100vh + 192px);
+  background:
+    linear-gradient(var(--color-rule) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(90deg, var(--color-rule) 1px, transparent 1px) 0 0 / 48px 48px;
+  opacity: 0.14;
+  pointer-events: none;
+}
+
+html.js-ready:not(.motion-off) body::before {
+  animation: grid-ambient 40s linear infinite;
+}
+
+@keyframes grid-ambient {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: -48px 48px;
+  }
+}
+
+@media screen and (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: scroll()) {
+    html:not(.motion-off) body::before {
+      animation: grid-drift linear both;
+      animation-timeline: scroll(root);
+    }
+
+    html.js-ready:not(.motion-off) body::before {
+      animation: grid-drift linear both, grid-ambient 40s linear infinite;
+      animation-timeline: scroll(root), auto;
+    }
+  }
+}
+
+@keyframes grid-drift {
+  to {
+    transform: translateY(-96px);
+  }
+}
+
 img,
 svg,
 canvas {
@@ -498,28 +550,65 @@ html:not(.js) canvas[data-scene] {
   position: absolute;
   inset: 0 0 0 auto;
   width: 38%;
-  background: radial-gradient(circle, var(--brand-mint) 1px, transparent 1.6px) 0 0 / 10px 10px;
+  /* The dimming lives in the dot color, not opacity, so the scan band can be brighter. */
+  background: radial-gradient(circle, color-mix(in srgb, var(--brand-mint) 18%, transparent) 1px, transparent 1.6px) 0 0 / 10px 10px;
   -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 10px, transparent 10px 50px),
     linear-gradient(90deg, transparent, #000 60%);
   mask-image: repeating-linear-gradient(90deg, #000 0 10px, transparent 10px 50px),
     linear-gradient(90deg, transparent, #000 60%);
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
-  opacity: 0.18;
   pointer-events: none;
 }
 
-/* On phones the banner stacks, so the dots would run behind the console and labels. */
+/* A brighter band of the same dots scans up and down the columns while motion is on. */
+.dot-field::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, color-mix(in srgb, var(--brand-mint) 55%, transparent) 1px, transparent 1.6px) 0 0 / 10px 10px;
+  -webkit-mask: linear-gradient(transparent 40%, #000 50%, transparent 60%) 0 100% / 100% 300% no-repeat;
+  mask: linear-gradient(transparent 40%, #000 50%, transparent 60%) 0 100% / 100% 300% no-repeat;
+  opacity: 0;
+}
+
+/* mask-position repaints, so the shimmer runs only on wider screens. */
+@media (min-width: 800px) {
+  html.js-ready:not(.motion-off) .dot-field::before {
+    opacity: 1;
+    animation: dot-scan 7s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes dot-scan {
+  from {
+    -webkit-mask-position: 0 100%;
+    mask-position: 0 100%;
+  }
+  to {
+    -webkit-mask-position: 0 0;
+    mask-position: 0 0;
+  }
+}
+
+/* On phones the banner stacks, so the dots sit only behind the headline, fading out
+   before the wireframe, console, and labels below it. */
 @media (max-width: 799px) {
   .dot-field {
-    display: none;
+    inset: 0 0 auto auto;
+    width: 70%;
+    height: 17rem;
+    -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 10px, transparent 10px 50px),
+      linear-gradient(90deg, transparent, #000 60%), linear-gradient(#000 55%, transparent);
+    mask-image: repeating-linear-gradient(90deg, #000 0 10px, transparent 10px 50px),
+      linear-gradient(90deg, transparent, #000 60%), linear-gradient(#000 55%, transparent);
   }
 }
 
 .terminal {
   grid-area: term;
   min-width: 0;
-  height: 13.5em;
+  height: 18em;
   margin: 0;
   overflow: hidden;
   font-size: 0.6875rem;
@@ -544,6 +633,44 @@ html:not(.js) canvas[data-scene] {
 @keyframes blink {
   50% {
     opacity: 0;
+  }
+}
+
+/* Console echoes (ADR 0008): faint, decorative copies of the console's finished
+   lines in empty space beside the name and above the values. Hidden on phones. */
+/* clip, not hidden: a hidden overflow would become the scroll container that the
+   scroll reveals measure against, and they would stop following the page. */
+.hero,
+.values {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+}
+
+.terminal-echo {
+  display: none;
+  position: absolute;
+  z-index: -1;
+  margin: 0;
+  overflow: hidden;
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  white-space: pre;
+  opacity: 0.1;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-mask-image: linear-gradient(transparent, #000 25%, #000 75%, transparent);
+  mask-image: linear-gradient(transparent, #000 25%, #000 75%, transparent);
+}
+
+html.js-ready:not(.motion-off) .terminal-echo {
+  animation: echo-drift 9s ease-in-out infinite alternate;
+}
+
+@keyframes echo-drift {
+  to {
+    transform: translateY(-1.5em);
   }
 }
 
@@ -736,6 +863,51 @@ html:not(.js) canvas[data-scene] {
 
 .barcode-strip + .value + .value + .value h3 {
   color: var(--brand-blue);
+}
+
+/* ==========================================================================
+   Scroll reveals (ADR 0008). Each section's blocks slide up and fade in as they
+   enter the screen, driven by scrolling itself, so no script is needed. The
+   values arrive one after another, and their headings wipe on like a scan line.
+   Browsers without view timelines, reduced motion, the motion toggle, and print
+   all get the page as is: nothing is hidden outside these rules. Every range ends
+   by "entry 100%", which any block with content below it always reaches.
+   ========================================================================== */
+@media screen and (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    html:not(.motion-off) :is(.section > .container > :not(.project-list), .project-list > .card, .values .value) {
+      animation: reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 70%;
+    }
+
+    html:not(.motion-off) .barcode-strip + .value + .value {
+      animation-range: entry 20% entry 90%;
+    }
+
+    html:not(.motion-off) .barcode-strip + .value + .value + .value {
+      animation-range: entry 40% entry 100%;
+    }
+
+    html:not(.motion-off) .values .value h3 {
+      animation: wipe linear both;
+      animation-timeline: view();
+      animation-range: entry 40% entry 100%;
+    }
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(2rem);
+  }
+}
+
+@keyframes wipe {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
 }
 
 /* ==========================================================================
@@ -1185,6 +1357,24 @@ html:not(.js) canvas[data-scene] {
     justify-content: flex-end;
   }
 
+  .terminal {
+    font-size: 0.75rem;
+  }
+
+  /* Above the values: the barcode row sits left, the echo fills the right. */
+  .values .container {
+    padding-top: var(--space-24);
+  }
+
+  .values .terminal-echo {
+    display: block;
+    top: var(--space-4);
+    right: max(var(--gutter), (100% - var(--content-max)) / 2);
+    width: 50%;
+    height: 7.5em;
+    text-align: right;
+  }
+
   .card {
     grid-template-columns: 1fr 1fr;
     gap: var(--space-12);
@@ -1220,12 +1410,28 @@ html:not(.js) canvas[data-scene] {
    ========================================================================== */
 @media (min-width: 1280px) {
   .banner .container {
-    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.2fr) minmax(0, 1fr);
     grid-template-areas:
       "term art head"
       "term art labels";
     align-items: center;
-    min-height: 34rem;
+    /* The banner fills most of the screen, so the console runs its full height. */
+    min-height: min(calc(100svh - 4rem), 48rem);
+  }
+
+  /* Either side of the name, in the space the centred heading leaves. */
+  .hero .terminal-echo {
+    display: block;
+    top: 0;
+    bottom: 0;
+    left: var(--space-6);
+    width: 16rem;
+  }
+
+  .hero .terminal-echo + .terminal-echo {
+    left: auto;
+    right: var(--space-6);
+    text-align: right;
   }
 
 
