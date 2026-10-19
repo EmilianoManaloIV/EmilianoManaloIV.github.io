@@ -267,6 +267,15 @@ export function rotate([x, y, z], ax, ay) {
   return [x * cy + z1 * sy, y1, -x * sy + z1 * cy];
 }
 
+// The largest projection scale, as a fraction of half the frame's shorter side, at
+// which a mesh can never leave its frame, however it is turned. A point at radius r
+// projects no further out than r * d / sqrt(d^2 - r^2) (the sight line tangent to its
+// bounding sphere), so dividing by that bound keeps every orientation inside.
+export function fitScale({ vertices }, distance = 4) {
+  const r = Math.max(...vertices.map((v) => Math.hypot(...v)));
+  return Math.sqrt(distance * distance - r * r) / (r * distance);
+}
+
 // Perspective projection to screen space. Larger distance means a flatter view.
 export function project([x, y, z], cx, cy, scale, distance = 4) {
   const k = distance / (distance + z);

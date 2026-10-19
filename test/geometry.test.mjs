@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { torus, lathe, dome, grid, sphere, cube, waveHeight, rotate, project, bezierPatches, uprightUnit, fitUnit, headset, icosphere } from "../js/geometry.js";
+import { torus, lathe, dome, grid, sphere, cube, waveHeight, rotate, project, bezierPatches, uprightUnit, fitUnit, headset, icosphere, fitScale } from "../js/geometry.js";
 import { teapotPoints, teapotPatches } from "../js/models.js";
 
 const length = ([x, y, z]) => Math.hypot(x, y, z);
@@ -151,4 +151,21 @@ test("the geodesic sphere has 12, then 42 vertices on the unit sphere", () => {
   const degree = new Array(42).fill(0);
   for (const [a, b] of mesh.edges) degree[a]++, degree[b]++;
   assert.ok(degree.every((d) => d === 5 || d === 6));
+});
+
+test("fitScale keeps a model inside its frame at every orientation", () => {
+  for (const [name, mesh, distance] of [["headset", fitUnit(headset()), 5], ["torus", torus(1, 0.42, 36, 16), 4]]) {
+    const scale = fitScale(mesh, distance); // in units of half the frame's shorter side
+    let worst = 0;
+    for (let ax = 0; ax < Math.PI * 2; ax += 0.07) {
+      for (let ay = 0; ay < Math.PI * 2; ay += 0.07) {
+        for (const p of mesh.vertices) {
+          const [x, y] = project(rotate(p, ax, ay), 0, 0, scale, distance);
+          worst = Math.max(worst, Math.abs(x), Math.abs(y));
+        }
+      }
+    }
+    assert.ok(worst <= 1 + 1e-9, `${name} reaches ${worst.toFixed(3)} of its frame`);
+    assert.ok(worst > 0.85, `${name}: the bound should not be needlessly loose (${worst.toFixed(3)})`);
+  }
 });

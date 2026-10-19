@@ -24,7 +24,7 @@ After the video clips (0007) and ambient motion (0008), `js/` was 10 bytes under
 
 **Models:**
 - **Utah teapot:** Martin Newell's 32 bicubic Bézier patches, transcribed from three.js `TeapotGeometry` (MIT License). The University of Utah says the model files "are freely available for any use" and asks that it be named a Utah Teapot, which the caption and `js/models.js` do. `bezierPatches` in `geometry.js` draws the patches as iso-lines, and `uprightUnit` fits the model to the other meshes' size.
-- **VR headset:** built procedurally by `headset()` in `geometry.js`. It's original geometry: a superellipse visor shell, front sensors, lenses, a head band, and a top strap. It sits on the R&D page heading and is hands-on like the teapot. `fitUnit` centres and scales it.
+- **VR headset:** built procedurally by `headset()` in `geometry.js`. It's original geometry: a superellipse visor shell, front sensors, lenses, a head band, and a top strap. It sits on the R&D page heading and is hands-on like the teapot. `fitUnit` centres and scales it. Its strap swings toward the viewer as it turns, so `fitScale` sizes it from its bounding sphere to stay inside its square frame at every angle, and a test checks every orientation.
 - **Suzanne: not included.** No clearly permissive license was found for the mesh. Blender developers have said it likely falls under Blender's GPL. A home-made monkey head or a CC0 model could be added later.
 
 **Interactive canvases:**

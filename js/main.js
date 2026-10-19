@@ -1,5 +1,5 @@
 // Motion, console, headline, device readout, and toggles; see ADR 0002. No network use.
-import { torus, dome, grid, cube, sphere, waveHeight, rotate, project, bezierPatches, uprightUnit, fitUnit, headset, icosphere } from "./geometry.js";
+import { torus, dome, grid, cube, sphere, waveHeight, rotate, project, bezierPatches, uprightUnit, fitUnit, headset, icosphere, fitScale } from "./geometry.js";
 import { teapotPoints, teapotPatches } from "./models.js";
 
 const root = document.documentElement;
@@ -139,7 +139,9 @@ const painters = {
   },
   headset(ctx, w, h) {
     const [ax, ay] = posed("headset");
-    strokeMesh(ctx, meshes.headset, (p) => project(rotate(p, ax, ay), w / 2, h / 2, Math.min(w, h) * 0.55, 5));
+    // Its strap swings toward the viewer as it turns, so it is sized to stay inside
+    // its frame at any angle, with a little breathing room (ADR 0009).
+    strokeMesh(ctx, meshes.headset, (p) => project(rotate(p, ax, ay), w / 2, h / 2, (Math.min(w, h) / 2) * 0.94 * headsetFit, 5));
   },
 };
 
@@ -156,6 +158,7 @@ const scenes = [...document.querySelectorAll("canvas[data-scene]")].map((canvas)
 const ambient = scenes.find((s) => s.canvas.dataset.scene === "ambient");
 const motionScenes = scenes.filter((s) => s !== ambient);
 let ambientTime = 0;
+const headsetFit = fitScale(meshes.headset, 5);
 let ambientTimer = 0;
 
 // Pixel ratio per scene, capped at 2. The full-screen ambient sphere draws at 1x:

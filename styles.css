@@ -1494,6 +1494,12 @@ html.js-ready:not(.motion-off) .terminal-echo {
   aspect-ratio: 3 / 2;
 }
 
+/* The headset can face any way, and its strap reaches as far up as sideways, so its
+   frame is square: the largest size that never clips at any angle. */
+.headset-scene {
+  aspect-ratio: 1;
+}
+
 .model-teapot,
 .model-headset {
   max-width: 24rem;
