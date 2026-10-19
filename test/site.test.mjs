@@ -66,8 +66,8 @@ test("no built page has an unfilled template value or build marker", () => {
 // only checked for URLs, so harmless visitor text ("javascript: is a language") passes.
 const SAFE_TAGS = new Set(("a article b blockquote body br button canvas code del details div em figcaption figure footer " +
   "h1 h2 h3 h4 h5 h6 head header hr html i img ins kbd li link main meta nav ol p pre s script section span strong " +
-  "sub summary sup table tbody td th thead time title tr ul").split(" "));
-const SAFE_ATTRS = /^(alt|align|as|charset|class|content|crossorigin|datetime|download|height|href|http-equiv|id|lang|loading|media|name|property|rel|role|src|start|title|type|width|aria-[a-z]+|data-[a-z-]+)$/;
+  "sub summary sup table tbody td th thead time title tr ul video").split(" "));
+const SAFE_ATTRS = /^(alt|align|as|charset|class|content|controls|crossorigin|datetime|download|height|href|http-equiv|id|lang|loading|loop|media|muted|name|playsinline|preload|property|rel|role|src|start|title|type|width|aria-[a-z]+|data-[a-z-]+)$/;
 // No "//host" or "/\host" (both leave the site), and any scheme must be http(s) or mailto.
 // Decoded first, as a browser would: "javascript&colon;" and "java&#9;script:" are schemes too.
 const TEMPLATES = ["templates/rd-post.html", "templates/project.html"];
@@ -273,6 +273,35 @@ test("guestbook links to GitHub Discussions and explains signing", () => {
   assert.match(text, /<a class="tag tag-link" href="https:\/\/github\.com\/EmilianoManaloIV\/EmilianoManaloIV\.github\.io\/discussions[^"]*">Sign the guestbook<\/a>/);
   assert.match(text, /Signing uses your GitHub account/);
   assert.match(html("index.html"), /<a href="\/guestbook\/">sign the guestbook<\/a>/, "Contact links the guestbook");
+});
+
+// ADR 0007: clips are local files that never autoplay from markup; js/main.js plays
+// them only while motion is on. Visitors' comments and signatures carry no video.
+test("clips are local, sized, muted, never autoplay, and only in the owner's text", () => {
+  for (const page of pages) {
+    const text = html(page);
+    for (const tag of text.match(/<video\b[^>]*>/gi) ?? []) {
+      const src = attrs(tag, "src")[0] ?? "";
+      assert.match(src, /^(\/projects\/[\w-]+\/)?clip-\d+\.(mp4|webm)#t=0\.001$/, `${page}: clip source ${src}`);
+      assert.ok(existsSync(join(site, target(page, src).file)), `${page}: missing clip ${src}`);
+      for (const name of ["width", "height", "aria-label"]) assert.match(tag, new RegExp(`\\s${name}="[^"]+"`), `${page}: ${name} missing: ${tag}`);
+      for (const flag of ["muted", "loop", "playsinline", "data-clip"]) assert.match(tag, new RegExp(`\\s${flag}[\\s>]`), `${page}: ${flag} missing: ${tag}`);
+      assert.doesNotMatch(tag, /\sautoplay\b/, `${page}: clips must not autoplay without the motion gate`);
+    }
+    for (const block of text.match(/<li class="(comment|guestbook-entry)">[\s\S]*?<\/li>/g) ?? []) {
+      assert.doesNotMatch(block, /<video/, `${page}: video in a visitor's text`);
+    }
+  }
+  // WCAG 2.2.2: clips play from one place only, behind the motion gate.
+  const main = read("js/main.js");
+  assert.match(main, /video\[data-clip\]/, "main.js gates clips");
+  assert.match(main, /const awake = motion && !document\.hidden;[\s\S]*const want = awake && clip\.seen === true;\s*if \(want !== clip\.want\) want \? clip\.play\(\)/, "clips play only when motion is on, the tab is visible, and the clip is on screen");
+  for (const file of scripts) assert.equal((read(`js/${file}`).match(/\.play\(/g) ?? []).length, file === "main.js" ? 1 : 0, `${file}: play() outside the motion gate`);
+  // The fixture build has clips in a post, a project page, and that project's home card.
+  if (pages.some((p) => read(p).includes("FIXTURE-VISITOR-VIDEO"))) {
+    const count = pages.reduce((n, p) => n + (html(p).match(/<video\b/g) ?? []).length, 0);
+    assert.equal(count, 3, "fixture clips");
+  }
 });
 
 // WCAG 2.2.2: anything that moves must be pausable, so every page carries the

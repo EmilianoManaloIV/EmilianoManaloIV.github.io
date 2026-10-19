@@ -6,6 +6,7 @@ This README is the owner's guide to running the site day to day. You never edit 
 
 - [Publish an R&D post](#publish-an-rd-post)
 - [Add a project](#add-a-project)
+- [Add a video clip](#add-a-video-clip)
 - [Skills on the About page](#skills-on-the-about-page)
 - [The guestbook](#the-guestbook)
 - [Edit, hide, or remove](#edit-hide-or-remove)
@@ -16,12 +17,12 @@ This README is the owner's guide to running the site day to day. You never edit 
 
 1. Open **Discussions** and click **New discussion**.
 2. Pick the **R&D** category.
-3. Write a title and the post. Markdown works: headings, lists, code blocks, links, and images you drag in.
+3. Write a title and the post. Markdown works: headings, lists, code blocks, links, and images or [video clips](#add-a-video-clip) you drag in.
 4. Click **Start discussion**.
 
 The post appears on the [R&D page](https://emilianomanaloiv.github.io/rd/), newest first, and gets its own page at `/rd/<number>-<title>/`. Visitors can comment on it with a GitHub account, and their comments show under the post.
 
-The first paragraph is the summary on the R&D page and in link previews. Images are copied onto the site, so visitors never load anything from GitHub.
+The first paragraph is the summary on the R&D page and in link previews. Images and clips are copied onto the site, so visitors never load anything from GitHub.
 
 ## Add a project
 
@@ -36,11 +37,25 @@ The first paragraph is the summary on the R&D page and in link previews. Images 
 
    It becomes the orange "Blendity link" button. With no `Link:` line, there is no button.
 5. Write the description. The first paragraph becomes the text on the home page card.
-6. Drag in a screenshot or render. The first image becomes the card picture. Without one, the card shows a placeholder.
+6. Drag in a screenshot or render. The first image becomes the card picture. With no image, the first [video clip](#add-a-video-clip) is used instead, and with neither, the card shows a placeholder.
 7. Click **Start discussion**.
 8. In the right sidebar, open **Labels** and pick the project's skills. See the next section.
 
 The project shows up in the home page's Projects section, newest first, with its own page at `/projects/<number>-<title>/` where visitors can comment.
+
+## Add a video clip
+
+Use a short clip instead of a GIF in a post or a project. A clip is much smaller than the same GIF, and it pauses with the site's motion button.
+
+1. Name the file for what it shows, for example `orbit-demo.mp4`. Screen readers read the name as the clip's label ("orbit demo"). A camera name such as `IMG_9408.MOV` becomes just "Video clip".
+2. Keep it short and small: under **10 MB**, ideally under **4 MB**, since visitors are often on conference Wi-Fi. Sound is muted on the site.
+3. Drag the file into the discussion, the same way as an image.
+
+On the site, the clip plays silently on a loop while it is on screen and motion is on. It pauses when a visitor turns motion off, and stays paused for visitors who asked their device for reduced motion. They can still press play.
+
+**Use MP4 (H.264) or WebM.** iPhones often record in HEVC, which many browsers can't play, so the site drops those clips. To fix one, export it again as H.264: on iPhone, set **Settings → Camera → Formats** to **Most Compatible** before recording, or export from Photos or your editor as H.264 MP4. A dropped clip is named in the warnings of the latest [Actions](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/actions) run.
+
+Visitors can't add clips: videos in comments and guestbook signatures never appear.
 
 ## Skills on the About page
 
@@ -62,7 +77,7 @@ The [guestbook](https://emilianomanaloiv.github.io/guestbook/) is an old-interne
 - **Where it lives:** the **Sign The Guestbook** discussion ([#6](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/discussions/6)) in the **Guestbook** category. It is pinned, so it's easy to find.
 - **Signing:** visitors click "Sign the guestbook" on the site, which opens that discussion, and leave a comment with their GitHub account.
 - **On the site:** each comment becomes a numbered signature, oldest first (#001, #002, …), with the visitor's username and date. Replies to a signature are not shown.
-- **Links and images:** visitors can include links and pictures. Links are marked so search engines don't follow them, and only images hosted on GitHub are kept.
+- **Links and images:** visitors can include links and pictures. Links are marked so search engines don't follow them, and only images hosted on GitHub are kept. Video clips in signatures are not shown.
 
 Keep that one discussion. The site always uses your oldest discussion in the Guestbook category, so a new one wouldn't replace it, and deleting #6 would erase every signature.
 
@@ -92,10 +107,11 @@ After any change, browsers may show the old page for up to 10 minutes.
 1. Open the [Actions tab](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/actions) and look at the latest run.
 2. A failed run leaves the last good version of the site live. Open the failed step, and the log names the problem.
 3. A common cause is a broken site link inside a post, such as `/no-such-page/`. Fix the link in the discussion and the site rebuilds.
-4. To rebuild by hand, open the **Test and deploy** workflow and click **Run workflow**.
+4. A missing image or clip doesn't fail the run. Look for a warning that starts with "dropped", which says why, such as a clip over 10 MB or in HEVC.
+5. To rebuild by hand, open the **Test and deploy** workflow and click **Run workflow**.
 
 The hourly rebuild pauses after 60 days without any activity in the repository. Any post, comment, or manual run starts it again.
 
 ## For developers
 
-How the site is built, tested, and changed is in [`CLAUDE.md`](CLAUDE.md) and the decision records in [`docs/decisions/`](docs/decisions/), especially [0005](docs/decisions/0005-discussions-as-content-built-in-ci.md) and [0006](docs/decisions/0006-projects-and-skills-from-discussions.md).
+How the site is built, tested, and changed is in [`CLAUDE.md`](CLAUDE.md) and the decision records in [`docs/decisions/`](docs/decisions/), especially [0005](docs/decisions/0005-discussions-as-content-built-in-ci.md), [0006](docs/decisions/0006-projects-and-skills-from-discussions.md), and [0007](docs/decisions/0007-video-clips-instead-of-gifs.md).
