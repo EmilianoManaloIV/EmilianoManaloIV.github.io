@@ -1489,6 +1489,11 @@ html.js-ready:not(.motion-off) .terminal-echo {
   color: var(--color-ink);
 }
 
+/* The teapot is wide and low, so its frame is too: no empty band above and below. */
+.teapot-scene {
+  aspect-ratio: 3 / 2;
+}
+
 .model-teapot,
 .model-headset {
   max-width: 24rem;
@@ -1728,9 +1733,12 @@ html.js-ready:not(.motion-off) .terminal-echo {
 
 /* Margin labels: a drawing sheet's margin note beside each named section. It stays
    put (sticky) while its section is read and leaves with it. It is a real box of
-   fixed height, floated into the right margin: floats don't move block content,
-   and the section (a flow root) always contains it, so a label can never slide
-   into the next section's. Decorative, so screen readers skip it. */
+   fixed height but zero width, floated against the screen's right edge, so it
+   takes no width from anything beside it (a grid such as Contact's narrows for
+   any float in its row), then slid into the margin with `translate`, which
+   layout ignores. Its text overflows the zero-width box; the longest label fits
+   the 13rem height. The section, a flow root, always contains it, so a label can never
+   slide into the next section's. Decorative, so screen readers skip it. */
 @media screen and (min-width: 1600px) {
   .section[data-label] {
     display: flow-root;
@@ -1742,11 +1750,9 @@ html.js-ready:not(.motion-off) .terminal-echo {
     position: sticky;
     top: 30vh;
     float: right;
-    width: 1.5em;
+    width: 0;
     height: 13rem;
-    margin-right: calc(50% - var(--content-max) / 2 - 3rem - 1.5em);
-    overflow: hidden;
-    text-overflow: ellipsis;
+    translate: calc(var(--content-max) / 2 + 3rem + 1.5em - 50vw) 0;
     color: var(--color-ink-muted);
     font-size: var(--text-xs);
     letter-spacing: 0.16em;
