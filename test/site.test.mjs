@@ -695,3 +695,119 @@ test("preview and touch-icon tags appear only when their images exist", () => {
     assert.equal(/rel="apple-touch-icon"/.test(text), touch, `${page}: apple-touch-icon`);
   }
 });
+
+// == Pre-launch audit (ADR 0012)
+
+// WCAG contrast computed from the design tokens themselves, for both themes, so a
+// colour change that hurts legibility fails here rather than in front of a visitor.
+function themeTokens(css, theme) {
+  // The rule's body: from "selector {" to the first line that is just "}".
+  const block = (selector) => {
+    const at = css.indexOf(`${selector} {`);
+    return at === -1 ? "" : css.slice(at, css.indexOf("\n}", at));
+  };
+  const tokens = {};
+  const take = (text) => {
+    for (const [, name, value] of text.matchAll(/(--[a-z0-9-]+):\s*([^;]+);/g)) tokens[name] = value.trim();
+  };
+  take(block(":root"));
+  if (theme === "dark") take(block(':root[data-theme="dark"]'));
+  const resolve = (value, depth = 0) => {
+    const ref = /^var\((--[a-z0-9-]+)\)$/.exec(value);
+    return ref && depth < 10 ? resolve(tokens[ref[1]], depth + 1) : value;
+  };
+  return (name) => {
+    const value = resolve(tokens[name]);
+    const hex = /^#([0-9a-f]{6})$/i.exec(value);
+    if (hex) return { rgb: [0, 2, 4].map((i) => parseInt(hex[1].slice(i, i + 2), 16)), alpha: 1 };
+    const rgb = /^rgb\((\d+) (\d+) (\d+)(?: \/ ([\d.]+))?\)$/.exec(value);
+    if (rgb) return { rgb: rgb.slice(1, 4).map(Number), alpha: rgb[4] ? Number(rgb[4]) : 1 };
+    throw new Error(`${theme}: can't read ${name} = ${value}`);
+  };
+}
+const luminance = (rgb) =>
+  rgb.map((c) => c / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)).reduce((sum, c, i) => sum + c * [0.2126, 0.7152, 0.0722][i], 0);
+function contrast(fg, bg) {
+  const shown = fg.rgb.map((c, i) => c * fg.alpha + bg.rgb[i] * (1 - fg.alpha));
+  const [a, b] = [luminance(shown), luminance(bg.rgb)].sort((x, y) => y - x);
+  return (a + 0.05) / (b + 0.05);
+}
+
+test("contrast: every text and control colour meets WCAG AA in both themes (ADR 0012)", (t) => {
+  const css = withoutComments(read("styles.css"));
+  // [foreground, background, minimum, where]. 4.5:1 for text, 3:1 for large text
+  // (24px+, or 18.66px+ bold) and for focus rings. Decorative, aria-hidden marks
+  // (frame corners, ticks, margin labels, echoes) are left out on purpose.
+  const pairs = [
+    ["--color-ink", "--color-bg", 4.5, "body text"],
+    ["--color-ink-muted", "--color-bg", 4.5, "muted text, section titles, captions"],
+    ["--color-ink-muted", "--color-slot", 4.5, "placeholder slots"],
+    ["--color-panel-ink", "--color-panel", 4.5, "text on dark panels"],
+    ["--color-panel-ink-muted", "--color-panel", 4.5, "muted text on dark panels"],
+    ["--color-tag-ink", "--color-tag", 4.5, "skill tags"],
+    ["--color-tag-primary-ink", "--color-tag-primary", 4.5, "orange link buttons"],
+    ["--brand-mint", "--color-panel", 4.5, "banner labels and toggle"],
+    ["--brand-red", "--color-panel", 3, "Bridging: Technology (large)"],
+    ["--brand-amber", "--color-panel", 3, "Bridging: Engineering (large)"],
+    ["--brand-yellow", "--color-panel", 3, "Bridging: Art (large)"],
+    ["--brand-magenta", "--color-panel", 3, "value heading (large)"],
+    ["--brand-blue", "--color-panel", 3, "value heading (large)"],
+    ["--color-focus", "--color-bg", 3, "focus ring"],
+    ["--color-focus", "--color-panel", 3, "focus ring on panels"],
+    ["--color-marker", "--color-bg", 3, "current-page underline and active rail dot"],
+    ["--color-marker", "--color-panel", 3, "active rail dot over the banner"],
+    ["--color-rail", "--color-bg", 3, "rail dots"],
+    ["--color-rail", "--color-panel", 3, "rail dots over the banner"],
+  ];
+  for (const theme of ["light", "dark"]) {
+    const color = themeTokens(css, theme);
+    for (const [fg, bg, min, where] of pairs) {
+      const ratio = contrast(color(fg), color(bg));
+      t.diagnostic(`${theme} ${where}: ${ratio.toFixed(2)}:1`);
+      assert.ok(ratio >= min, `${theme}: ${where} (${fg} on ${bg}) is ${ratio.toFixed(2)}:1, needs ${min}:1`);
+    }
+  }
+  // The token test only means something if the buttons and tags really use them.
+  assert.match(css, /\.tag-link \{[^}]*color: var\(--color-tag-primary-ink\)/);
+  assert.match(css, /\.tag \{[^}]*background: var\(--color-tag\);[^}]*color: var\(--color-tag-ink\)/);
+  assert.doesNotMatch(css.match(/\.tag-count \{[^}]*\}/)?.[0] ?? "", /opacity/, "dimming the count would drop it below 4.5:1");
+  assert.match(css, /\.nav-list a\[aria-current\] \{[^}]*text-decoration-color: var\(--color-marker\)/);
+  assert.match(css, /\.section-rail a \{[^}]*background: var\(--color-rail\)/);
+  // The system dark mode and the toggle's dark mode must define the same colours.
+  const darkBlock = (start) => {
+    const at = css.indexOf(start);
+    return [...css.slice(at, css.indexOf("}", at)).matchAll(/(--[a-z0-9-]+):\s*([^;]+);/g)].map((m) => `${m[1]}=${m[2].trim()}`).sort();
+  };
+  assert.deepEqual(darkBlock(':root:not([data-theme="light"]) {'), darkBlock(':root[data-theme="dark"] {'));
+});
+
+// Bytes over the network for one visit: the page, the stylesheet, every script,
+// and every font (the worst case, before the browser caches anything).
+test("page weight: every page loads in under 200 KB gzipped (ADR 0012)", (t) => {
+  const gz = (file) => gzipSync(readFileSync(file), { level: 9 }).length;
+  const shared =
+    gz(join(site, "styles.css")) +
+    readdirSync(join(site, "js")).reduce((sum, f) => sum + gz(join(site, "js", f)), 0) +
+    readdirSync(join(site, "assets", "fonts")).filter((f) => f.endsWith(".woff2")).reduce((sum, f) => sum + readFileSync(join(site, "assets", "fonts", f)).length, 0);
+  for (const page of pages.filter((p) => p.endsWith(".html"))) {
+    const total = gz(join(site, page)) + shared;
+    t.diagnostic(`${page}: ${Math.round(total / 1024)} KB`);
+    assert.ok(total < 200 * 1024, `${page} is ${Math.round(total / 1024)} KB`);
+  }
+});
+
+test("print: always black on white, with decoration and controls left out (ADR 0012)", () => {
+  const css = withoutComments(read("styles.css"));
+  // Only the site-wide print block counts (the QR card has its own), so a check here
+  // can't pass on the strength of the card's rules.
+  const print = blocksAt(css, "@media print").map(([from, to]) => css.slice(from, to)).find((block) => block.includes(":root:root:root"));
+  assert.ok(print, "a site-wide print block exists");
+  // Cream text would vanish on paper, since browsers drop page backgrounds when printing.
+  const tokens = [["--color-bg", "#fff"], ["--color-ink", "#000"], ["--color-panel-ink", "#000"], ["--brand-mint", "#000"], ["--color-tag-ink", "#000"], ["--color-tag-primary-ink", "#000"]];
+  for (const [token, value] of tokens) assert.ok(print.includes(`${token}: ${value};`), `print sets ${token}`);
+  const hiddenRule = print.match(/([^{}]+)\{\s*display: none !important;\s*\}/)?.[1] ?? "";
+  for (const hidden of [".site-header", ".banner", ".model", ".terminal-echo", ".ambient-scene", ".toggle", ".action", ".skip-link"]) {
+    assert.ok(selectorList(hiddenRule).includes(hidden), `print hides ${hidden}`);
+  }
+  assert.match(print, /a\[href\^="http"\]::after \{\s*content: " \(" attr\(href\) "\)";/, "outside links show their address");
+});
