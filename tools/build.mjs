@@ -229,6 +229,9 @@ function write(file, html) {
 async function build() {
   // Only ever clear a "_"-prefixed folder directly inside the project.
   if (dirname(out) !== root || !basename(out).startsWith("_")) throw new Error(`refusing to build into ${out}; use --out _name`);
+  // Site text is read and checked first, so a typo in site-text.md fails the build
+  // with the section's name before anything is generated (ADR 0010).
+  const siteText = r.readSiteText(readFileSync(join(root, "site-text.md"), "utf8"));
   rmSync(out, { recursive: true, force: true });
   mkdirSync(out, { recursive: true });
   for (const entry of STATIC) cpSync(join(root, entry), join(out, entry), { recursive: true });
@@ -348,6 +351,14 @@ async function build() {
     guestbook_url: r.escapeHtml(guestbook?.url ?? `https://github.com/${REPO}/discussions/categories/guestbook`),
   });
   write(guestbookFile, r.insertAt(page, "<!-- ENTRIES -->", localize(entries, guestbookMedia)));
+
+  // Every page, generated ones included, gets the site text and links (ADR 0010).
+  for (const file of readdirSync(out, { recursive: true }).filter((f) => String(f).endsWith(".html"))) {
+    const path = join(out, String(file));
+    writeFileSync(path, r.applySiteText(readFileSync(path, "utf8"), siteText));
+  }
+  const vcard = join(out, "emiliano-manalo.vcf");
+  writeFileSync(vcard, r.applyVcard(readFileSync(vcard, "utf8"), siteText));
 
   const versions = fingerprint();
 

@@ -5,6 +5,7 @@ import {
   videoSources, clipInfo, isPlayableClip, clipLabel, localizeVideos,
   versionUrls, versionImports, importsOf, isProject, projectPath, skillsOf, extractLink, projectCard, skillsList,
   readingMinutes, summary, formatDate, renderComments, countComments, fill, postCard, guestbookEntries, redirectPage,
+  parseSiteText, readSiteText, renderInline, applySiteText, applyVcard, SITE_TEXT,
 } from "../tools/render.mjs";
 
 const owner = { login: "EmilianoManaloIV" };
@@ -414,4 +415,104 @@ test("redirect page needs no JavaScript and stays out of search", () => {
   assert.match(page, /<a href="\/rd\/12-new-name\/">/);
   assert.match(page, /noindex/);
   assert.doesNotMatch(page, /<script/);
+});
+
+// == Site text (ADR 0010)
+
+// A complete, valid file built from SITE_TEXT, with optional overrides per section.
+function siteFile(overrides = {}, links = {}) {
+  const linkLines = { Email: "me@example.com", LinkedIn: "https://www.linkedin.com/in/me", Instagram: "", X: "", GitHub: "https://github.com/me", ...links };
+  const parts = ["<!-- How to edit: change the text under each heading. -->", "## Links", ...Object.entries(linkLines).map(([k, v]) => `${k}: ${v}`)];
+  for (const [name, , kind] of SITE_TEXT) {
+    parts.push("", `## ${name}`);
+    if (name in overrides) parts.push(overrides[name]);
+    else if (kind === "entries") parts.push("### 2023–2027 | Some title", "What happened.");
+    else parts.push(`${name} text.`);
+  }
+  return parts.join("\n");
+}
+
+test("site text: sections, ### entries, paragraphs, and comments parse", () => {
+  const sections = parseSiteText("<!-- note -->\r\n## Intro\nOne\nline.\n\nTwo.\n## List\n### A | B\nBody");
+  assert.deepEqual(sections.get("intro").lines.filter(Boolean), ["One", "line.", "Two."]);
+  assert.equal(sections.get("list").entries[0].head, "A | B");
+  const { fields, links } = readSiteText(siteFile({ "About story": "First para\ncontinues.\n\nSecond *para*." }));
+  assert.equal(fields["about-story"], "\n            <p>First para continues.</p>\n            <p>Second <em>para</em>.</p>\n          ");
+  assert.deepEqual(fields.education, [{ when: "2023–2027", title: "Some title", body: ["What happened."] }]);
+  assert.equal(links.instagram, "");
+  assert.equal(links.email, "me@example.com");
+});
+
+test("site text: a missing, empty, or malformed section fails with its name", () => {
+  const without = siteFile().replace(/## Home about text\nHome about text text\./, "");
+  assert.throws(() => readSiteText(without), /"## Home about text" is missing/);
+  assert.throws(() => readSiteText(siteFile({ "Value 2 text": "" })), /"## Value 2 text" is empty/);
+  assert.throws(() => readSiteText(siteFile({ Education: "no entries here" })), /"## Education" needs at least one/);
+  assert.throws(() => readSiteText(siteFile({ Experience: "### just a title" })), /should look like/);
+  assert.throws(() => readSiteText(siteFile({}, { Email: "not-an-email" })), /must be an email address/);
+  assert.throws(() => readSiteText(siteFile({}, { LinkedIn: "http://insecure.example" })), /must start with https/);
+  assert.throws(() => readSiteText(siteFile({}, { X: "javascript:alert(1)" })), /must start with https/);
+});
+
+test("site text: inline formatting is escaped, limited, and sanitized", () => {
+  assert.equal(renderInline("a *b* **c** [d](https://e.example/f?g=1&h=2)"), 'a <em>b</em> <strong>c</strong> <a href="https://e.example/f?g=1&amp;h=2">d</a>');
+  assert.equal(renderInline("<script>x</script> & {{title}} $&"), "&lt;script&gt;x&lt;/script&gt; &amp; {{title}} $&amp;");
+  assert.doesNotMatch(renderInline("[x](javascript:alert(1))"), /<a/);
+  assert.doesNotMatch(renderInline("[x](http://insecure.example)"), /<a/);
+});
+
+test("site text: pages get the text, links, and email, and lose the markers", () => {
+  const page = [
+    '<p data-text="home-subtitle">old</p>',
+    '<ol class="entry-list" data-text="education"><li>old</li></ol>',
+    '<li><a href="https://x.com/TODO" data-link="x" aria-label="X">X</a></li>',
+    '<li>LinkedIn: <a href="https://www.linkedin.com/in/TODO" data-link="linkedin" data-link-text>old</a></li>',
+    '<li>Email: <a href="mailto:TODO@example.com" data-link="email" data-link-text>old</a> <button data-link="email" data-copy-email="TODO@example.com">Copy</button></li>',
+  ].join("\n");
+  const site = readSiteText(siteFile({ "Home subtitle": "New $& subtitle" }, { X: "" }));
+  const out = applySiteText(page, site);
+  assert.match(out, /<p>New \$&amp; subtitle<\/p>/);
+  assert.match(out, /<ol class="entry-list">\s*<li>\s*<p class="entry-when">2023–2027<\/p>/);
+  assert.doesNotMatch(out, /x\.com/, "a blank link removes its list item");
+  assert.match(out, /<a href="https:\/\/www\.linkedin\.com\/in\/me">linkedin\.com\/in\/me<\/a>/);
+  assert.match(out, /<a href="mailto:me@example\.com">me@example\.com<\/a> <button data-copy-email="me@example\.com">Copy<\/button>/);
+  assert.doesNotMatch(out, /data-text|data-link/);
+  assert.throws(() => applySiteText('<p data-text="nope">x</p>', site), /unknown data-text="nope"/);
+});
+
+test("site text: the contact card gets the email and LinkedIn", () => {
+  const vcf = "BEGIN:VCARD\nEMAIL;TYPE=INTERNET:TODO@example.com\nEND:VCARD\n";
+  const out = applyVcard(vcf, readSiteText(siteFile()));
+  assert.match(out, /^EMAIL;TYPE=INTERNET:me@example\.com$/m);
+  assert.match(out, /^URL:https:\/\/www\.linkedin\.com\/in\/me\nEND:VCARD$/m);
+});
+
+test("site text: silent mistakes are caught and named", () => {
+  assert.throws(() => readSiteText(siteFile() + "\n## Links\nEmail: x@y.co"), /"## Links" appears more than once/);
+  assert.throws(() => readSiteText(siteFile().replace("## Value 2 text", "## Value two text")), /"## Value two text" isn't a heading/);
+  assert.throws(() => readSiteText(siteFile({}, { Twitter: "https://x.example/me" })), /"Twitter: [^"]*" in "## Links" isn't one of/);
+  assert.throws(() => readSiteText(siteFile().replace("LinkedIn:", "- LinkedIn:")), /isn't one of/);
+  assert.throws(() => readSiteText(siteFile({ "About story": "### oops\ntext" })), /can't have "###" lines/);
+  assert.throws(() => readSiteText(siteFile({ "Home subtitle": "One.\n\nTwo." })), /single paragraph/);
+  assert.throws(() => readSiteText(siteFile({}, { Email: "mailto:a@b.co" })), /must be an email address/);
+  assert.throws(() => readSiteText(siteFile({}, { Email: "a@b.co?subject=hi" })), /must be an email address/);
+});
+
+test("site text: a $ in an address is inserted as typed", () => {
+  const url = "https://www.linkedin.com/in/a$&b$'c$$d";
+  const site = readSiteText(siteFile({}, { LinkedIn: url }));
+  const out = applySiteText('<li><a href="old" data-link="linkedin" data-link-text>old</a></li>', site);
+  assert.equal(out, '<li><a href="https://www.linkedin.com/in/a$&amp;b$&#39;c$$d">linkedin.com/in/a$&amp;b$&#39;c$$d</a></li>');
+  const card = applyVcard("BEGIN:VCARD\r\nEMAIL;TYPE=INTERNET:x\r\nURL:https://github.com/old\r\nEND:VCARD\r\n", site);
+  assert.ok(card.split("\r\n").includes(`URL:${url}`));
+  assert.ok(card.split("\r\n").includes("URL:https://github.com/me"), "GitHub follows the file");
+  assert.doesNotMatch(card, /github\.com\/old/);
+  assert.doesNotMatch(card, /[^\r]\n/, "the card keeps CRLF line endings");
+});
+
+test("site text: inline formatting edge cases", () => {
+  assert.equal(renderInline("2 * 3 * 4"), "2 * 3 * 4");
+  assert.equal(renderInline("[wiki](https://en.wikipedia.org/wiki/A_(b))"), '<a href="https://en.wikipedia.org/wiki/A_(b)">wiki</a>');
+  assert.equal(renderInline("[x](https://x.example/a*b*c) and *y*"), '<a href="https://x.example/a*b*c">x</a> and <em>y</em>');
+  assert.equal(renderInline("[x](HTTPS://x.example)"), '<a href="HTTPS://x.example">x</a>');
 });

@@ -4,6 +4,7 @@ The personal website of Emiliano Panday Manalo IV: **https://emilianomanaloiv.gi
 
 This README is the owner's guide to running the site day to day. You never edit HTML to publish. R&D posts, projects, and the guestbook all come from this repository's [Discussions](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/discussions). The site rebuilds within about a minute of any change, from the web or the GitHub mobile app.
 
+- [Edit your site text](#edit-your-site-text)
 - [Publish an R&D post](#publish-an-rd-post)
 - [Add a project](#add-a-project)
 - [Add a video clip](#add-a-video-clip)
@@ -12,6 +13,25 @@ This README is the owner's guide to running the site day to day. You never edit 
 - [Edit, hide, or remove](#edit-hide-or-remove)
 - [Moderate comments and signatures](#moderate-comments-and-signatures)
 - [If something doesn't show up](#if-something-doesnt-show-up)
+
+## Edit your site text
+
+Your bio, values, education, experience, email, and social links all live in one file: [`site-text.md`](site-text.md).
+
+**From a phone or a computer:**
+
+1. Open [`site-text.md`](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/blob/main/site-text.md) on GitHub.
+2. Tap the **pencil** (Edit) button.
+3. Change the text under any `## Heading`. Keep the heading lines as they are.
+4. Tap **Commit changes**, then **Commit changes** again.
+
+The site updates in about a minute.
+
+**Tips:**
+- **Formatting:** `*italic*`, `**bold**`, and `[link text](https://example.com)` work. Most sections are a single paragraph. **About story** can have several, with a blank line between them. Bullet lists aren't supported.
+- **Education and Experience:** each entry is a `### When | Title` line, such as `### 2023–2027 | B.S. Computer Science`, followed by a sentence or two. Add or remove entries, keeping at least one in each.
+- **Links:** leave a social link empty, with nothing after the colon, to hide it everywhere. Email is required.
+- **If a change doesn't appear:** a mistake stops the update and your site stays as it was. Open the [Actions tab](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/actions), and the failed run says what to fix: a missing, duplicated, or misspelled heading, a bad link, or an extra paragraph. Fix it soon, because new posts, comments, and signatures also wait until the file is valid.
 
 ## Publish an R&D post
 
