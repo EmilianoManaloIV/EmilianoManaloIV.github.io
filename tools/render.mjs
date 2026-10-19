@@ -608,3 +608,198 @@ export function redirectPage(to, site) {
 </html>
 `;
 }
+
+// == Site text (ADR 0010): page copy and links from one plain file, site-text.md,
+// edited on GitHub. Pages mark editable spots with data-text="key" and links with
+// data-link="name"; the build fills them and strips the markers.
+
+// Every section the file must have, the page key it fills, and how it renders:
+// "inline" (one run of text), "block" (paragraphs), or "entries" (### items).
+export const SITE_TEXT = [
+  ["Home subtitle", "home-subtitle", "inline"],
+  ["Home about heading", "home-about-heading", "inline"],
+  ["Home about text", "home-about-text", "inline"],
+  ["Value 1 heading", "value-1-heading", "inline"],
+  ["Value 1 text", "value-1-text", "inline"],
+  ["Value 2 heading", "value-2-heading", "inline"],
+  ["Value 2 text", "value-2-text", "inline"],
+  ["Value 3 heading", "value-3-heading", "inline"],
+  ["Value 3 text", "value-3-text", "inline"],
+  ["About one-liner", "about-one-liner", "inline"],
+  ["About story", "about-story", "block"],
+  ["Education", "education", "entries"],
+  ["Experience", "experience", "entries"],
+];
+// Links: Email is required; a blank social link removes it from every page.
+export const SITE_LINKS = ["Email", "LinkedIn", "Instagram", "X", "GitHub"];
+
+// Splits the file into sections ("## Name") and their "### " entries. HTML comments
+// are guidance for the editor and are dropped. A heading used twice is recorded in
+// `duplicates`, so the check can name it instead of silently keeping the last.
+export function parseSiteText(text) {
+  const sections = new Map();
+  sections.duplicates = [];
+  let section = null;
+  let entry = null;
+  for (const raw of String(text).replace(/\r\n?/g, "\n").replace(/<!--[\s\S]*?-->/g, "").split("\n")) {
+    const line = raw.trimEnd();
+    if (line.startsWith("## ")) {
+      section = { title: line.slice(3).trim(), lines: [], entries: [] };
+      entry = null;
+      const name = section.title.toLowerCase();
+      if (sections.has(name)) sections.duplicates.push(section.title);
+      sections.set(name, section);
+    } else if (line.startsWith("### ") && section) {
+      entry = { head: line.slice(4).trim(), lines: [] };
+      section.entries.push(entry);
+    } else if (section) {
+      (entry ?? section).lines.push(line);
+    }
+  }
+  return sections;
+}
+
+const paragraphs = (lines) =>
+  lines
+    .join("\n")
+    .split(/\n\s*\n/)
+    .map((p) => p.trim().replace(/\s*\n\s*/g, " "))
+    .filter(Boolean);
+
+// *em* and **strong** only when the stars hug the words, so "2 * 3 * 4" stays as typed.
+const emphasis = (html) =>
+  html.replace(/\*\*(?=\S)(.+?)(?<=\S)\*\*/g, "<strong>$1</strong>").replace(/\*(?=\S)(.+?)(?<=\S)\*/g, "<em>$1</em>");
+
+// A small, safe Markdown subset: *em*, **strong**, and [text](https:// or mailto:).
+// Links are found first, so stars inside an address never become markup; one level
+// of parentheses in an address is allowed, as in Wikipedia links. Everything is
+// escaped before any markup is added, and the result goes through the owner sanitizer.
+const LINK = /\[([^\]]+)\]\(((?:https:\/\/|mailto:)(?:[^\s()]|\([^\s()]*\))+)\)/gi;
+export function renderInline(text) {
+  const out = [];
+  let last = 0;
+  for (const m of String(text).matchAll(LINK)) {
+    out.push(emphasis(escapeHtml(text.slice(last, m.index))));
+    out.push(`<a href="${escapeHtml(m[2])}">${emphasis(escapeHtml(m[1]))}</a>`);
+    last = m.index + m[0].length;
+  }
+  out.push(emphasis(escapeHtml(String(text).slice(last))));
+  return sanitize(out.join(""));
+}
+
+const isHttps = (url) => /^https:\/\/[^\s/]+\.[^\s]+$/i.test(url);
+const isEmail = (email) => /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email);
+
+// Reads and checks the whole file. Any problem throws with the section's name, so a
+// typo fails the build (and the last good site stays live) instead of publishing.
+export function readSiteText(text) {
+  const sections = parseSiteText(text);
+  const fail = (message) => {
+    throw new Error(`site-text.md: ${message}`);
+  };
+  if (sections.duplicates.length) fail(`"## ${sections.duplicates[0]}" appears more than once; keep one`);
+  const known = new Set(["links", ...SITE_TEXT.map(([name]) => name.toLowerCase())]);
+  for (const section of sections.values()) {
+    if (!known.has(section.title.toLowerCase())) fail(`"## ${section.title}" isn't a heading this site uses; check its spelling against the list at the top of the file`);
+  }
+  const fields = {};
+  for (const [name, key, kind] of SITE_TEXT) {
+    const section = sections.get(name.toLowerCase());
+    if (!section) fail(`"## ${name}" is missing`);
+    if (kind !== "entries" && section.entries.length) fail(`"## ${name}" can't have "###" lines; those are only for Education and Experience`);
+    if (kind === "entries") {
+      if (!section.entries.length) fail(`"## ${name}" needs at least one "### When | Title" entry`);
+      fields[key] = section.entries.map((e) => {
+        const [when, ...rest] = e.head.split("|");
+        const title = rest.join("|").trim();
+        if (!when.trim() || !title) fail(`"### ${e.head}" in "${name}" should look like "### 2023–2027 | Title"`);
+        const body = paragraphs(e.lines);
+        return { when: renderInline(when.trim()), title: renderInline(title), body: body.map(renderInline) };
+      });
+      continue;
+    }
+    const body = paragraphs(section.lines);
+    if (!body.length) fail(`"## ${name}" is empty`);
+    if (kind === "inline" && body.length > 1) fail(`"## ${name}" should be a single paragraph (no blank lines inside it)`);
+    // Blocks keep the pages' own indentation, so the built HTML reads like the source.
+    fields[key] = kind === "block" ? `${body.map((p) => `\n            <p>${renderInline(p)}</p>`).join("")}\n          ` : renderInline(body.join(" "));
+  }
+  const links = {};
+  const linkSection = sections.get("links");
+  if (!linkSection) fail(`"## Links" is missing`);
+  if (linkSection.entries.length) fail(`"## Links" can't have "###" lines`);
+  const allowed = SITE_LINKS.map((n) => n.toLowerCase());
+  for (const line of linkSection.lines.map((l) => l.trim()).filter(Boolean)) {
+    // The name is everything before the first colon, so addresses keep theirs.
+    const match = /^([^:]+):\s*(.*)$/.exec(line);
+    const key = match?.[1].trim().toLowerCase();
+    if (!match || !allowed.includes(key)) fail(`"${line}" in "## Links" isn't one of ${SITE_LINKS.join(", ")} followed by a colon`);
+    if (key in links) fail(`"${match[1].trim()}:" appears twice in "## Links"`);
+    links[key] = match[2].trim();
+  }
+  for (const name of SITE_LINKS) {
+    const value = links[name.toLowerCase()] ?? "";
+    if (name === "Email") {
+      if (!isEmail(value)) fail(`"Email:" in "## Links" must be an email address, not "${value}"`);
+    } else if (value && !isHttps(value)) {
+      fail(`"${name}:" in "## Links" must start with https://, not "${value}"`);
+    }
+  }
+  return { fields, links: Object.fromEntries(SITE_LINKS.map((n) => [n.toLowerCase(), links[n.toLowerCase()] ?? ""])) };
+}
+
+const displayUrl = (url) => url.replace(/^https:\/\/(www\.)?/i, "").replace(/\/$/, "");
+
+function entryItems(entries) {
+  return entries
+    .map(
+      (e) => `
+          <li>
+            <p class="entry-when">${e.when}</p>
+            <div>
+              <h3>${e.title}</h3>${e.body.map((p) => `\n              <p>${p}</p>`).join("")}
+            </div>
+          </li>`,
+    )
+    .join("") + "\n        ";
+}
+
+// Fills one page. Unknown keys throw, so a typo in a page's markup can't go unnoticed.
+export function applySiteText(html, { fields, links }) {
+  let out = html.replace(/<([a-z][a-z0-9]*)\b([^>]*?)\sdata-text="([^"]+)"([^>]*)>([\s\S]*?)<\/\1>/g, (_, tag, before, key, after) => {
+    if (!(key in fields)) throw new Error(`unknown data-text="${key}"`);
+    const value = fields[key];
+    const inner = Array.isArray(value) ? entryItems(value) : value;
+    return `<${tag}${before}${after}>${inner}</${tag}>`;
+  });
+  for (const name of Object.keys(links)) {
+    const value = links[name];
+    if (!value) {
+      // A blank link removes its list item (header and footer icons, contact list).
+      out = out.replace(new RegExp(String.raw`\s*<li\b[^>]*>(?:(?!</li>)[\s\S])*?\sdata-link="${name}"(?:(?!</li>)[\s\S])*</li>`, "g"), "");
+      continue;
+    }
+    const href = name === "email" ? `mailto:${value}` : value;
+    out = out.replace(new RegExp(String.raw`<([a-z]+)\b([^>]*?)\sdata-link="${name}"([^>]*)>([\s\S]*?)</\1>`, "g"), (_, tag, before, after, inner) => {
+      // Function replacers, so a "$" in an address is inserted as typed.
+      let attrs = `${before}${after}`;
+      attrs = attrs.replace(/\shref="[^"]*"/, () => ` href="${escapeHtml(href)}"`);
+      attrs = attrs.replace(/\sdata-copy-email="[^"]*"/, () => ` data-copy-email="${escapeHtml(value)}"`);
+      const showText = /\sdata-link-text\b/.test(attrs);
+      attrs = attrs.replace(/\sdata-link-text\b/, "");
+      return `<${tag}${attrs}>${showText ? escapeHtml(name === "email" ? value : displayUrl(value)) : inner}</${tag}>`;
+    });
+  }
+  return out;
+}
+
+// The contact card carries the same email, the GitHub link as set (or none), and
+// LinkedIn when given. It keeps the card's own line endings (vCard prefers CRLF).
+export function applyVcard(vcf, { links }) {
+  const eol = vcf.includes("\r\n") ? "\r\n" : "\n";
+  const lines = vcf.split(/\r?\n/).filter((line) => !/^URL:https:\/\/(www\.)?(github|linkedin)\.com\//i.test(line));
+  const end = lines.indexOf("END:VCARD");
+  const extra = [links.github, links.linkedin].filter(Boolean).map((url) => `URL:${url}`);
+  lines.splice(end, 0, ...extra);
+  return lines.map((line) => (line.startsWith("EMAIL;TYPE=INTERNET:") ? `EMAIL;TYPE=INTERNET:${links.email}` : line)).join(eol);
+}

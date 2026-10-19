@@ -8,6 +8,7 @@ import { gzipSync } from "node:zlib";
 import { dirname, join, resolve, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
+import { readSiteText, escapeHtml } from "../tools/render.mjs";
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const site = resolve(repo, process.env.SITE_DIR ?? "_site");
@@ -189,12 +190,19 @@ test("every page repeats the home page's header and footer exactly", () => {
     const clean = text.replace(/\r\n/g, "\n").replace(/ aria-current="page"/g, "");
     return ["header", "footer"].map((tag) => clean.match(new RegExp(`<${tag} class="site-${tag}">[\\s\\S]*?</${tag}>`))?.[0]);
   };
-  const [header, footer] = chrome(read("index.html"));
-  assert.ok(header && footer, "index.html header or footer not found");
-  for (const [name, text] of [...pages.map((p) => [p, read(p)]), ...TEMPLATES.map((t) => [t, source(t)])]) {
-    const [h, f] = chrome(text);
-    assert.equal(h, header, `${name}: header differs from index.html`);
-    assert.equal(f, footer, `${name}: footer differs from index.html`);
+  // Built pages are compared with the built home page, and templates with the source
+  // home page: the build fills site-text links (ADR 0010), so the two forms differ.
+  for (const [home, others] of [
+    [read("index.html"), pages.map((p) => [p, read(p)])],
+    [source("index.html"), TEMPLATES.map((t) => [t, source(t)])],
+  ]) {
+    const [header, footer] = chrome(home);
+    assert.ok(header && footer, "index.html header or footer not found");
+    for (const [name, text] of others) {
+      const [h, f] = chrome(text);
+      assert.equal(h, header, `${name}: header differs from index.html`);
+      assert.equal(f, footer, `${name}: footer differs from index.html`);
+    }
   }
 });
 
@@ -598,4 +606,50 @@ test("deploy workflow builds with tools/build.mjs and tests the result", () => {
 const todos = [...pages, "emiliano-manalo.vcf", "styles.css"].filter((f) => read(f).includes("TODO"));
 test("launch readiness: no TODO placeholders remain", { todo: todos.length > 0 }, () => {
   assert.deepEqual(todos, [], `placeholders remain in: ${todos.join(", ")}`);
+});
+
+// ADR 0010: page copy and links come from site-text.md.
+test("site text: the file is valid, and the built pages carry it with no markers left", () => {
+  const { fields, links } = readSiteText(source("site-text.md"));
+  for (const page of [...pages, "emiliano-manalo.vcf"]) {
+    assert.doesNotMatch(read(page), /\sdata-(text|link)(-text)?\b/, `${page}: a site-text marker was left in the built page`);
+  }
+  const home = read("index.html");
+  assert.ok(home.includes(`<p>${fields["home-subtitle"]}</p>`), "the home subtitle comes from site-text.md");
+  assert.ok(read("about/index.html").includes(fields["about-one-liner"]), "the About one-liner comes from site-text.md");
+  // One email everywhere: the mailto link, the copy button, and the contact card.
+  assert.ok(home.includes(`href="mailto:${escapeHtml(links.email)}"`));
+  assert.ok(home.includes(`data-copy-email="${escapeHtml(links.email)}"`));
+  assert.ok(read("emiliano-manalo.vcf").split(/\r?\n/).includes(`EMAIL;TYPE=INTERNET:${links.email}`), "the contact card has the same email");
+  // Social links: in every page's header and footer where set, gone everywhere where
+  // blank. Pages hold the address HTML-escaped (an "&" in a URL becomes "&amp;").
+  const labels = { linkedin: "LinkedIn", instagram: "Instagram", x: "X", github: "GitHub" };
+  for (const [name, label] of Object.entries(labels)) {
+    for (const page of pages) {
+      const icons = (read(page).match(new RegExp(`<a href="([^"]*)" aria-label="${label}">`, "g")) ?? []).length;
+      if (links[name]) {
+        assert.equal(icons, 2, `${page}: the ${label} icon should be in the header and footer`);
+        assert.ok(read(page).includes(`<a href="${escapeHtml(links[name])}" aria-label="${label}">`), `${page}: ${label} points elsewhere`);
+      } else {
+        assert.equal(icons, 0, `${page}: a blank ${label} link should be removed`);
+      }
+    }
+  }
+});
+
+test("site text: marked elements never contain their own tag, so filling them is exact", () => {
+  // applySiteText replaces up to the first closing tag of the same name; a nested
+  // element of that tag inside a marked one would leave a stray tail (ADR 0010).
+  for (const file of ["index.html", "about/index.html", "rd/index.html", "guestbook/index.html", "404.html", ...TEMPLATES]) {
+    for (const [, tag, inner] of source(file).matchAll(/<([a-z][a-z0-9]*)\b[^>]*\sdata-text="[^"]+"[^>]*>([\s\S]*?)<\/\1>/g)) {
+      assert.doesNotMatch(inner, new RegExp(`<${tag}\\b`), `${file}: a <${tag} data-text> holds another <${tag}>`);
+    }
+  }
+});
+
+test("site text: every editable spot in the source pages is a known key", () => {
+  const keys = new Set(Object.keys(readSiteText(source("site-text.md")).fields));
+  for (const file of ["index.html", "about/index.html", "rd/index.html", "guestbook/index.html", "404.html", ...TEMPLATES]) {
+    for (const [, key] of source(file).matchAll(/data-text="([^"]+)"/g)) assert.ok(keys.has(key), `${file}: unknown data-text="${key}"`);
+  }
 });
