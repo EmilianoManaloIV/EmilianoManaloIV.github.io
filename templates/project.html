@@ -31,7 +31,7 @@
 
   <header class="site-header">
     <div class="read-progress" aria-hidden="true"></div>
-    <div class="scroll-ruler" aria-hidden="true"><span data-ruler></span></div>
+    <canvas class="ambient-scene" data-scene="ambient" aria-hidden="true"></canvas>
     <div class="container">
       <a class="monogram" href="/" aria-label="Emiliano Panday Manalo IV, home">EM</a>
       <nav id="site-nav" aria-label="Primary">
@@ -68,7 +68,7 @@
       </div>
     </article>
 
-    <section id="comments" class="section">
+    <section id="comments" class="section" data-label="01 — Comments ({{comment_count}})">
       <div class="container prose">
         <h2 class="section-title"><span class="section-index" aria-hidden="true">01 /</span> Comments ({{comment_count}})</h2>
         {{comments}}

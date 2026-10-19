@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { torus, lathe, dome, grid, sphere, cube, waveHeight, rotate, project, bezierPatches, uprightUnit, fitUnit, headset } from "../js/geometry.js";
+import { torus, lathe, dome, grid, sphere, cube, waveHeight, rotate, project, bezierPatches, uprightUnit, fitUnit, headset, icosphere } from "../js/geometry.js";
 import { teapotPoints, teapotPatches } from "../js/models.js";
 
 const length = ([x, y, z]) => Math.hypot(x, y, z);
@@ -137,4 +137,18 @@ test("the VR headset is symmetric, wider than tall, with its strap behind the vi
   const tallest = Math.max(...mesh.vertices.map((v) => Math.abs(v[0])));
   const sides = mesh.vertices.filter((v) => Math.abs(v[0]) > tallest - 1e-6);
   assert.ok(sides.every((v) => v[2] < front + (back - front) / 3), "the widest points belong to the visor at the front");
+});
+
+test("the geodesic sphere has 12, then 42 vertices on the unit sphere", () => {
+  const base = icosphere(0);
+  assert.equal(base.vertices.length, 12);
+  assert.equal(base.edges.length, 30);
+  const mesh = icosphere(1);
+  assert.equal(mesh.vertices.length, 42);
+  assert.equal(mesh.edges.length, 120);
+  for (const p of mesh.vertices) assert.ok(Math.abs(length(p) - 1) < 1e-9);
+  // Every vertex joins five or six neighbours, as on a geodesic dome.
+  const degree = new Array(42).fill(0);
+  for (const [a, b] of mesh.edges) degree[a]++, degree[b]++;
+  assert.ok(degree.every((d) => d === 5 || d === 6));
 });

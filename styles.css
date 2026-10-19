@@ -313,66 +313,6 @@ button {
   }
 }
 
-/* Scroll ruler (ADR 0009): a drawing-style ruler in the empty right margin of wide
-   screens, with ticks, a marker at the reader's position, and a readout from
-   ui.js. Like the progress bar it reports status, so it stays on with motion off. */
-.scroll-ruler {
-  display: none;
-}
-
-@media screen and (min-width: 1440px) {
-  .scroll-ruler {
-    position: fixed;
-    top: 15vh;
-    right: 1.5rem;
-    z-index: 5;
-    display: block;
-    width: 1.25rem;
-    height: 70vh;
-    border-right: 1px solid var(--color-rule);
-    background:
-      repeating-linear-gradient(var(--color-rule) 0 1px, transparent 1px 40px) right top / 1.25rem 100% no-repeat,
-      repeating-linear-gradient(var(--color-rule) 0 1px, transparent 1px 8px) right top / 0.5rem 100% no-repeat;
-    pointer-events: none;
-  }
-
-  /* A page-coloured backing keeps the readout legible where it crosses dark panels. */
-  .scroll-ruler span {
-    position: absolute;
-    top: 0;
-    right: calc(100% + 0.5rem);
-    padding: var(--space-2) 2px;
-    background: var(--color-bg);
-    color: var(--color-ink-muted);
-    font-size: var(--text-xs);
-    letter-spacing: 0.12em;
-    white-space: nowrap;
-    writing-mode: vertical-rl;
-  }
-}
-
-@supports (animation-timeline: scroll()) {
-  @media screen and (min-width: 1440px) {
-    .scroll-ruler::after {
-      content: "";
-      position: absolute;
-      top: 0;
-      right: -4px;
-      width: calc(1.25rem + 8px);
-      height: 2px;
-      background: var(--brand-red);
-      animation: ruler-mark linear both;
-      animation-timeline: scroll(root);
-    }
-  }
-}
-
-@keyframes ruler-mark {
-  to {
-    transform: translateY(calc(70vh - 2px));
-  }
-}
-
 .container {
   width: 100%;
   max-width: calc(var(--content-max) + 2 * var(--gutter));
@@ -1736,13 +1676,6 @@ html.js-ready:not(.motion-off) .terminal-echo {
     text-align: right;
   }
 
-  /* At 1440px and up the ruler takes the right margin, so the echo stays clear of it. */
-  @media (min-width: 1440px) {
-    .hero .terminal-echo + .terminal-echo {
-      right: 6rem;
-    }
-  }
-
   /* Subpage headings: the echo fills the empty right half (behind the R&D headset). */
   .page-hero .terminal-echo {
     display: block;
@@ -1761,5 +1694,89 @@ html.js-ready:not(.motion-off) .terminal-echo {
   .tech-labels {
     justify-content: flex-end;
     align-self: end;
+  }
+}
+
+/* ==========================================================================
+   Big screens: 1600px and up (ADR 0009). The content column and type grow with
+   the screen, so a full-screen 16:9 display isn't 40% empty margin; the banner
+   spans the full width; sections get margin labels; and one faint wireframe
+   drifts in the margins.
+   ========================================================================== */
+@media (min-width: 1600px) {
+  :root {
+    --content-max: 80rem; /* 1360px at 17px, 1440px at 18px */
+  }
+
+  html {
+    font-size: 106.25%;
+  }
+
+  /* The banner is the showcase: its console pins to the left edge of the screen
+     and the headline to the right, with the art taking the extra width. */
+  .banner .container {
+    max-width: none;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 1920px) {
+  html {
+    font-size: 112.5%;
+  }
+}
+
+/* Margin labels: a drawing sheet's margin note beside each named section. It stays
+   put (sticky) while its section is read and leaves with it. It is a real box of
+   fixed height, floated into the right margin: floats don't move block content,
+   and the section (a flow root) always contains it, so a label can never slide
+   into the next section's. Decorative, so screen readers skip it. */
+@media screen and (min-width: 1600px) {
+  .section[data-label] {
+    display: flow-root;
+  }
+
+  .section[data-label]::before {
+    content: "+ " attr(data-label);
+    content: "+ " attr(data-label) / "";
+    position: sticky;
+    top: 30vh;
+    float: right;
+    width: 1.5em;
+    height: 13rem;
+    margin-right: calc(50% - var(--content-max) / 2 - 3rem - 1.5em);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--color-ink-muted);
+    font-size: var(--text-xs);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    writing-mode: vertical-rl;
+    opacity: 0.7;
+    pointer-events: none;
+  }
+}
+
+/* The ambient wireframe: one oversized, very faint geodesic sphere fixed behind the
+   page, masked out behind the content column so it shows only in the margins.
+   Dark panels cover it, like the page grid. */
+.ambient-scene {
+  display: none;
+}
+
+@media screen and (min-width: 1600px) {
+  .ambient-scene {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    display: block;
+    width: 100%;
+    height: 100vh;
+    color: var(--color-ink);
+    opacity: 0.07;
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(50% - var(--content-max) / 2 - 3rem), transparent calc(50% - var(--content-max) / 2 + 3rem), transparent calc(50% + var(--content-max) / 2 - 3rem), #000 calc(50% + var(--content-max) / 2 + 3rem));
+    mask-image: linear-gradient(90deg, #000 calc(50% - var(--content-max) / 2 - 3rem), transparent calc(50% - var(--content-max) / 2 + 3rem), transparent calc(50% + var(--content-max) / 2 - 3rem), #000 calc(50% + var(--content-max) / 2 + 3rem));
   }
 }

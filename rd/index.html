@@ -30,7 +30,7 @@
 
   <header class="site-header">
     <div class="read-progress" aria-hidden="true"></div>
-    <div class="scroll-ruler" aria-hidden="true"><span data-ruler></span></div>
+    <canvas class="ambient-scene" data-scene="ambient" aria-hidden="true"></canvas>
     <div class="container">
       <a class="monogram" href="/" aria-label="Emiliano Panday Manalo IV, home">EM</a>
       <nav id="site-nav" aria-label="Primary">
@@ -73,7 +73,7 @@
       </div>
     </section>
 
-    <section id="entries" class="section">
+    <section id="entries" class="section" data-label="01 — Entries">
       <div class="container">
         <h2 class="section-title"><span class="section-index" aria-hidden="true">01 /</span> Entries</h2>
         <!-- The build (tools/build.mjs) fills this list from GitHub Discussions, newest first. -->
@@ -82,7 +82,7 @@
       </div>
     </section>
 
-    <section id="how" class="section">
+    <section id="how" class="section" data-label="02 — How this works">
       <div class="container">
         <h2 class="section-title"><span class="section-index" aria-hidden="true">02 /</span> How this works</h2>
         <div class="prose">

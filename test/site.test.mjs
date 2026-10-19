@@ -439,10 +439,9 @@ test("styles.css: looping animations run only under html.js-ready:not(.motion-of
 test("styles.css: scroll-linked motion is screen-only, no-preference, and stops with the toggle (ADR 0008)", () => {
   const css = withoutComments(read("styles.css"));
   const safe = blocksAt(css, "@media screen and (prefers-reduced-motion: no-preference)");
-  // The reading-progress bar and the scroll ruler's marker are status displays, not
-  // decoration (ADR 0009): they report scroll position, so they stay on under
-  // reduced motion and with motion off.
-  const statusDisplays = new Set([".read-progress", ".scroll-ruler::after"]);
+  // The reading-progress bar is a status display, not decoration (ADR 0009): it
+  // reports scroll position, so it stays on under reduced motion and motion off.
+  const statusDisplays = new Set([".read-progress"]);
   let rules = 0;
   for (const match of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
     const [, selector, body] = match;
@@ -459,21 +458,40 @@ test("styles.css: scroll-linked motion is screen-only, no-preference, and stops 
   assert.ok(rules >= 2, "the grid parallax and reveals should be found");
 });
 
-test("the reading-progress bar and scroll ruler sit in the shared header of every page (ADR 0009)", () => {
+test("the progress bar and ambient wireframe sit in the shared header of every page (ADR 0009)", () => {
   for (const page of pages.filter((p) => p.endsWith(".html"))) {
     assert.match(
       html(page),
-      /<header class="site-header">\s*<div class="read-progress" aria-hidden="true"><\/div>\s*<div class="scroll-ruler" aria-hidden="true"><span data-ruler><\/span><\/div>/,
+      /<header class="site-header">\s*<div class="read-progress" aria-hidden="true"><\/div>\s*<canvas class="ambient-scene" data-scene="ambient" aria-hidden="true"><\/canvas>/,
       page,
     );
   }
-  assert.match(read("js/ui.js"), /querySelector\("\[data-ruler\]"\)/, "ui.js writes the ruler readout");
-  // The ruler only has room in a wide margin: hidden by default, shown on screens
-  // 1440px and up, so it never prints or crowds a phone.
+  // The ambient wireframe only has room in a wide margin: hidden by default and
+  // shown on screens 1600px and up, so it never crowds a laptop or phone.
   const css = withoutComments(read("styles.css"));
-  assert.match(css, /\.scroll-ruler \{\s*display: none;\s*\}/);
-  const wide = blocksAt(css, "@media screen and (min-width: 1440px)");
-  assert.ok(wide.some(([from, to]) => /\.scroll-ruler \{[^}]*display: block/.test(css.slice(from, to))), "shown only at 1440px and up");
+  assert.match(css, /\.ambient-scene \{[^}]*display: none;/);
+  const wide = blocksAt(css, "@media screen and (min-width: 1600px)");
+  assert.ok(wide.some(([from, to]) => /\.ambient-scene \{[^}]*display: block/.test(css.slice(from, to))), "shown only at 1600px and up");
+});
+
+test("named sections carry a margin label matching their title (ADR 0009)", () => {
+  // Attributes are read individually, so their order and extra classes don't matter.
+  const attr = (tag, name) => tag.match(new RegExp(`\\s${name}="([^"]*)"`))?.[1];
+  let labels = 0;
+  for (const page of pages.filter((p) => p.endsWith(".html"))) {
+    for (const [, tag, body] of html(page).matchAll(/(<section\b[^>]*>)([\s\S]*?)<\/section>/g)) {
+      const title = body.match(/<span class="section-index" aria-hidden="true">(\d{2}) \/<\/span> ([^<]+)<\/h2>/);
+      const label = attr(tag, "data-label");
+      if (!title) {
+        assert.equal(label, undefined, `${page}: a label without a numbered title: ${tag}`);
+        continue;
+      }
+      if (!(attr(tag, "class") ?? "").split(/\s+/).includes("section")) continue;
+      labels++;
+      assert.equal(label, `${title[1]} — ${title[2].trim()}`, `${page}: margin label missing or disagrees with the title: ${tag}`);
+    }
+  }
+  assert.ok(labels >= 10, "home, About, R&D, and Guestbook sections should be found");
 });
 
 test("hands-on models are focusable, labelled, and resettable (ADR 0009)", () => {

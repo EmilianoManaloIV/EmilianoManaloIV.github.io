@@ -115,7 +115,7 @@ The hourly rebuild pauses after 60 days without any activity in the repository. 
 ## Things visitors can do
 
 - **Turn the 3D models:** drag the teapot in Contact, the VR headset on the R&D page, or the torus at the bottom of every page, or click one and use the arrow keys. **Reset view** or the Home key puts it back.
-- **See where you are:** a thin bar across the top fills as you scroll, and on wide screens a ruler in the right margin reads out your position and section.
+- **See where you are:** a thin bar across the top fills as you scroll. On big screens, a faint label in the right margin names the section you're reading.
 - **Pause all motion:** the **Motion** button in the footer stops every animation, and the site remembers the choice.
 
 ## For developers

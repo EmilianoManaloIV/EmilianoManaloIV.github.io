@@ -10,7 +10,7 @@ After the video clips (0007) and ambient motion (0008), `js/` was 10 bytes under
 
 ## Decision
 
-**Budget:** the limit rises from 10 KB to **32 KB gzipped**. That makes room for model data and interaction while staying under a third of the self-hosted fonts, which are about 105 KB. On slow Wi-Fi it adds well under a second. After this change `js/` is about 16.1 KB.
+**Budget:** the limit rises from 10 KB to **32 KB gzipped**. That makes room for model data and interaction while staying under a third of the self-hosted fonts, which are about 105 KB. On slow Wi-Fi it adds well under a second. After this change `js/` is about 16.8 KB.
 
 **Each addition answers a usability principle:**
 
@@ -18,7 +18,6 @@ After the video clips (0007) and ambient motion (0008), `js/` was 10 bytes under
 |---|---|---|
 | Hands-on models | Direct manipulation, feedback | The teapot and the footer torus follow the hand when dragged, or turn with the arrow keys. A visible hint and "Reset view" sit under each one, Home also resets, and the console logs `USER ROTATE`. |
 | Reading-progress bar | Visibility of system status | A thin brand-gradient bar at the top shows how far down the page the reader is. |
-| Scroll ruler | Visibility of system status, wayfinding | On screens 1440 px and up, a drawing-style ruler in the empty right margin has a marker at the reader's position and a readout like `Y 01840 / 06210 · SEC 02`. |
 | Section markers | Wayfinding | Each section rule ends in a registration mark and draws in as the section arrives. |
 | 404 teapot | Error recovery | The 404 page explains itself with a nod to HTTP 418 and offers three large, named ways back. |
 | Hover and focus feedback | Affordance | Card brackets close in, link arrows nudge forward, and card titles underline when pointed at or focused. |
@@ -37,12 +36,19 @@ After the video clips (0007) and ambient motion (0008), `js/` was 10 bytes under
 
 **Echoes on subpages:** the R&D, About, and Guestbook headings get the faint console echo from 0008. Those pages have no console, so `main.js` runs the same telemetry without one: one finished line every couple of seconds, gated like the console by motion, tab visibility, and the echo being on screen.
 
-**Progress bar and ruler:** they are status displays, not decoration, so it follows scrolling under reduced motion and with the motion toggle off. Browsers without scroll timelines don't show it. A site test exempts them by name from the 0008 motion gates, and checks that both are in every page's shared header. The ruler's readout comes from `ui.js`'s existing scroll handler.
+**Progress bar:** it is a status display, not decoration, so it follows scrolling under reduced motion and with the motion toggle off. Browsers without scroll timelines don't show it. A site test exempts it by name from the 0008 motion gates, and checks that it is in every page's shared header.
 
 **Reduced motion:** hover and focus feedback changes instantly instead of animating, so the feedback stays and the movement goes.
 
+**Big screens (1600 px and up):** on a full-screen 16:9 display the 1152 px column left 40% of the screen as margin. So the layout uses the space it has, rather than adding clutter to fill it:
+- **Scale-up:** the content column grows to 80rem and the root font size to 17 px at 1600 and 18 px at 1920. Everything built in `rem` grows with it, and the margins shrink to about 240 px at 1920.
+- **Full-width banner:** the banner's grid drops its max-width, so the console pins to the screen's left edge and the headline to its right.
+- **Margin labels (wayfinding):** each titled section carries `data-label="02 — Projects"`, shown by CSS alone as a faint vertical note in the right margin. It is sticky, so it stays beside the section being read. Each label is a fixed-height box floated into the margin, and its section is a flow root, so a label can never slide into the next section's. A side effect: a very short section, like R&D's Entries before any posts, is at least as tall as its label on big screens. A site test checks every label matches its title.
+- **Ambient wireframe (depth):** one oversized geodesic sphere (`icosphere(1)`, 42 vertices) drifts behind the page at about 7% opacity, masked out behind the content column and cropped by the screen edge. It draws at 1x pixel ratio and on its own timer of about 15 frames a second, so it never keeps the full-rate frame loop running by itself. It stops with the Motion toggle like every other scene.
+
 ## Alternatives
 
+- **A scroll ruler in the right margin:** a drawing-style ruler with a position marker and a `Y 01840 / 06210` readout. Tried and dropped: it duplicated the browser's own scroll bar and felt busy.
 - **A counted section code (`SEC.02`) on each marker:** dropped. Unnumbered panels made the count disagree with the visible `04 /` index, and a wrong number is worse than none.
 - **Suzanne from a third-party download:** rejected until its license is clear.
 - **Keep the 10 KB budget:** every feature would need to strip comments or skip interaction. The owner chose to raise it.

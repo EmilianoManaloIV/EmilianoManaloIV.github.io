@@ -1,5 +1,5 @@
 // Motion, console, headline, device readout, and toggles; see ADR 0002. No network use.
-import { torus, dome, grid, cube, sphere, waveHeight, rotate, project, bezierPatches, uprightUnit, fitUnit, headset } from "./geometry.js";
+import { torus, dome, grid, cube, sphere, waveHeight, rotate, project, bezierPatches, uprightUnit, fitUnit, headset, icosphere } from "./geometry.js";
 import { teapotPoints, teapotPatches } from "./models.js";
 
 const root = document.documentElement;
@@ -36,6 +36,7 @@ const meshes = {
   globe: sphere(10, 7),
   teapot: uprightUnit(bezierPatches(teapotPoints, teapotPatches, 3, 6)),
   headset: fitUnit(headset()),
+  icosa: icosphere(1),
 };
 
 function strokeMesh(ctx, mesh, transform) {
@@ -59,6 +60,7 @@ const poses = {
   torus: (t) => [1 + Math.sin(t * 0.3) * 0.25, t * 0.4],
   teapot: (t) => [0.35 + Math.sin(t * 0.25) * 0.15, t * 0.3],
   headset: (t) => [0.3 + Math.sin(t * 0.2) * 0.12, 2.6 + t * 0.28],
+  ambient: (t) => [0.4 + Math.sin(t * 0.05) * 0.2, (t * TAU) / 90], // one turn per 90 s
 };
 // Hands-on models (ADR 0009): a visitor's own turn, added on top of the pose.
 const turns = {};
@@ -128,6 +130,13 @@ const painters = {
     const [ax, ay] = posed("teapot");
     strokeMesh(ctx, meshes.teapot, (p) => project(rotate(p, ax, ay), w / 2, h / 2, Math.min(w, h) * 0.6, 5));
   },
+  // The big-screen ambient sphere (ADR 0009): large, cropped by the right edge, and
+  // drifting gently with the page so it reads as depth behind it.
+  ambient(ctx, w, h) {
+    const [ax, ay] = poses.ambient(ambientTime);
+    const y = h * 0.5 + Math.sin(scrollY / 900) * h * 0.12;
+    strokeMesh(ctx, meshes.icosa, (p) => project(rotate(p, ax, ay), w * 0.94, y, h * 0.42, 6));
+  },
   headset(ctx, w, h) {
     const [ax, ay] = posed("headset");
     strokeMesh(ctx, meshes.headset, (p) => project(rotate(p, ax, ay), w / 2, h / 2, Math.min(w, h) * 0.55, 5));
@@ -141,9 +150,20 @@ const scenes = [...document.querySelectorAll("canvas[data-scene]")].map((canvas)
   visible: false,
   color: "",
 }));
+// The ambient sphere is always "on screen" where it shows, so it runs on its own
+// slow timer (about 15 frames a second, with its own clock) instead of keeping the
+// full-rate frame loop busy on every big-screen page.
+const ambient = scenes.find((s) => s.canvas.dataset.scene === "ambient");
+const motionScenes = scenes.filter((s) => s !== ambient);
+let ambientTime = 0;
+let ambientTimer = 0;
+
+// Pixel ratio per scene, capped at 2. The full-screen ambient sphere draws at 1x:
+// faint thin lines don't need retina sharpness, and it saves most of the fill.
+const ratio = (scene) => (scene.canvas.dataset.scene === "ambient" ? 1 : Math.min(devicePixelRatio || 1, 2));
 
 function resize(scene) {
-  const dpr = Math.min(devicePixelRatio || 1, 2);
+  const dpr = ratio(scene);
   const { clientWidth: w, clientHeight: h } = scene.canvas;
   scene.canvas.width = Math.round(w * dpr);
   scene.canvas.height = Math.round(h * dpr);
@@ -156,7 +176,7 @@ function draw(scene) {
   const h = canvas.clientHeight;
   // Never draw into a stale bitmap: the observer can arrive after the first frames,
   // and pixel ratio changes (zoom, rotation, another monitor) don't trigger it.
-  const dpr = Math.min(devicePixelRatio || 1, 2);
+  const dpr = ratio(scene);
   if (canvas.width !== Math.round(w * dpr) || canvas.height !== Math.round(h * dpr)) resize(scene);
   ctx.clearRect(0, 0, w, h);
   ctx.strokeStyle = scene.color;
@@ -191,7 +211,7 @@ function tick(now) {
     if (bannerVisible && rev > (revs[name] ?? rev)) log(`${name.toUpperCase().padEnd(6)} REV ${pad(rev)} COMPLETE`);
     revs[name] = rev;
   }
-  for (const scene of scenes) if (scene.visible) draw(scene);
+  for (const scene of motionScenes) if (scene.visible) draw(scene);
   schedule();
 }
 
@@ -204,8 +224,10 @@ const pose = (name) => posed(name).map((a, i) => `${i ? "RY" : "RX"} ${angle(a)}
 const shown = (name) => (scenes.find((s) => s.canvas.dataset.scene === name)?.visible ? 1 : 0);
 // Each line names the scene it reports on. The home console reports everything; a
 // subpage's echo reports only what is on that page (ADR 0009).
-const sceneOf = (mesh) => (mesh === "dome" || mesh === "wave" ? "banner" : mesh);
-const onPage = (scene) => !scene || scenes.some((s) => s.canvas.dataset.scene === scene);
+const sceneOf = (mesh) => (mesh === "dome" || mesh === "wave" ? "banner" : mesh === "icosa" ? "ambient" : mesh);
+// A scene counts only if it is actually shown (the ambient sphere is display:none
+// below 1600px, for instance).
+const onPage = (scene) => !scene || scenes.some((s) => s.canvas.dataset.scene === scene && s.canvas.getClientRects().length);
 // Console names fit the 6-character column; the headset is an HMD (head-mounted display).
 const label = (mesh) => (mesh === "headset" ? "HMD" : mesh.toUpperCase());
 const script = [
@@ -402,10 +424,19 @@ function schedule() {
     if (want !== clip.want) want ? clip.play().catch(() => {}) : clip.pause();
     clip.want = want;
   }
-  if (awake && scenes.some((s) => s.visible)) {
+  if (awake && motionScenes.some((s) => s.visible)) {
     if (!frame) frame = requestAnimationFrame(tick);
   } else {
     last = 0;
+  }
+  if (awake && ambient?.visible) {
+    ambientTimer ||= setInterval(() => {
+      ambientTime += 1 / 15;
+      draw(ambient);
+    }, 1000 / 15);
+  } else {
+    clearInterval(ambientTimer);
+    ambientTimer = 0;
   }
   if (awake && (bannerVisible || echoSeen)) {
     startTerminal();

@@ -147,6 +147,49 @@ export function fitUnit({ vertices, edges }) {
   return { vertices: vertices.map((v) => v.map((n, c) => (n - (lo[c] + hi[c]) / 2) / half)), edges };
 }
 
+// Geodesic sphere of radius 1: an icosahedron whose triangles are split into four
+// `levels` times, with new points pushed out to the sphere. Level 1 has 42 vertices
+// and 120 edges.
+export function icosphere(levels = 1) {
+  const g = (1 + Math.sqrt(5)) / 2;
+  const unit = (v) => v.map((n) => n / Math.hypot(...v));
+  let vertices = [
+    [-1, g, 0], [1, g, 0], [-1, -g, 0], [1, -g, 0],
+    [0, -1, g], [0, 1, g], [0, -1, -g], [0, 1, -g],
+    [g, 0, -1], [g, 0, 1], [-g, 0, -1], [-g, 0, 1],
+  ].map(unit);
+  let faces = [
+    [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
+    [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+    [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
+    [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1],
+  ];
+  for (let l = 0; l < levels; l++) {
+    const middle = new Map();
+    const mid = (a, b) => {
+      const key = a < b ? `${a},${b}` : `${b},${a}`;
+      if (!middle.has(key)) middle.set(key, vertices.push(unit(vertices[a].map((n, c) => n + vertices[b][c]))) - 1);
+      return middle.get(key);
+    };
+    faces = faces.flatMap(([a, b, c]) => {
+      const [ab, bc, ca] = [mid(a, b), mid(b, c), mid(c, a)];
+      return [[a, ab, ca], [b, bc, ab], [c, ca, bc], [ab, bc, ca]];
+    });
+  }
+  const seen = new Set();
+  const edges = [];
+  for (const face of faces) {
+    for (let i = 0; i < 3; i++) {
+      const [a, b] = [face[i], face[(i + 1) % 3]].sort((x, y) => x - y);
+      if (!seen.has(`${a},${b}`)) {
+        seen.add(`${a},${b}`);
+        edges.push([a, b]);
+      }
+    }
+  }
+  return { vertices, edges };
+}
+
 // A VR headset, built from simple parts (ADR 0009): a rounded visor shell lofted
 // from superellipse rings, four front sensors, two lenses on the face side, and a
 // head band with a top strap reaching back. y is up, the front faces -z (toward

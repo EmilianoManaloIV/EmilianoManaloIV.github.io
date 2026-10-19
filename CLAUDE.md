@@ -20,7 +20,8 @@ comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 00
 - `js/theme.js` applies a saved theme in `<head>`. `js/main.js` runs the canvas wireframes, terminal, and toggles.
 - `js/geometry.js` is pure mesh and projection math, unit-tested in `test/geometry.test.mjs`.
 - `js/models.js` holds model data (the Utah teapot's Bézier patches, ADR 0009). Credit it as a Utah Teapot. The VR headset is built in code by `headset()` in `geometry.js`.
-- The shared header holds the reading-progress bar and the wide-screen scroll ruler; `ui.js` writes the ruler's readout (ADR 0009).
+- The shared header holds the reading-progress bar and the big-screen ambient canvas (ADR 0009).
+- Screens 1600px and up scale the layout (`--content-max: 80rem`, larger root font). Titled sections carry `data-label="NN — Title"` for their margin label; keep it in step with the title (a test checks).
 - Hands-on canvases are `tabindex="0" role="img" aria-roledescription="3D model"` with a visible hint and a `data-reset` button; decorative ones stay `aria-hidden` (ADR 0009).
 - `js/ui.js` runs wayfinding and share and copy. It reads sections from `main section[id]` on any page.
 - `assets/fonts/` holds self-hosted `.woff2` files with their OFL licenses. Never link a font CDN.
@@ -31,8 +32,8 @@ Colors come from the Figma "Branding Guide" variables, in Light and Dark modes. 
 Design source of truth: Figma Sites file "Personal Website"
 https://www.figma.com/site/uuMSVAiWUYtckwg7fJRxfF/Personal-Website?node-id=0-1
 
-Breakpoints match the Figma frames: mobile below 800px, tablet 800 to 1279px, desktop 1280px and up.
-CSS is mobile-first with `min-width` queries at those two widths.
+Breakpoints match the Figma frames: mobile below 800px, tablet 800 to 1279px, desktop 1280px and up, plus a big-screen step at 1600px.
+CSS is mobile-first with `min-width` queries at those widths (800px, 1280px, and 1600px).
 
 ## Commands
 

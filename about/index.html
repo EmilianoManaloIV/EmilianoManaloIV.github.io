@@ -30,7 +30,7 @@
 
   <header class="site-header">
     <div class="read-progress" aria-hidden="true"></div>
-    <div class="scroll-ruler" aria-hidden="true"><span data-ruler></span></div>
+    <canvas class="ambient-scene" data-scene="ambient" aria-hidden="true"></canvas>
     <div class="container">
       <a class="monogram" href="/" aria-label="Emiliano Panday Manalo IV, home">EM</a>
       <nav id="site-nav" aria-label="Primary">
@@ -66,7 +66,7 @@
       </div>
     </section>
 
-    <section id="story" class="section">
+    <section id="story" class="section" data-label="01 — Story">
       <div class="container">
         <h2 class="section-title"><span class="section-index" aria-hidden="true">01 /</span> Story</h2>
         <article class="card">
@@ -85,7 +85,7 @@
       </div>
     </section>
 
-    <section id="education" class="section">
+    <section id="education" class="section" data-label="02 — Education">
       <div class="container">
         <h2 class="section-title"><span class="section-index" aria-hidden="true">02 /</span> Education</h2>
         <ol class="entry-list">
@@ -100,7 +100,7 @@
       </div>
     </section>
 
-    <section id="experience" class="section">
+    <section id="experience" class="section" data-label="03 — Experience">
       <div class="container">
         <h2 class="section-title"><span class="section-index" aria-hidden="true">03 /</span> Experience</h2>
         <ol class="entry-list">
@@ -115,7 +115,7 @@
       </div>
     </section>
 
-    <section id="skills" class="section">
+    <section id="skills" class="section" data-label="04 — Skills">
       <div class="container">
         <h2 class="section-title"><span class="section-index" aria-hidden="true">04 /</span> Skills</h2>
         <h3 class="list-heading">From my projects</h3>
@@ -125,7 +125,7 @@
       </div>
     </section>
 
-    <section id="cv" class="section">
+    <section id="cv" class="section" data-label="05 — CV">
       <div class="container">
         <h2 class="section-title"><span class="section-index" aria-hidden="true">05 /</span> CV</h2>
         <!-- TODO: when assets/cv/emiliano-manalo-cv.pdf exists, replace this paragraph with
