@@ -118,6 +118,16 @@
           "endCursor": null
         },
         "nodes": []
+      },
+      "labels": {
+        "nodes": [
+          {
+            "name": "opinion"
+          },
+          {
+            "name": "bug"
+          }
+        ]
       }
     },
     {

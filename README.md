@@ -67,6 +67,10 @@ The post appears on the [R&D page](https://emilianomanaloiv.github.io/rd/), newe
 
 The first paragraph is the summary on the R&D page and in link previews. Images and clips are copied onto the site, so visitors never load anything from GitHub.
 
+### Mark a post as opinion
+
+For posts that argue a view, rants included, open the discussion and pick the **`opinion`** label in the right sidebar. The post and its R&D card show a small **Opinion** tag within a minute. Remove the label to take the tag off.
+
 ## Add a project
 
 1. Open **Discussions** and click **New discussion**.
@@ -112,6 +116,10 @@ Skills are GitHub labels whose names start with `skill: `, for example `skill: C
 Adding or removing a label rebuilds the site, so the About page stays in sync. A skill disappears from About once no project uses it, but the label stays in the repository for reuse.
 
 Other skill groups on the About page, such as tools or languages, are still written by hand in `about/index.html`.
+
+## The AI-use note
+
+Every page's footer says "Built with AI assistance" and links to **How this site was made** at the bottom of your About page. Its text is the `## How this site was made` section of [`site-text.md`](site-text.md). Keep it true: if what you or the AI wrote changes, update it there.
 
 ## The guestbook
 
