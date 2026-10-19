@@ -1,0 +1,13 @@
+{
+  "name": "Emiliano Panday Manalo IV",
+  "short_name": "EM",
+  "description": "Creative technologist, technical artist, and software engineer.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "browser",
+  "background_color": "#292927",
+  "theme_color": "#292927",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

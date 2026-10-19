@@ -5,17 +5,18 @@
 //   node tools/build.mjs --offline          no posts or signatures; for quick previews and CI tests
 //   node tools/build.mjs --fixture <file>   content from a saved JSON file, for tests and previews
 //   --out _name                             build into another "_"-prefixed folder of the project
-import { cpSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { basename, dirname, join, relative, resolve } from "node:path";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import * as r from "./render.mjs";
+import { qrSvg } from "./qr.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = "https://emilianomanaloiv.github.io";
 const REPO = process.env.GITHUB_REPOSITORY || "EmilianoManaloIV/EmilianoManaloIV.github.io";
-const STATIC = ["index.html", "404.html", "styles.css", "favicon.svg", "emiliano-manalo.vcf", "assets", "js", "about", "rd", "guestbook"];
+const STATIC = ["index.html", "404.html", "styles.css", "favicon.svg", "emiliano-manalo.vcf", "site.webmanifest", "assets", "js", "about", "rd", "guestbook", "card"];
 // Limits for images and clips found in posts and comments, which strangers can write.
 // Attempts count against maxPerPage whether they succeed or not, so a comment full of
 // dead links can't stall the build; pageBytes keeps a page's media well under Pages limits.
@@ -41,7 +42,7 @@ const DISCUSSIONS = `query($owner: String!, $name: String!, $cursor: String, $af
     discussionCategories(first: 50) { nodes { name } }
     discussions(first: 50, after: $cursor, orderBy: { field: CREATED_AT, direction: DESC }) {
       pageInfo { hasNextPage endCursor }
-      nodes { number title url createdAt bodyHTML author { login } category { name } labels(first: 20) { nodes { name } } ${COMMENTS} }
+      nodes { number title url createdAt updatedAt bodyHTML author { login } category { name } labels(first: 20) { nodes { name } } ${COMMENTS} }
     }
   }
 }`;
@@ -235,6 +236,8 @@ async function build() {
   rmSync(out, { recursive: true, force: true });
   mkdirSync(out, { recursive: true });
   for (const entry of STATIC) cpSync(join(root, entry), join(out, entry), { recursive: true });
+  // The conference card's QR code, drawn from the site's own address (ADR 0011).
+  write(join(out, "card", "qr.svg"), qrSvg(`${SITE}/`, { title: "QR code for emilianomanaloiv.github.io" }));
 
   const { discussions, categories, media: fixtureMedia } = await loadContent();
   for (const category of [r.POSTS_CATEGORY, r.PROJECTS_CATEGORY, r.GUESTBOOK_CATEGORY]) {
@@ -357,10 +360,33 @@ async function build() {
     const path = join(out, String(file));
     writeFileSync(path, r.applySiteText(readFileSync(path, "utf8"), siteText));
   }
+  // Preview and home-screen tags, only for images that exist (ADR 0011).
+  const extras = {
+    site: SITE,
+    shareImage: existsSync(join(root, "assets", "img", "share.png")),
+    touchIcon: existsSync(join(root, "assets", "img", "apple-touch-icon.png")),
+  };
+  for (const file of readdirSync(out, { recursive: true }).filter((f) => String(f).endsWith(".html"))) {
+    const path = join(out, String(file));
+    writeFileSync(path, r.headExtras(readFileSync(path, "utf8"), extras));
+  }
   const vcard = join(out, "emiliano-manalo.vcf");
   writeFileSync(vcard, r.applyVcard(readFileSync(vcard, "utf8"), siteText));
 
   const versions = fingerprint();
+
+  // Sitemap and robots (ADR 0011): every real page, not the 404 or redirects, with
+  // posts and projects dated by their last edit.
+  const dated = new Map([...posts, ...projects].map((item) => [item.path, r.isoDate(item.updatedAt ?? item.createdAt)]));
+  const sitemap = [];
+  for (const file of readdirSync(out, { recursive: true }).map(String).filter((f) => f.endsWith(".html") && f !== "404.html")) {
+    if (/http-equiv="refresh"/.test(readFileSync(join(out, file), "utf8"))) continue;
+    // readdirSync gives "about\index.html" on Windows; URLs use "/".
+    const path = `/${file.split(sep).join("/").replace(/index\.html$/, "")}`;
+    sitemap.push({ loc: `${SITE}${path}`, lastmod: dated.get(path) });
+  }
+  write(join(out, "sitemap.xml"), r.sitemapXml(sitemap));
+  write(join(out, "robots.txt"), r.robotsTxt(SITE));
 
   const mode = offline ? "offline" : fixturePath ? `fixture ${fixturePath}` : `live ${REPO}`;
   console.log(`built ${relative(root, out)}/ (${mode}): ${posts.length} posts, ${projects.length} projects, ${count} guestbook signatures, ${versions.size} fingerprinted assets`);

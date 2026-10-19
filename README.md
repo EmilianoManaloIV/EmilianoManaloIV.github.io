@@ -5,6 +5,8 @@ The personal website of Emiliano Panday Manalo IV: **https://emilianomanaloiv.gi
 This README is the owner's guide to running the site day to day. You never edit HTML to publish. R&D posts, projects, and the guestbook all come from this repository's [Discussions](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/discussions). The site rebuilds within about a minute of any change, from the web or the GitHub mobile app.
 
 - [Edit your site text](#edit-your-site-text)
+- [At the conference: your QR card](#at-the-conference-your-qr-card)
+- [Link previews and home-screen icon](#link-previews-and-home-screen-icon)
 - [Publish an R&D post](#publish-an-rd-post)
 - [Add a project](#add-a-project)
 - [Add a video clip](#add-a-video-clip)
@@ -32,6 +34,27 @@ The site updates in about a minute.
 - **Education and Experience:** each entry is a `### When | Title` line, such as `### 2023–2027 | B.S. Computer Science`, followed by a sentence or two. Add or remove entries, keeping at least one in each.
 - **Links:** leave a social link empty, with nothing after the colon, to hide it everywhere. Email is required.
 - **If a change doesn't appear:** a mistake stops the update and your site stays as it was. Open the [Actions tab](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/actions), and the failed run says what to fix: a missing, duplicated, or misspelled heading, a bad link, or an extra paragraph. Fix it soon, because new posts, comments, and signatures also wait until the file is valid.
+
+## At the conference: your QR card
+
+Open **[emilianomanaloiv.github.io/card](https://emilianomanaloiv.github.io/card/)** on your phone. The footer of every page links to it as "Show my QR card".
+
+- **Hold it up:** the QR code fills the screen and scans in light or dark mode. Turn your screen brightness up.
+- **Print it:** print the page and you get a 4 × 3 in badge insert with the code, your name, and your title.
+- **Stickers and slides:** download the code itself from the link on the card page, or use `/card/qr.svg`. It's a sharp SVG that scales to any size.
+
+**Test it before you print:** scan the code from the card page with your phone's camera. It should open your site.
+
+## Link previews and home-screen icon
+
+Two optional images make the site look finished when it's shared or saved. Export them from the Figma file and add them to `assets/img/` on GitHub with **Add file → Upload files**.
+
+| File | Size | What it does |
+|---|---|---|
+| `assets/img/share.png` | 1200 × 630 | The preview picture when your link is shared in chats and on social media |
+| `assets/img/apple-touch-icon.png` | 180 × 180 | The icon when someone adds your site to an iPhone home screen |
+
+The site picks them up on the next build. You don't need to change any code.
 
 ## Publish an R&D post
 

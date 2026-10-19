@@ -653,3 +653,45 @@ test("site text: every editable spot in the source pages is a known key", () => 
     for (const [, key] of source(file).matchAll(/data-text="([^"]+)"/g)) assert.ok(keys.has(key), `${file}: unknown data-text="${key}"`);
   }
 });
+
+// ADR 0011: the conference kit.
+test("the QR card page shows the generated code, and the code encodes the site's address", async () => {
+  const card = html("card/index.html");
+  assert.match(card, /<img src="\/card\/qr\.svg(\?v=[0-9a-f]+)?" alt="QR code that opens emilianomanaloiv\.github\.io" width="296" height="296">/);
+  const svg = read("card/qr.svg");
+  assert.match(svg, /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 37 37"/);
+  assert.match(svg, /<rect width="37" height="37" fill="#fff"\/>/, "a white quiet zone, so it scans in dark mode");
+  const { qrSvg } = await import("../tools/qr.mjs");
+  assert.equal(svg, qrSvg(`${SITE}/`, { title: "QR code for emilianomanaloiv.github.io" }), "built from the site's own address");
+  for (const page of pages) assert.match(html(page), /<a href="\/card\/">Show my QR card<\/a>/, `${page}: footer link to the card`);
+});
+
+test("the sitemap lists exactly the real pages, and robots points at it", () => {
+  const xml = read("sitemap.xml");
+  const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+  const expected = pages
+    .filter((p) => p.endsWith(".html") && p !== "404.html")
+    .map((p) => `${SITE}/${p.split(sep).join("/").replace(/index\.html$/, "")}`)
+    .sort();
+  assert.deepEqual([...locs].sort(), expected);
+  assert.ok(locs.includes(`${SITE}/card/`));
+  assert.match(read("robots.txt"), new RegExp(`^Sitemap: ${SITE}/sitemap\.xml$`, "m"));
+});
+
+test("the web manifest is valid and linked from every page", () => {
+  const manifest = JSON.parse(read("site.webmanifest"));
+  assert.equal(manifest.short_name, "EM");
+  assert.equal(manifest.start_url, "/");
+  assert.ok(manifest.icons.every((icon) => existsSync(join(site, icon.src))), "every manifest icon exists");
+  for (const page of pages) assert.match(html(page), /<link rel="manifest" href="\/?site\.webmanifest">/, page);
+});
+
+test("preview and touch-icon tags appear only when their images exist", () => {
+  const share = existsSync(join(repo, "assets", "img", "share.png"));
+  const touch = existsSync(join(repo, "assets", "img", "apple-touch-icon.png"));
+  for (const page of pages) {
+    const text = html(page);
+    assert.equal(/property="og:image"/.test(text), share && /twitter:card/.test(text), `${page}: og:image`);
+    assert.equal(/rel="apple-touch-icon"/.test(text), touch, `${page}: apple-touch-icon`);
+  }
+});

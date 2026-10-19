@@ -7,7 +7,7 @@ Visitors mostly arrive on a phone by scanning a QR code, often on slow Wi-Fi.
 
 Hand-written static HTML, CSS, and a little first-party JavaScript. **Zero dependencies.**
 A zero-dependency build (`tools/build.mjs`) runs in CI and turns GitHub Discussions into R&D posts,
-comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 0007). Read the ADRs in `docs/decisions/` (0001 to 0010) before changing this.
+comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 0007). Read the ADRs in `docs/decisions/` (0001 to 0011) before changing this.
 
 - `index.html` is the home page: a fast overview with sections anchored by id.
 - `about/index.html` (About & CV), `rd/index.html` (the R&D blog), and `guestbook/index.html` are subpages.
@@ -15,6 +15,7 @@ comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 00
 - Projects are generated into `_site/projects/<number>-<slug>/` from `templates/project.html`, and fill the home page's `<!-- PROJECTS -->` and the About page's `<!-- SKILLS -->` markers.
 - The build fingerprints script and stylesheet addresses (`?v=<hash>`) so deploys never mix old and new files. Write plain `js/main.js` or `/styles.css` in source pages; the build adds the fingerprint.
 - Page copy and links (bio, values, education, experience, email, socials) live in `site-text.md`; pages mark them with `data-text`/`data-link` and the build fills them (ADR 0010). Edit the file, not the HTML.
+- `/card/` is the conference QR card; the build draws `card/qr.svg` with `tools/qr.mjs` (dependency-free, tested in `test/qr.test.mjs`) and writes `sitemap.xml` and `robots.txt` (ADR 0011). Preview and iOS-icon tags appear only when `assets/img/share.png` or `apple-touch-icon.png` exist.
 - `tools/render.mjs` holds the pure build helpers (sanitizer, images, video clips, markup), tested in `test/render.test.mjs`.
 - Every page repeats the home page's header and footer exactly; a test enforces it (ADR 0004). Change the nav or footer in every page at once.
 - `styles.css` holds design tokens in `:root` at the top, then components.
