@@ -13,10 +13,10 @@ The JavaScript budget (ADR 0003, 10 KB gzipped) was almost spent, and a parallel
 
 ## Decision
 
-**Do the motion in CSS.** JavaScript changes are limited to one class, copying console lines, and the wave formula.
+**Do the motion in CSS.** JavaScript changes are limited to copying console lines and the wave formula.
 
 **Two kinds of motion, two gates:**
-- **Looping motion** (the page grid's slow drift, the dot-matrix shimmer, the console echo drift) runs only under `html.motion-on`. `main.js` sets that class in `setMotion`, next to `motion-off`. The footer and banner toggles therefore stop it, reduced-motion visitors start with it off, and it never runs without JavaScript, when no toggle exists.
+- **Looping motion** (the page grid's slow drift, the dot-matrix shimmer, the console echo drift) runs only under `html.js-ready:not(.motion-off)`. `main.js` adds `js-ready` once it has run and sets `motion-off` in `setMotion`, so no new class or script is needed. (A separate `motion-on` class was dropped to stay inside the JavaScript budget once video clips landed.) The footer and banner toggles therefore stop it, reduced-motion visitors start with it off, and it never runs without JavaScript, when no toggle exists.
 - **Scroll-linked motion** (section reveals, the values' staggered entry and heading wipe, the grid's parallax) moves only while the visitor scrolls, so it is not auto-playing. It still sits inside `@media screen and (prefers-reduced-motion: no-preference)` and under `html:not(.motion-off)`. Printing gets the page as is.
 
 **The pieces:**
@@ -28,7 +28,7 @@ The JavaScript budget (ADR 0003, 10 KB gzipped) was almost spent, and a parallel
 - **Reveals:** CSS view timelines (`animation-timeline: view()`) inside `@supports`. Content is hidden only inside the animation, so browsers without view timelines, such as Firefox today, show the page as is, and anchor jumps land fully revealed. Every range ends by `entry 100%`, which any block with content below it always reaches, so nothing stays half-revealed at the bottom of the page.
 
 **Tests** enforce:
-- every selector of every infinite CSS animation is gated by `html.motion-on`, except the console cursor that `main.js` creates;
+- every selector of every infinite CSS animation is gated by `html.js-ready:not(.motion-off)`, except the console cursor that `main.js` creates;
 - every `animation-timeline` is inside a screen, no-preference block, and every scroll-linked rule is stopped by the toggle;
 - echoes are `aria-hidden`.
 
@@ -39,6 +39,6 @@ The JavaScript budget (ADR 0003, 10 KB gzipped) was almost spent, and a parallel
 
 ## Consequences
 
-- **Budget:** `js/` sits at about 10.08 KB of 10.24 KB gzipped. The next feature that adds script must make room or revisit ADR 0003.
+- **Budget:** with video clips (ADR 0007), `js/` sits just under the 10.24 KB gzipped budget. The next feature that adds script must make room or revisit ADR 0003.
 - **Firefox:** visitors without view timelines see no reveals or parallax. Everything else works.
-- **New looping animations** must be gated by `html.motion-on`, or the site test fails.
+- **New looping animations** must be gated by `html.js-ready:not(.motion-off)`, or the site test fails.

@@ -188,7 +188,7 @@ body::before {
   pointer-events: none;
 }
 
-html.motion-on body::before {
+html.js-ready:not(.motion-off) body::before {
   animation: grid-ambient 40s linear infinite;
 }
 
@@ -208,7 +208,7 @@ html.motion-on body::before {
       animation-timeline: scroll(root);
     }
 
-    html.motion-on body::before {
+    html.js-ready:not(.motion-off) body::before {
       animation: grid-drift linear both, grid-ambient 40s linear infinite;
       animation-timeline: scroll(root), auto;
     }
@@ -574,7 +574,7 @@ html:not(.js) canvas[data-scene] {
 
 /* mask-position repaints, so the shimmer runs only on wider screens. */
 @media (min-width: 800px) {
-  html.motion-on .dot-field::before {
+  html.js-ready:not(.motion-off) .dot-field::before {
     opacity: 1;
     animation: dot-scan 7s ease-in-out infinite alternate;
   }
@@ -664,7 +664,7 @@ html:not(.js) canvas[data-scene] {
   mask-image: linear-gradient(transparent, #000 25%, #000 75%, transparent);
 }
 
-html.motion-on .terminal-echo {
+html.js-ready:not(.motion-off) .terminal-echo {
   animation: echo-drift 9s ease-in-out infinite alternate;
 }
 
@@ -986,10 +986,16 @@ html.motion-on .terminal-echo {
   line-height: 1;
 }
 
-.card-media img {
+.card-media img,
+.card-media video {
+  display: block;
   width: 100%;
   height: auto;
   border-radius: var(--radius-md);
+}
+
+.card-media video {
+  background: var(--color-slot);
 }
 
 .card-body > p {
@@ -1252,6 +1258,15 @@ html.motion-on .terminal-echo {
 .prose img {
   height: auto;
   border-radius: var(--radius-sm);
+}
+
+/* Clips (ADR 0007) keep their aspect ratio from width and height before they load. */
+.prose video {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  background: var(--color-slot);
 }
 
 .post-footer {
