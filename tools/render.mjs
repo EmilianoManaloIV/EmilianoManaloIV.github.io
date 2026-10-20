@@ -485,10 +485,14 @@ export function fill(template, values) {
   });
 }
 
+// Posts labelled "opinion" on GitHub carry an "Opinion" tag (ADR 0013).
+export const isOpinion = (d) => (d?.labels?.nodes ?? []).some((node) => /^opinion$/i.test(String(node?.name ?? "").trim()));
+export const opinionTag = (d) => (isOpinion(d) ? ' · <span class="tag-opinion">Opinion</span>' : "");
+
 export function postCard(post) {
   const n = post.commentCount;
   return `<li class="post-card">
-            <p class="eyebrow"><time datetime="${isoDate(post.createdAt)}">${formatDate(post.createdAt)}</time> · ${post.minutes} min read · ${n} ${n === 1 ? "comment" : "comments"}</p>
+            <p class="eyebrow"><time datetime="${isoDate(post.createdAt)}">${formatDate(post.createdAt)}</time> · ${post.minutes} min read · ${n} ${n === 1 ? "comment" : "comments"}${opinionTag(post)}</p>
             <h3><a href="${post.path}">${escapeHtml(post.title)}</a></h3>
             <p>${escapeHtml(post.summary)}</p>
           </li>`;
@@ -627,6 +631,7 @@ export const SITE_TEXT = [
   ["Value 3 text", "value-3-text", "inline"],
   ["About one-liner", "about-one-liner", "inline"],
   ["About story", "about-story", "block"],
+  ["How this site was made", "about-made", "block"],
   ["Education", "education", "entries"],
   ["Experience", "experience", "entries"],
 ];

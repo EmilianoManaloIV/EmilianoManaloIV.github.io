@@ -60,7 +60,7 @@
   <main id="main">
     <article id="post" class="section post">
       <div class="container prose">
-        <p class="eyebrow"><a href="/rd/">R&amp;D</a> / <time datetime="{{date_iso}}">{{date}}</time> · {{minutes}} min read</p>
+        <p class="eyebrow"><a href="/rd/">R&amp;D</a> / <time datetime="{{date_iso}}">{{date}}</time> · {{minutes}} min read{{opinion}}</p>
         <h1>{{title}}</h1>
         {{body}}
       </div>
@@ -82,6 +82,7 @@
         <hr class="footer-rule">
         <p class="footer-brand">EM</p>
         <p class="footer-tagline">Blending Engineering Practices With Art</p>
+        <p class="footer-ai">Built with AI assistance · <a href="/about/#made">How this site was made</a></p>
         <p class="footer-links"><a href="/guestbook/">Sign the guestbook</a> · <a href="/card/">Show my QR card</a></p>
         <p class="footer-motion"><button class="toggle" type="button" data-motion-toggle aria-pressed="true">Motion<span data-state aria-hidden="true">: on</span></button></p>
         <ul class="socials" aria-label="Social profiles">

@@ -63,6 +63,13 @@ TODO: A longer bio. Where you started, what pulled you toward technology, engine
 
 TODO: What you want to talk about with people you meet at the conference.
 
+## How this site was made
+<!-- Your AI-use note, shown at the bottom of the About page. Keep it true: if you
+     write more of the code, or use AI for any of your writing, change it here. -->
+I designed this site in Figma and built it with **Claude**, Anthropic's AI coding assistant. Claude wrote most of the code and some of the interface text, working from my direction, and each change went live only after I reviewed and merged it.
+
+My bio, my projects, and my R&D posts are my own words. The site has no trackers, loads no outside scripts, and its whole source is [public on GitHub](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io).
+
 ## Education
 ### TODO: Years | TODO: Degree or program
 TODO: School, location. Focus areas, honors, or relevant coursework.

@@ -266,6 +266,7 @@ async function build() {
         date_iso: r.isoDate(d.createdAt),
         date: r.formatDate(d.createdAt),
         minutes: post.minutes,
+        opinion: r.opinionTag(d),
         body: localize(body, media),
         comments: localize(thread, media),
         comment_count: commentCount,

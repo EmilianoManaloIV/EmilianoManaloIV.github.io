@@ -811,3 +811,38 @@ test("print: always black on white, with decoration and controls left out (ADR 0
   }
   assert.match(print, /a\[href\^="http"\]::after \{\s*content: " \(" attr\(href\) "\)";/, "outside links show their address");
 });
+
+// ADR 0013: the AI-use disclosure and opinion posts.
+test("every page discloses AI assistance and links to how the site was made", () => {
+  for (const page of pages) {
+    assert.match(html(page), /<p class="footer-ai">Built with AI assistance · <a href="\/about\/#made">How this site was made<\/a><\/p>/, page);
+  }
+  const { fields } = readSiteText(source("site-text.md"));
+  const about = html("about/index.html");
+  assert.match(about, /<section id="made" class="section" data-label="06 — How this site was made">/);
+  assert.ok(about.includes(fields["about-made"]), "the note comes from site-text.md");
+  assert.match(fields["about-made"], /AI|Claude/, "the note names the AI assistance");
+});
+
+test("R&D posts labelled opinion show the Opinion tag, on the post and in the list", () => {
+  const posts = pages.filter((p) => /^rd[\/]\d+-/.test(p));
+  if (!posts.length) return; // the offline build has no posts
+  const list = html("rd/index.html");
+  let tagged = 0;
+  for (const page of posts) {
+    const tag = html(page).includes('<span class="tag-opinion">Opinion</span>');
+    const path = `/${page.split(sep).join("/").replace(/index\.html$/, "")}`;
+    // Each card on its own, so one card's tag can't be credited to its neighbour.
+    const card = list.split('<li class="post-card">').find((chunk) => chunk.includes(`href="${path}"`)) ?? "";
+    assert.ok(card, `${page}: no card in the R&D list`);
+    const cardTag = /<p class="eyebrow">[^<]*<time[^>]*>[^<]*<\/time>[^<]*<span class="tag-opinion">Opinion<\/span><\/p>/.test(card);
+    assert.equal(cardTag, tag, `${page}: the list card and the post agree`);
+    if (tag) tagged++;
+  }
+  // Only the fixture knows which posts are opinions; a live build may have none or all.
+  const fixtureOpinion = "rd/11-r-and-d-why-i-m-starting-this-log/index.html";
+  if (pages.some((p) => p.split(sep).join("/") === fixtureOpinion)) {
+    assert.equal(tagged, 1, "the fixture has exactly one opinion post (#11)");
+    assert.ok(html(fixtureOpinion).includes('<span class="tag-opinion">Opinion</span>'), "#11 is the tagged one");
+  }
+});

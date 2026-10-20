@@ -1366,6 +1366,18 @@ html.js-ready:not(.motion-off) .terminal-echo {
   font-size: var(--text-small);
 }
 
+/* "Opinion" on R&D posts labelled "opinion" (ADR 0013): an outlined tag in the date
+   line, so readers know a post argues a view. Ink on the page passes AA. */
+.tag-opinion {
+  display: inline-block;
+  padding: 0 var(--space-2);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-sm);
+  color: var(--color-ink);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .tag-count {
   margin-left: 0.25em;
 }
@@ -1478,6 +1490,13 @@ html.js-ready:not(.motion-off) .terminal-echo {
   margin-block: var(--space-2) var(--space-4);
   color: var(--color-ink-muted);
   font-size: var(--text-small);
+}
+
+/* The AI-use disclosure (ADR 0013): small, but on every page. */
+.footer-ai {
+  margin-block: 0 var(--space-4);
+  color: var(--color-ink-muted);
+  font-size: var(--text-xs);
 }
 
 .torus-scene {

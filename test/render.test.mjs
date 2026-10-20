@@ -5,7 +5,7 @@ import {
   videoSources, clipInfo, isPlayableClip, clipLabel, localizeVideos,
   versionUrls, versionImports, importsOf, isProject, projectPath, skillsOf, extractLink, projectCard, skillsList,
   readingMinutes, summary, formatDate, renderComments, countComments, fill, postCard, guestbookEntries, redirectPage,
-  parseSiteText, readSiteText, renderInline, applySiteText, applyVcard, SITE_TEXT, headExtras, sitemapXml, robotsTxt,
+  parseSiteText, readSiteText, renderInline, applySiteText, applyVcard, SITE_TEXT, headExtras, sitemapXml, robotsTxt, isOpinion, opinionTag,
 } from "../tools/render.mjs";
 
 const owner = { login: "EmilianoManaloIV" };
@@ -535,4 +535,17 @@ test("the sitemap is sorted, escaped, and dated where known; robots points at it
   assert.ok(xml.indexOf("s.example/?a=1&amp;b=2") < xml.indexOf("s.example/rd/"));
   assert.match(xml, /<url><loc>https:\/\/s\.example\/rd\/<\/loc><lastmod>2026-10-18<\/lastmod><\/url>/);
   assert.equal(robotsTxt("https://s.example"), "User-agent: *\nAllow: /\n\nSitemap: https://s.example/sitemap.xml\n");
+});
+
+// == Opinion posts (ADR 0013)
+
+test("posts labelled opinion carry an Opinion tag; others don't", () => {
+  const opinion = { labels: { nodes: [{ name: "bug" }, { name: " Opinion " }] } };
+  assert.ok(isOpinion(opinion));
+  assert.ok(!isOpinion({ labels: { nodes: [{ name: "opinions" }, { name: "skill: opinion" }] } }));
+  assert.ok(!isOpinion({}));
+  assert.equal(opinionTag(opinion), ' · <span class="tag-opinion">Opinion</span>');
+  assert.equal(opinionTag({}), "");
+  const card = postCard({ ...opinion, createdAt: "2026-10-18T12:00:00Z", minutes: 2, commentCount: 0, path: "/rd/1-x/", title: "X", summary: "s" });
+  assert.match(card, /0 comments · <span class="tag-opinion">Opinion<\/span><\/p>/);
 });
