@@ -499,7 +499,23 @@ test("named sections carry a margin label matching their title (ADR 0009)", () =
       assert.equal(label, `${title[1]} — ${title[2].trim()}`, `${page}: margin label missing or disagrees with the title: ${tag}`);
     }
   }
-  assert.ok(labels >= 10, "home, About, R&D, and Guestbook sections should be found");
+  // The home page has none since ADR 0014 (checked in its own test below).
+  assert.ok(labels >= 7, "About, R&D, and Guestbook sections should be found");
+});
+
+test("the home page's sections drop their visible numbered headings but keep one for screen readers (ADR 0014)", () => {
+  const home = html("index.html");
+  assert.doesNotMatch(home, /class="section-index"/, "no '01 /' headings on the home page");
+  assert.doesNotMatch(home, /data-label=/, "no margin labels on the home page");
+  for (const [id, name] of [["about", "About"], ["projects", "Projects"], ["contact", "Contact"]]) {
+    const body = home.match(new RegExp(`<section id="${id}"[^>]*>([\\s\\S]*?)</section>`))?.[1] ?? "";
+    const headings = [...body.matchAll(/<h2\b[^>]*>([^<]*)<\/h2>/g)];
+    assert.equal(headings.length, 1, `#${id} has exactly one h2`);
+    assert.match(headings[0][0], /class="visually-hidden"/, `#${id}'s heading is visually hidden`);
+    assert.equal(headings[0][1], name);
+  }
+  // Subpages keep theirs.
+  assert.match(html("about/index.html"), /class="section-index"/);
 });
 
 test("hands-on models are focusable, labelled, and resettable (ADR 0009)", () => {

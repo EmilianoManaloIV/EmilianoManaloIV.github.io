@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { torus, lathe, dome, grid, sphere, cube, waveHeight, rotate, project, bezierPatches, uprightUnit, fitUnit, headset, icosphere, fitScale } from "../js/geometry.js";
+import { torus, lathe, piercedSpheroid, POLAR, BORE, grid, sphere, cube, terrainHeight, DRIFT, rotate, orient, project, bezierPatches, uprightUnit, fitUnit, headset, icosphere, fitScale } from "../js/geometry.js";
 import { teapotPoints, teapotPatches } from "../js/models.js";
 
 const length = ([x, y, z]) => Math.hypot(x, y, z);
@@ -18,7 +18,7 @@ test("lathe connects each ring to the previous one", () => {
 });
 
 test("every edge references an existing vertex", () => {
-  for (const mesh of [torus(1, 0.3, 10, 6), dome(), grid(5), cube(2), sphere(8, 5)]) {
+  for (const mesh of [torus(1, 0.3, 10, 6), piercedSpheroid(), grid(5), cube(2), sphere(8, 5)]) {
     for (const [a, b] of mesh.edges) {
       assert.ok(mesh.vertices[a] && mesh.vertices[b], `bad edge ${a}-${b}`);
     }
@@ -36,6 +36,16 @@ test("rotation preserves distance from the origin", () => {
     const turned = rotate(point, 0.7, -1.3);
     assert.ok(Math.abs(length(turned) - length(point)) < 1e-9);
   }
+});
+
+test("orient preserves distance and turns before it tilts and rolls", () => {
+  for (const point of [[1, 2, 3], [-0.5, 0.25, 4]]) assert.ok(Math.abs(length(orient(point, 0.7, -1.3, 0.4)) - length(point)) < 1e-9);
+  // Turning spins a point on the y axis in place, so the axis keeps its lean.
+  const axis = orient([0, 1, 0], -0.8, 0, -0.5);
+  const spun = orient([0, 1, 0], -0.8, 2.1, -0.5);
+  for (let c = 0; c < 3; c++) assert.ok(Math.abs(axis[c] - spun[c]) < 1e-9);
+  // A negative roll leans the axis to the right; a negative tilt points it at the viewer.
+  assert.ok(axis[0] > 0 && axis[1] > 0 && axis[2] < 0);
 });
 
 test("projecting the origin lands on the screen center", () => {
@@ -72,14 +82,65 @@ test("sphere is rings-1 latitude rings on the unit sphere", () => {
   for (const p of mesh.vertices) assert.ok(Math.abs(length(p) - 1) < 1e-9);
 });
 
-test("wave height changes over time", () => {
-  assert.notEqual(waveHeight(0.3, 0.2, 0), waveHeight(0.3, 0.2, 1));
+test("the pierced spheroid is an oblate shell with a bore through its short axis", () => {
+  const mesh = piercedSpheroid(20, 9);
+  // 9 outer rings, 2 lip rings at each rim, and 3 bore rings, of 20 points each; every
+  // point joins its own ring and the next ring.
+  assert.equal(mesh.vertices.length, 20 * 16);
+  assert.equal(mesh.edges.length, 2 * 20 * 16);
+  const keys = mesh.edges.map(([a, b]) => `${Math.min(a, b)}-${Math.max(a, b)}`);
+  assert.equal(new Set(keys).size, keys.length, "no duplicate edges");
+  const top = POLAR * Math.sqrt(1 - BORE * BORE);
+  for (const [x, y, z] of mesh.vertices) {
+    const r = Math.hypot(x, z);
+    const onShell = Math.abs(r * r + (y / POLAR) ** 2 - 1) < 1e-9;
+    const onBore = Math.abs(r - BORE) < 1e-9 && Math.abs(y) <= top + 1e-9;
+    assert.ok(onShell || onBore, `${x}, ${y}, ${z} is off the surface`);
+    assert.ok(r >= BORE - 1e-9, "nothing inside the bore");
+  }
+  // The bore runs from the top rim to the bottom rim, and the shape is mirror-symmetric.
+  const bore = mesh.vertices.filter(([x, , z]) => Math.abs(Math.hypot(x, z) - BORE) < 1e-9).map(([, y]) => y);
+  assert.ok(Math.abs(Math.max(...bore) - top) < 1e-9 && Math.abs(Math.min(...bore) + top) < 1e-9);
+  const key = (v) => v.map((n) => (Math.abs(n) < 1e-9 ? 0 : n).toFixed(6)).join();
+  const all = new Set(mesh.vertices.map(key));
+  for (const [x, y, z] of mesh.vertices) assert.ok(all.has(key([x, -y, z])), `no mirror for y = ${y}`);
 });
 
-test("wave height stays within +-0.3, the bound ADR 0008 states", () => {
-  for (let t = 0; t < 20; t += 0.7) {
-    for (let x = -1; x <= 1; x += 0.1) for (let z = -1; z <= 1; z += 0.1) assert.ok(Math.abs(waveHeight(x, z, t)) <= 0.3);
+test("terrain is bounded, flat at the edges, deterministic, and moves over time", () => {
+  const period = 2 / DRIFT;
+  for (let t = 0; t < period; t += 0.9) {
+    for (let i = 0; i <= 20; i++) {
+      for (let j = 0; j <= 20; j++) {
+        const [x, z] = [i / 10 - 1, j / 10 - 1];
+        const h = terrainHeight(x, z, t);
+        // Hills reach about 0.5 and the noise adds at most +-0.195, faded at the edges;
+        // across the whole drift the sampled heights stay within -0.11..0.44.
+        assert.ok(h > -0.2 && h < 0.55, `height ${h} out of range`);
+        if (i === 0 || j === 0 || i === 20 || j === 20) assert.ok(Math.abs(h) < 1e-9, "edges are flat");
+        assert.equal(h, terrainHeight(x, z, t), "same input, same height");
+      }
+    }
   }
+  assert.notEqual(terrainHeight(0.3, 0.2, 0), terrainHeight(0.3, 0.2, 1));
+  // It repeats seamlessly, so the drift never jumps.
+  assert.ok(Math.abs(terrainHeight(0.3, 0.2, 0) - terrainHeight(0.3, 0.2, period)) < 1e-9);
+  // The tall peak sits right of centre at t = 0, as in Figma.
+  assert.ok(terrainHeight(0.2, 0.05, 0) > 0.3);
+});
+
+test("terrain is jagged: its slope turns often along a grid row, unlike a smooth swell", () => {
+  let turns = 0;
+  for (let r = 4; r <= 18; r++) {
+    let prev = 0;
+    for (let c = 4; c < 18; c++) {
+      const [x, z] = [c / 11 - 1, r / 11 - 1];
+      const d = terrainHeight(x + 1 / 11, z, 0) - terrainHeight(x, z, 0);
+      if (prev && Math.sign(d) !== Math.sign(prev)) turns++;
+      prev = d;
+    }
+  }
+  // 15 interior rows of 14 steps: a single smooth hill turns about once per row.
+  assert.ok(turns / 15 > 2.5, `only ${turns / 15} turns per row`);
 });
 
 test("Bezier patch corners land exactly on their corner control points", () => {

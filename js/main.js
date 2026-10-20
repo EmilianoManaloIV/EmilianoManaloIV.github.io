@@ -1,5 +1,5 @@
 // Motion, console, headline, device readout, and toggles; see ADR 0002. No network use.
-import { torus, dome, grid, cube, sphere, waveHeight, rotate, project, bezierPatches, uprightUnit, fitUnit, headset, icosphere, fitScale } from "./geometry.js";
+import { torus, piercedSpheroid, grid, cube, sphere, terrainHeight, DRIFT, rotate, orient, project, bezierPatches, uprightUnit, fitUnit, headset, icosphere, fitScale } from "./geometry.js";
 import { teapotPoints, teapotPatches } from "./models.js";
 
 const root = document.documentElement;
@@ -29,8 +29,8 @@ const pad = (n, len = 2) => String(n).padStart(len, "0");
 // == Wireframe scenes
 
 const meshes = {
-  dome: dome(28),
-  wave: grid(18),
+  core: piercedSpheroid(24, 9),
+  terrain: grid(22),
   torus: torus(1, 0.42, 36, 16),
   cube: cube(4),
   globe: sphere(10, 7),
@@ -53,8 +53,10 @@ function strokeMesh(ctx, mesh, transform) {
 // and the console telemetry both read these, so the numbers match the shapes.
 const TAU = Math.PI * 2;
 const poses = {
-  dome: (t) => [0.45, t * 0.35],
-  wave: () => [0.55, -0.6], // the surface itself ripples with phase t * 2.2
+  // The banner art (ADR 0014) uses orient(): [tilt, turn]. The core spins on its own
+  // bore axis, which holds Figma's lean; the terrain holds still while the land drifts.
+  core: (t) => [-0.7, t * 0.3],
+  terrain: () => [-0.3, -0.35],
   cube: (t) => [0.55 + t * 0.12, t * 0.22],
   globe: (t) => [0.35, t * 0.6],
   torus: (t) => [1 + Math.sin(t * 0.3) * 0.25, t * 0.4],
@@ -66,53 +68,98 @@ const poses = {
 const turns = {};
 const posed = (name) => poses[name](time).map((a, i) => a + (turns[name]?.[i] || 0));
 
-// Banner layout: the dome and wave at their designed spots, shrunk and nudged only
-// when they would spill past the canvas (narrow phones). Measured once per size
-// over sampled poses, so the moving shapes never hit the edge.
+// The banner art at time t, before projection (ADR 0014): the pierced core, leaning up
+// and to the right as in Figma, and the terrain, its land drifting toward the viewer.
+const CORE_ROLL = -0.45;
+const bannerArt = {
+  core: (t) => (p) => orient(p, ...poses.core(t), CORE_ROLL),
+  terrain: (t) => ([x, , z]) => orient([x, terrainHeight(x, z, t), z], ...poses.terrain(t)),
+};
+
+// Where the banner art goes, as [centre x, centre y, width], all fractions of the
+// canvas. Desktop matches Figma's 1280 x 542 banner, the canvas spanning all of it
+// behind the text (the core sits 1.4% left of Figma's 0.574, clearing the site's
+// larger headline); tablets and phones give the art its own 4:3 box.
+const artSpots = {
+  full: { core: [0.56, 0.274, 0.224], terrain: [0.27, 0.62, 0.4] },
+  boxed: { core: [0.62, 0.32, 0.52], terrain: [0.42, 0.74, 0.9] },
+};
+
+// Each shape's projected box at unit scale around (0, 0): `still` at t = 0, the frame
+// Figma shows, which sets its size and centre; `all` over its whole motion (the terrain
+// repeats every 2 / DRIFT seconds), which keeps it inside the canvas. Projection is
+// linear in scale and centre, so these place the shapes at any size.
+const unitBoxes = {};
+for (const name of ["core", "terrain"]) {
+  const boxes = {};
+  for (const [kind, samples] of [["still", 1], ["all", 12]]) {
+    const box = [Infinity, Infinity, -Infinity, -Infinity];
+    for (let i = 0; i < samples; i++) {
+      const at = bannerArt[name]((i / samples) * (2 / DRIFT));
+      for (const p of meshes[name].vertices) {
+        const [x, y] = project(at(p), 0, 0, 1);
+        box[0] = Math.min(box[0], x);
+        box[1] = Math.min(box[1], y);
+        box[2] = Math.max(box[2], x);
+        box[3] = Math.max(box[3], y);
+      }
+    }
+    boxes[kind] = box;
+  }
+  unitBoxes[name] = boxes;
+}
+
+// Banner layout: each shape scaled to its designed width and centred on its spot. In
+// the boxed layout the pair is then shrunk and nudged only when it would spill past
+// the canvas (narrow phones). Cached per size and mode.
 let layoutKey = "";
 let layout = null;
-function bannerLayout(w, h) {
-  if (layoutKey === `${w}x${h}`) return layout;
+function bannerLayout(w, h, full) {
+  const key = `${w}x${h}${full ? "f" : ""}`;
+  if (layoutKey === key) return layout;
   const m = 8;
+  const spots = artSpots[full ? "full" : "boxed"];
+  const place = (k, ox, oy) => {
+    const out = {};
+    for (const [name, [fx, fy, fw]] of Object.entries(spots)) {
+      const [x0, y0, x1, y1] = unitBoxes[name].still;
+      const s = ((fw * w) / (x1 - x0)) * k;
+      out[name] = [fx * w + ox - (s * (x0 + x1)) / 2, fy * h + oy - (s * (y0 + y1)) / 2, s];
+    }
+    return out;
+  };
   // A collapsed or tiny canvas has nothing to fit; avoid a negative or NaN scale.
-  if (w <= 4 * m || h <= 4 * m) return { dome: [w * 0.36, h * 0.36, 0], wave: [w * 0.62, h * 0.72, 0] };
-  const s = Math.min(w, h);
-  const place = (k, ox, oy) => ({
-    dome: [w * 0.36 + ox, h * 0.36 + oy, s * 0.24 * k],
-    wave: [w * 0.62 + ox, h * 0.72 + oy, s * 0.42 * k],
-  });
-  const bounds = (spots) => {
+  if (w <= 4 * m || h <= 4 * m) return place(0, 0, 0);
+  const bounds = (placed) => {
     const box = [Infinity, Infinity, -Infinity, -Infinity];
-    const add = ([x, y]) => {
-      box[0] = Math.min(box[0], x);
-      box[1] = Math.min(box[1], y);
-      box[2] = Math.max(box[2], x);
-      box[3] = Math.max(box[3], y);
-    };
-    for (let i = 0; i < 8; i++) {
-      const t = i * 2.5;
-      const [dx, dy] = poses.dome(t);
-      for (const p of meshes.dome.vertices) add(project(rotate(p, dx, dy), ...spots.dome));
-      for (const [x, , z] of meshes.wave.vertices) add(project(rotate([x, waveHeight(x, z, t), z], ...poses.wave(t)), ...spots.wave));
+    for (const [name, [cx, cy, s]] of Object.entries(placed)) {
+      const [x0, y0, x1, y1] = unitBoxes[name].all;
+      box[0] = Math.min(box[0], cx + s * x0);
+      box[1] = Math.min(box[1], cy + s * y0);
+      box[2] = Math.max(box[2], cx + s * x1);
+      box[3] = Math.max(box[3], cy + s * y1);
     }
     return box;
   };
+  layoutKey = key;
+  if (full) return (layout = place(1, 0, 0));
   let box = bounds(place(1, 0, 0));
   const k = Math.min(1, (w - 2 * m) / (box[2] - box[0]), (h - 2 * m) / (box[3] - box[1]));
   box = bounds(place(k, 0, 0));
   const shift = (lo, hi, size) => (lo < m ? m - lo : hi > size - m ? size - m - hi : 0);
-  layoutKey = `${w}x${h}`;
   layout = place(k, shift(box[0], box[2], w), shift(box[1], box[3], h));
   return layout;
 }
 
 const painters = {
-  banner(ctx, w, h, t) {
-    const spots = bannerLayout(w, h);
-    const [dx, dy] = poses.dome(t);
-    const [wx, wy] = poses.wave(t);
-    strokeMesh(ctx, meshes.dome, (p) => project(rotate(p, dx, dy), ...spots.dome));
-    strokeMesh(ctx, meshes.wave, ([x, , z]) => project(rotate([x, waveHeight(x, z, t), z], wx, wy), ...spots.wave));
+  banner(ctx, w, h, t, scene) {
+    // On desktop the stylesheet lifts the canvas out of the grid to span the banner;
+    // resize() notes which, since that also changes the canvas size.
+    const spots = bannerLayout(w, h, scene.full);
+    for (const name of ["core", "terrain"]) {
+      const at = bannerArt[name](t);
+      strokeMesh(ctx, meshes[name], (p) => project(at(p), ...spots[name]));
+    }
   },
   cube(ctx, w, h, t) {
     const [ax, ay] = poses.cube(t);
@@ -171,6 +218,7 @@ function resize(scene) {
   scene.canvas.width = Math.round(w * dpr);
   scene.canvas.height = Math.round(h * dpr);
   scene.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  scene.full = getComputedStyle(scene.canvas).position === "absolute";
 }
 
 function draw(scene) {
@@ -185,7 +233,7 @@ function draw(scene) {
   ctx.strokeStyle = scene.color;
   ctx.globalAlpha = 0.85;
   ctx.lineWidth = 0.75;
-  scene.paint(ctx, w, h, time);
+  scene.paint(ctx, w, h, time, scene);
 }
 
 function refreshColors() {
@@ -209,7 +257,7 @@ function tick(now) {
   if (delta) dt += (delta - dt) * 0.1;
   // Log each full Y turn a shape completes, only while the console is on screen
   // to read it; off screen the count still advances so nothing replays stale.
-  for (const name of ["dome", "cube", "globe", "torus"]) {
+  for (const name of ["core", "cube", "globe", "torus"]) {
     const rev = Math.floor(poses[name](time)[1] / TAU);
     if (bannerVisible && rev > (revs[name] ?? rev)) log(`${name.toUpperCase().padEnd(6)} REV ${pad(rev)} COMPLETE`);
     revs[name] = rev;
@@ -227,15 +275,16 @@ const pose = (name) => posed(name).map((a, i) => `${i ? "RY" : "RX"} ${angle(a)}
 const shown = (name) => (scenes.find((s) => s.canvas.dataset.scene === name)?.visible ? 1 : 0);
 // Each line names the scene it reports on. The home console reports everything; a
 // subpage's echo reports only what is on that page (ADR 0009).
-const sceneOf = (mesh) => (mesh === "dome" || mesh === "wave" ? "banner" : mesh === "icosa" ? "ambient" : mesh);
+const sceneOf = (mesh) => (mesh === "core" || mesh === "terrain" ? "banner" : mesh === "icosa" ? "ambient" : mesh);
 // A scene counts only if it is actually shown (the ambient sphere is display:none
 // below 1600px, for instance).
 const onPage = (scene) => !scene || scenes.some((s) => s.canvas.dataset.scene === scene && s.canvas.getClientRects().length);
 // Console names fit the 6-character column; the headset is an HMD (head-mounted display).
-const label = (mesh) => (mesh === "headset" ? "HMD" : mesh.toUpperCase());
+const label = (mesh) => (mesh === "headset" ? "HMD" : mesh === "terrain" ? "TERR" : mesh.toUpperCase());
+const peak = () => Math.max(...meshes.terrain.vertices.map(([x, , z]) => terrainHeight(x, z, time)));
 const script = [
-  ["banner", () => `DOME   ${pose("dome")}  VTX ${meshes.dome.vertices.length}`],
-  ["banner", () => `WAVE   PHASE ${angle(time * 2.2)}  CTR ${(Math.round(waveHeight(0, 0, time) * 1000) / 1000 || 0).toFixed(3)}`],
+  ["banner", () => `CORE   ${pose("core")}  VTX ${meshes.core.vertices.length}`],
+  ["banner", () => `TERR   PEAK ${peak().toFixed(3)}  DRIFT ${((time * DRIFT) % 2).toFixed(3)}`],
   ["cube", () => `CUBE   ${pose("cube")}  EDG ${meshes.cube.edges.length}`],
   ["globe", () => `GLOBE  RY ${angle(poses.globe(time)[1])}  VTX ${meshes.globe.vertices.length}`],
   ["torus", () => `TORUS  ${pose("torus")}  VIS ${shown("torus")}`],

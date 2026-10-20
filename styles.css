@@ -1739,13 +1739,10 @@ html.js-ready:not(.motion-off) .terminal-echo {
     grid-column: 1;
   }
 
-  #contact .section-title {
-    grid-column: 1 / -1;
-  }
-
+  /* The heading is visually hidden (ADR 0014), so the details start in row 1. */
   #contact .model-teapot {
     grid-column: 2;
-    grid-row: 2 / span 3;
+    grid-row: 1 / span 3;
     margin-top: 0;
   }
 }
@@ -1790,8 +1787,23 @@ html.js-ready:not(.motion-off) .terminal-echo {
   }
 
 
+  /* As in Figma, the art spans the whole banner behind the text, the terrain running
+     under the console (ADR 0014). The art column stays as the gap between console
+     and headline. isolation keeps the canvas above the banner's own background, and
+     grid-area: auto frames it by the whole container, not its old grid cell. */
+  .banner .container {
+    isolation: isolate;
+  }
+
   .banner-scene {
-    aspect-ratio: 5 / 4;
+    grid-area: auto;
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    pointer-events: none;
   }
 
   .tech-labels {
