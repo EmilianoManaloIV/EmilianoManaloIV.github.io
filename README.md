@@ -1,177 +1,133 @@
 # emilianomanaloiv.github.io
 
-The personal website of Emiliano Panday Manalo IV: **https://emilianomanaloiv.github.io**
+My personal website, built for conference use: **https://emilianomanaloiv.github.io**
 
-This README is the owner's guide to running the site day to day. You never edit HTML to publish. R&D posts, projects, and the guestbook all come from this repository's [Discussions](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/discussions). The site rebuilds within about a minute of any change, from the web or the GitHub mobile app.
+Most visitors arrive on a phone, by scanning the QR code on my badge, often on slow conference Wi-Fi. So the site had to load fast, work without JavaScript, stay accessible, and let me post R&D notes and projects from my phone between talks. Along the way it became a small showcase of the things I like building: real-time 3D graphics, careful interfaces, and systems with no moving parts I don't understand.
 
-- [Edit your site text](#edit-your-site-text)
-- [At the conference: your QR card](#at-the-conference-your-qr-card)
-- [Link previews and home-screen icon](#link-previews-and-home-screen-icon)
-- [Publish an R&D post](#publish-an-rd-post)
-- [Add a project](#add-a-project)
-- [Add a video clip](#add-a-video-clip)
-- [Skills on the About page](#skills-on-the-about-page)
-- [The guestbook](#the-guestbook)
-- [Edit, hide, or remove](#edit-hide-or-remove)
-- [Moderate comments and signatures](#moderate-comments-and-signatures)
-- [If something doesn't show up](#if-something-doesnt-show-up)
+> Running the site day to day (posting, projects, the guestbook, moderation, the QR card) is in the **[owner's manual](docs/MANUAL.md)**.
 
-## Edit your site text
+## How I made it
 
-Your bio, values, education, experience, email, and social links all live in one file: [`site-text.md`](site-text.md).
+I designed the site in **Figma** first, as a Figma Site called "Personal Website". Its colours are the "Branding Guide" variables, in light and dark modes, and the site's CSS tokens keep the same names.
 
-**From a phone or a computer:**
+I built it with **Claude Code**, Anthropic's AI coding assistant, working from my direction. Claude wrote most of the code and some of the interface text. I set the direction and the architecture, chose between the options it laid out, reviewed every change, and merged every pull request myself. My bio, projects, and R&D posts are my own words. The same note is on the site, at the bottom of the About page.
 
-1. Open [`site-text.md`](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/blob/main/site-text.md) on GitHub.
-2. Tap the **pencil** (Edit) button.
-3. Change the text under any `## Heading`. Keep the heading lines as they are.
-4. Tap **Commit changes**, then **Commit changes** again.
+The process stayed deliberate the whole way:
 
-The site updates in about a minute.
+- **One feature branch and pull request per change,** 20 merged over three days (October 18–20, 2026).
+- **An independent review before nearly every PR.** A separate AI reviewer checked each substantial change, and its findings were fixed before I merged.
+- **Tests on every PR in CI,** and a deploy only when they pass.
+- **A decision record for every meaningful choice,** 17 so far, in [`docs/decisions/`](docs/decisions/).
 
-**Tips:**
-- **Formatting:** `*italic*`, `**bold**`, and `[link text](https://example.com)` work. Most sections are a single paragraph. **About story** can have several, with a blank line between them. Bullet lists aren't supported.
-- **Education and Experience:** each entry is a `### When | Title` line, such as `### 2023–2027 | B.S. Computer Science`, followed by a sentence or two. Add or remove entries, keeping at least one in each.
-- **Links:** leave a social link empty, with nothing after the colon, to hide it everywhere. Email is required.
-- **If a change doesn't appear:** a mistake stops the update and your site stays as it was. Open the [Actions tab](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/actions), and the failed run says what to fix: a missing, duplicated, or misspelled heading, a bad link, or an extra paragraph. Fix it soon, because new posts, comments, and signatures also wait until the file is valid.
+## Tech stack
 
-## At the conference: your QR card
+- **Hand-written HTML, CSS, and JavaScript,** with **zero dependencies**: no npm packages, frameworks, CDNs, or outside fonts. The JavaScript is first-party, about 19 KB gzipped, and makes no network requests.
+- **A small Node build** ([`tools/build.mjs`](tools/build.mjs)), itself dependency-free, that runs in **GitHub Actions**.
+- **GitHub Discussions as the content system.**
+  - R&D posts, projects, and comments are discussions.
+  - Project skills are labels.
+  - The guestbook is one pinned discussion, and each comment is a signature.
+  - I can publish from the GitHub mobile app.
+- **GitHub Pages** for hosting, rebuilt within about a minute of any post, comment, or label change, and hourly otherwise.
+- **Self-hosted fonts:** Inter, Space Grotesk, and IBM Plex Mono.
 
-Open **[emilianomanaloiv.github.io/card](https://emilianomanaloiv.github.io/card/)** on your phone. The footer of every page links to it as "Show my QR card".
+```
+GitHub Discussions ─┐
+site-text.md ───────┼─► GitHub Actions: node tools/build.mjs ─► node --test ─► _site/ ─► GitHub Pages
+HTML · CSS · JS ────┘
+```
 
-- **Hold it up:** the QR code fills the screen and scans in light or dark mode. Turn your screen brightness up.
-- **Print it:** print the page and you get a 4 × 3 in badge insert with the code, your name, and your title.
-- **Stickers and slides:** download the code itself from the link on the card page, or use `/card/qr.svg`. It's a sharp SVG that scales to any size.
+Before anything is built from Discussions, CI runs the tests on an offline build and a sample build. Pull requests stop there; only `main` deploys.
 
-**Test it before you print:** scan the code from the card page with your phone's camera. It should open your site.
+## What I built
 
-## Link previews and home-screen icon
+- **A small 3D wireframe engine on `<canvas>`** ([`js/geometry.js`](js/geometry.js)): meshes, rotation, and perspective projection in plain JavaScript, unit-tested.
+  - **The banner art, matched to my Figma design:**
+    - an oblate spheroid with a cylinder bored through it;
+    - jagged, drifting terrain from hashed value noise that repeats without a seam.
+  - **The Utah teapot,** drawn from its original Bézier patches (Martin Newell, 1975).
+  - **A VR headset** built in code.
+  - **A geodesic sphere** that drifts in the margins of big screens.
+  - **Hands-on models:** the teapot and the headset can be dragged or turned with the arrow keys, and each has a Reset button.
+- **A live console** in the banner that types real telemetry from the shapes on screen, a headline that decodes from glyphs, and a device readout of the visitor's own browser.
+- **A content pipeline from Discussions:**
+  - **Pages:** discussions become pages, with comments.
+  - **Sanitizer:** a hardened HTML allowlist sanitizer handles anything a visitor writes.
+  - **Media:** images and short video clips are copied onto the site (iPhone HEVC clips are detected and refused).
+  - **Projects:** they get skills, cards, and their own pages.
+  - **Renames:** a renamed post keeps its old links working.
+- **A QR code generator written from scratch** ([`tools/qr.mjs`](tools/qr.mjs)), with Reed–Solomon error correction and masking. It draws the code for my conference card.
+  - The card's page prints as a badge insert.
+  - Visitors can save my contact as a vCard.
+  - The build also writes the sitemap and `robots.txt`, and fills the vCard from `site-text.md`.
+- **All my text in one file,** [`site-text.md`](site-text.md), editable on GitHub from a phone. The build validates it and fails with a plain-language message if something's wrong, leaving the last good site live.
+- **Accessibility and resilience, enforced by tests:**
+  - WCAG AA contrast, computed from the design tokens in both themes;
+  - all motion pausable, and paused by default under reduced motion;
+  - every page works without JavaScript;
+  - a black-on-white print stylesheet;
+  - cache-busting fingerprints, so deploys never mix old and new files;
+  - each page under 200 KB gzipped.
 
-Two optional images make the site look finished when it's shared or saved. Export them from the Figma file and add them to `assets/img/` on GitHub with **Add file → Upload files**.
+## On the site
 
-| File | Size | What it does |
-|---|---|---|
-| `assets/img/share.png` | 1200 × 630 | The preview picture when your link is shared in chats and on social media |
-| `assets/img/apple-touch-icon.png` | 180 × 180 | The icon when someone adds your site to an iPhone home screen |
+- **3D models:** turn the teapot at the bottom of every page, or the VR headset on the R&D page, by dragging or with the arrow keys. **Reset view** or the Home key puts it back.
+- **Wayfinding:** a thin bar across the top fills as you scroll. On a phone, a bar names the home-page section you're in. On big screens, faint margin labels name the subpage section you're reading.
+- **Settings:** the **Motion** button stops every animation, and **Dark mode** switches themes. The site remembers both choices.
+- **Guestbook:** visitors can sign it with a GitHub account, old-internet style.
+- **[QR card](https://emilianomanaloiv.github.io/card/):** the page I hold up at conferences.
 
-The site picks them up on the next build. You don't need to change any code.
+## Repository layout
 
-## Publish an R&D post
+| Path | What's there |
+|---|---|
+| `index.html`, `about/`, `rd/`, `guestbook/`, `card/`, `404.html` | The pages, hand-written |
+| `templates/` | The R&D post and project page templates the build fills |
+| `styles.css` | Design tokens first, then components; mobile-first at 800, 1280, and 1600 px |
+| `js/` | `main.js` (canvas scenes, console, motion), `geometry.js` (3D math), `models.js` (teapot data), `ui.js` (wayfinding, share, copy), `theme.js` |
+| `tools/` | `build.mjs`, `render.mjs` (sanitizer and markup helpers), `qr.mjs` |
+| `test/` | Unit tests, plus checks run on the built site |
+| `site-text.md` | All page copy and links |
+| `docs/` | The [owner's manual](docs/MANUAL.md) and the [decision records](docs/decisions/) |
 
-1. Open **Discussions** and click **New discussion**.
-2. Pick the **R&D** category.
-3. Write a title and the post. Markdown works: headings, lists, code blocks, links, and images or [video clips](#add-a-video-clip) you drag in.
-4. Click **Start discussion**.
+## Run it locally
 
-The post appears on the [R&D page](https://emilianomanaloiv.github.io/rd/), newest first, and gets its own page at `/rd/<number>-<title>/`. Visitors can comment on it with a GitHub account, and their comments show under the post.
+You need Node (24, as CI uses). Python is used only to serve the preview.
 
-The first paragraph is the summary on the R&D page and in link previews. Images and clips are copied onto the site, so visitors never load anything from GitHub.
+```bash
+node tools/build.mjs --offline                                # build _site/ without posts
+node tools/build.mjs --fixture test/fixtures/discussions.json # build with sample posts and comments
+node --test                                                   # about 160 tests: unit tests plus checks on _site/
+py -m http.server 8000 --directory _site                      # preview at http://localhost:8000
+```
 
-### Mark a post as opinion
+`py` is the Windows Python launcher; on macOS or Linux, use `python3 -m http.server 8000 --directory _site`. `node tools/build.mjs` with no flag builds from the real Discussions, using `gh auth token`.
 
-For posts that argue a view, rants included, open the discussion and pick the **`opinion`** label in the right sidebar. The post and its R&D card show a small **Opinion** tag within a minute. Remove the label to take the tag off.
+## Design decisions
 
-## Add a project
+| | |
+|---|---|
+| [0001](docs/decisions/0001-zero-dependency-static-site.md) | Zero-dependency static site |
+| [0002](docs/decisions/0002-first-party-javascript-for-motion.md) | First-party JavaScript for motion |
+| [0003](docs/decisions/0003-interactive-ui-elements.md) | Interactive UI elements for conference visitors |
+| [0004](docs/decisions/0004-multi-page-without-a-build-step.md) | Multiple pages without a build step |
+| [0005](docs/decisions/0005-discussions-as-content-built-in-ci.md) | GitHub Discussions as the content source, built in CI |
+| [0006](docs/decisions/0006-projects-and-skills-from-discussions.md) | Projects and skills from Discussions |
+| [0007](docs/decisions/0007-video-clips-instead-of-gifs.md) | Video clips instead of GIFs |
+| [0008](docs/decisions/0008-ambient-motion-and-scroll-reveals.md) | Ambient background motion and scroll reveals |
+| [0009](docs/decisions/0009-interactive-models-and-usability-driven-graphics.md) | Interactive models and usability-driven graphics |
+| [0010](docs/decisions/0010-site-text-in-one-file.md) | Site text in one file |
+| [0011](docs/decisions/0011-conference-kit.md) | Conference kit: QR card, link previews, home-screen icon, sitemap |
+| [0012](docs/decisions/0012-pre-launch-audit.md) | Pre-launch audit: contrast, print, and page weight |
+| [0013](docs/decisions/0013-ai-disclosure-and-opinion-posts.md) | AI-use disclosure and opinion posts |
+| [0014](docs/decisions/0014-banner-art-matched-to-figma.md) | Banner art matched to Figma |
+| [0015](docs/decisions/0015-pages-only-nav-and-contact-in-the-footer.md) | Pages-only nav, and contact in the footer |
+| [0016](docs/decisions/0016-data-columns-and-a-decoding-barcode-row.md) | Background data columns, a decoding barcode row, and a bigger teapot |
+| [0017](docs/decisions/0017-figma-details-and-fewer-background-layers.md) | Figma details, and fewer background layers |
 
-1. Open **Discussions** and click **New discussion**.
-2. Pick the **Projects** category.
-3. Use the project's name as the title.
-4. If the project has a link, make it the **first line**, with nothing else on that line:
+## Contributing
 
-   ```
-   Link: https://github.com/EmilianoManaloIV/blendity
-   ```
-
-   It becomes the orange "Blendity link" button. With no `Link:` line, there is no button.
-5. Write the description. The first paragraph becomes the text on the home page card.
-6. Drag in a screenshot or render. The first image becomes the card picture. With no image, the first [video clip](#add-a-video-clip) is used instead, and with neither, the card shows a placeholder.
-7. Click **Start discussion**.
-8. In the right sidebar, open **Labels** and pick the project's skills. See the next section.
-
-The project shows up in the home page's Projects section, newest first, with its own page at `/projects/<number>-<title>/` where visitors can comment.
-
-## Add a video clip
-
-Use a short clip instead of a GIF in a post or a project. A clip is much smaller than the same GIF, and it pauses with the site's motion button.
-
-1. Name the file for what it shows, for example `orbit-demo.mp4`. Screen readers read the name as the clip's label ("orbit demo"). A camera name such as `IMG_9408.MOV` becomes just "Video clip".
-2. Keep it short and small: under **10 MB**, ideally under **4 MB**, since visitors are often on conference Wi-Fi. Sound is muted on the site.
-3. Drag the file into the discussion, the same way as an image.
-
-On the site, the clip plays silently on a loop while it is on screen and motion is on. It pauses when a visitor turns motion off, and stays paused for visitors who asked their device for reduced motion. They can still press play.
-
-**Use MP4 (H.264) or WebM.** iPhones often record in HEVC, which many browsers can't play, so the site drops those clips. To fix one, export it again as H.264: on iPhone, set **Settings → Camera → Formats** to **Most Compatible** before recording, or export from Photos or your editor as H.264 MP4. A dropped clip is named in the warnings of the latest [Actions](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/actions) run.
-
-Visitors can't add clips: videos in comments and guestbook signatures never appear.
-
-## Skills on the About page
-
-Skills are GitHub labels whose names start with `skill: `, for example `skill: C++` or `skill: Unity3D`.
-
-- **On a project:** a skill label shows as a tag on the project's card and page.
-- **On the About page:** the "From my projects" list shows every skill used by at least one project. Each skill has a count, and hovering over it names the projects that use it.
-- **New skill:** create a label named `skill: <name>` from the Labels picker, or from **Issues → Labels → New label**. The skill labels use the color `#D9822B`.
-- **Other labels** such as `bug` or `enhancement` never appear on the site.
-
-Adding or removing a label rebuilds the site, so the About page stays in sync. A skill disappears from About once no project uses it, but the label stays in the repository for reuse.
-
-Other skill groups on the About page, such as tools or languages, are still written by hand in `about/index.html`.
-
-## The AI-use note
-
-Every page's footer says "Built with AI assistance" and links to **How this site was made** at the bottom of your About page. Its text is the `## How this site was made` section of [`site-text.md`](site-text.md). Keep it true: if what you or the AI wrote changes, update it there.
-
-## The guestbook
-
-The [guestbook](https://emilianomanaloiv.github.io/guestbook/) is an old-internet guest list.
-
-- **Where it lives:** the **Sign The Guestbook** discussion ([#6](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/discussions/6)) in the **Guestbook** category. It is pinned, so it's easy to find.
-- **Signing:** visitors click "Sign the guestbook" on the site, which opens that discussion, and leave a comment with their GitHub account.
-- **On the site:** each comment becomes a numbered signature, oldest first (#001, #002, …), with the visitor's username and date. Replies to a signature are not shown.
-- **Links and images:** visitors can include links and pictures. Links are marked so search engines don't follow them, and only images hosted on GitHub are kept. Video clips in signatures are not shown.
-
-Keep that one discussion. The site always uses your oldest discussion in the Guestbook category, so a new one wouldn't replace it, and deleting #6 would erase every signature.
-
-## Edit, hide, or remove
-
-These work the same for posts and projects.
-
-| You want to… | Do this | On the site |
-|---|---|---|
-| Fix a typo or update content | Edit the discussion | The page updates. |
-| Rename it | Edit the title | The address changes, and old links still work. |
-| Take it down for now | Move it to another category, such as General | The page disappears. Moving it back restores it with its comments. |
-| Remove it for good | Delete the discussion | The page, its card, and its skills disappear. **This is permanent on GitHub, comments included.** |
-
-Only discussions you write in R&D or Projects become pages. Visitors can comment, but anything they start there never appears on the site.
-
-After any change, browsers may show the old page for up to 10 minutes.
-
-## Moderate comments and signatures
-
-- **Delete a comment** to remove it from the site within a minute.
-- **Hide a comment** to remove it within the hour. Hiding doesn't trigger a rebuild, so the hourly rebuild picks it up.
-- **Lock a discussion** from its sidebar to stop new comments, for example a post you don't want discussed.
-
-## If something doesn't show up
-
-1. Open the [Actions tab](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/actions) and look at the latest run.
-2. A failed run leaves the last good version of the site live. Open the failed step, and the log names the problem.
-3. A common cause is a broken site link inside a post, such as `/no-such-page/`. Fix the link in the discussion and the site rebuilds.
-4. A missing image or clip doesn't fail the run. Look for a warning that starts with "dropped", which says why, such as a clip over 10 MB or in HEVC.
-5. To rebuild by hand, open the **Test and deploy** workflow and click **Run workflow**.
-
-The hourly rebuild pauses after 60 days without any activity in the repository. Any post, comment, or manual run starts it again.
-
-## Things visitors can do
-
-- **Turn the 3D models:** drag the teapot at the bottom of every page or the VR headset on the R&D page, or click one and use the arrow keys. **Reset view** or the Home key puts it back.
-- **See where you are:** a thin bar across the top fills as you scroll. On big screens, a faint label in the right margin names the section you're reading.
-- **Pause all motion:** the **Motion** button in the footer stops every animation, and the site remembers the choice.
-
-## For developers
-
-How the site is built, tested, and changed is in [`CLAUDE.md`](CLAUDE.md) and the decision records in [`docs/decisions/`](docs/decisions/), especially [0005](docs/decisions/0005-discussions-as-content-built-in-ci.md), [0006](docs/decisions/0006-projects-and-skills-from-discussions.md), and [0007](docs/decisions/0007-video-clips-instead-of-gifs.md).
+The working rules (stack, commands, tests, and conventions) are in [`CLAUDE.md`](CLAUDE.md). Changes go through a feature branch and a pull request, and only I merge into `main`, which deploys the site.
 
 ## Credits
 

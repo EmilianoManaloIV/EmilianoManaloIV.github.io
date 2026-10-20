@@ -31,7 +31,7 @@ All of that copy lives in **`site-text.md`** at the repository root: labelled `#
   - an unknown or repeated link name;
   - a bad email;
   - a non-`https` link.
-  The last good site stays live, but every rebuild waits on the file, including new posts and comments, so the README asks for a quick fix.
+  The last good site stays live, but every rebuild waits on the file, including new posts and comments, so the owner's manual (docs/MANUAL.md) asks for a quick fix.
 - **Escaping:** text is escaped first, then the small formatting subset is applied, then the owner sanitizer from 0005 runs. Links are found before emphasis, so stars inside an address stay literal. `*` only marks emphasis when it hugs the words, so `2 * 3` stays as typed. Typed `<script>`, `{{` or `$&` shows as plain text, in text and in links alike, because addresses are inserted with function replacers.
 - **Typos in markup:** an unknown `data-text` key in a page fails the build.
 
