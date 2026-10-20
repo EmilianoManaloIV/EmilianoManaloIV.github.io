@@ -1107,6 +1107,15 @@ html:not(.js) .model {
   color: var(--color-ink);
 }
 
+/* The line between the home page's sections (ADR 0017): the rule the numbered
+   headings used to carry, without their text. A border, so high-contrast mode and
+   print keep it. */
+.section-rule {
+  margin: 0 0 var(--space-8);
+  border: 0;
+  border-top: 1px solid var(--color-rule);
+}
+
 /* High-contrast mode and print drop backgrounds, so the rule falls back to a border. */
 @media (forced-colors: active), print {
   .section-title {

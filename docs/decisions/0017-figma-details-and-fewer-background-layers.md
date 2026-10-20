@@ -49,6 +49,10 @@ The owner wanted the background console text gone and more of the Figma design (
 - **Defaults:** they follow Figma ("System Core X7", "Module sector 12B", "X5-77", "IN-2087-A"). The live device readout still replaces them when JavaScript runs.
 - **Motion toggle:** it stays beside the grid.
 
+**Section lines:**
+- **What:** a plain 1px rule returns above About, Projects, and the footer's Contact block. It's the rule the numbered headings carried before 0014, now without their text or "+" mark.
+- **Markup:** an `aria-hidden` `<hr class="section-rule">` after each hidden heading. It's a border, so high-contrast mode and print keep it.
+
 ## Alternatives
 
 - **Exporting Figma's icon images** would add files and requests. Inline SVG costs a few hundred bytes per page and follows the theme colour.

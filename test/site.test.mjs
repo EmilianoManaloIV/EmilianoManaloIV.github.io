@@ -558,6 +558,11 @@ test("the home page's sections drop their visible numbered headings but keep one
   }
   // Subpages keep theirs.
   assert.match(html("about/index.html"), /class="section-index"/);
+  // A plain line still separates each section, as the headings' rule did (ADR 0017).
+  for (const [id, name] of [["about", "About"], ["projects", "Projects"]]) {
+    assert.match(home, new RegExp(`<section id="${id}"[^>]*>\\s*<div class="container">\\s*<h2 class="visually-hidden">${name}</h2>\\s*<hr class="section-rule" aria-hidden="true">`), `#${id} rule`);
+  }
+  assert.match(home, /<div class="footer-contact" id="contact">\s*<h2 class="visually-hidden">Contact<\/h2>\s*<hr class="section-rule" aria-hidden="true">/, "contact rule");
 });
 
 test("the barcode row keeps its real text in the markup and decodes only inside the hidden row (ADR 0016, 0017)", () => {
