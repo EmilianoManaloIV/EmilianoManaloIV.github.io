@@ -22,41 +22,41 @@
 -->
 
 ## Links
-Email: TODO@example.com
-LinkedIn: https://www.linkedin.com/in/TODO
-Instagram: https://www.instagram.com/TODO
-X: https://x.com/TODO
+Email: emilianomanaloiv@gmail.com
+LinkedIn: https://www.linkedin.com/in/emiliano-manalo-iv/
+Instagram: https://www.instagram.com/emanalo8
+X: https://x.com/EPolyGen
 GitHub: https://github.com/EmilianoManaloIV
 
 ## Home subtitle
 Aspiring Creative Technologist, Technical Artist, And Software Engineer
 
 ## Home about heading
-TODO: About heading
+Bridging Creatives And Technologists
 
 ## Home about text
-TODO: Short bio. Two or three sentences on who you are, what you are studying or working on, and what you want to talk about at the conference.
+I'm an aspiring creative technologist looking to bridge the misunderstandings between creatives and technologists. I believe there is a way for both paths to intersect and benefit from each other, rather than diverge and oppose each other. I'm currently researching ethical AI integration, computer graphics, and human-computer interactions. 
 
 ## Value 1 heading
-Cross Disciplined
+Polymath Thinking
 
 ## Value 1 text
-At the intersection of technology, engineering, and art. I wear many hats to solve complex problems.
+Every discipline is connected, no matter the environment. I bridge disciplines to solve complex, often multifaceted problems.
 
 ## Value 2 heading
-Willing To Learn
+Human Driven
 
 ## Value 2 text
-Technology, research, and art are always evolving. No stone should be left un-turned; keep learning!
+Creation, from good software to art, is intrinsically human. Technology is here to assist, NOT replace. 
 
 ## Value 3 heading
-Human First
+Evolved To Learn
 
 ## Value 3 text
-Building systems are inherently human. Humans use technology to *create*, not *replace* them.
+The world is always changing with new techniques, new technologies, and new mediums. Embracing change and being curious is crucial; not a weakness.
 
 ## About one-liner
-TODO: One sentence on what you do and what you care about.
+Finding ways to integrate technology ethically with art, media, and society.
 
 ## About story
 TODO: A longer bio. Where you started, what pulled you toward technology, engineering, and art, and what you are working toward now.
