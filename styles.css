@@ -369,7 +369,8 @@ button {
   .action,
   .barcode-strip,
   .ticks,
-  .footer-motion {
+  .footer-motion,
+  .data-columns {
     display: none !important;
   }
 
@@ -790,6 +791,57 @@ html.js-ready:not(.motion-off) .terminal-echo {
   width: 100%;
   aspect-ratio: 4 / 3;
   color: var(--brand-mint);
+}
+
+/* Data columns (ADR 0016): faint, decorative streams of made-up readouts behind the
+   banner art and the footer teapot, filled and stepped by js/main.js. contain: size
+   keeps their lines from growing the box they fill. */
+.data-columns {
+  display: flex;
+  justify-content: space-around;
+  gap: var(--space-4);
+  overflow: hidden;
+  contain: size;
+  pointer-events: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-mask-image: linear-gradient(transparent, #000 20%, #000 80%, transparent);
+  mask-image: linear-gradient(transparent, #000 20%, #000 80%, transparent);
+}
+
+.data-columns pre {
+  margin: 0;
+  overflow: hidden;
+  font-size: 0.625rem;
+  line-height: 1.6;
+  opacity: 0.14;
+}
+
+html:not(.js) .data-columns {
+  display: none;
+}
+
+/* In the banner they share the art's grid cell, behind the canvas; the container
+   is isolated so z-index -1 stays above the banner's own background. */
+.banner .container {
+  isolation: isolate;
+}
+
+.banner .data-columns {
+  grid-area: art;
+  align-self: stretch;
+  position: relative;
+  z-index: -1;
+}
+
+/* In the footer they sit in the teapot's frame, behind it. */
+.site-footer .data-columns {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: -1;
+  aspect-ratio: 3 / 2;
 }
 
 .banner-head {
@@ -1508,9 +1560,11 @@ html.js-ready:not(.motion-off) .terminal-echo {
   display: none;
 }
 
-/* The footer grid's gap already spaces the teapot from the brand. */
+/* The teapot ends every page (ADR 0015); the footer grid's gap already spaces it
+   from the brand. isolation keeps its data columns behind it (ADR 0016). */
 .site-footer .model-teapot {
   margin-top: 0;
+  isolation: isolate;
 }
 
 /* Hands-on models (ADR 0009). The grab cursor and focus ring say "you can move
@@ -1720,9 +1774,10 @@ html.js-ready:not(.motion-off) .terminal-echo {
     gap: var(--space-8);
   }
 
-  /* Footer (ADR 0015): contact above the brand on the left, the teapot beside both. */
+  /* Footer (ADR 0015): contact above the brand on the left, the teapot beside both,
+     in the wider column and at a generous size (ADR 0016). */
   .site-footer .container {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 24rem);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
     column-gap: var(--space-12);
     row-gap: var(--space-12);
     align-items: start;
@@ -1732,6 +1787,7 @@ html.js-ready:not(.motion-off) .terminal-echo {
     grid-column: 2;
     grid-row: 1 / span 2;
     align-self: center;
+    max-width: 40rem;
     margin-top: 0;
   }
 }
@@ -1778,12 +1834,9 @@ html.js-ready:not(.motion-off) .terminal-echo {
 
   /* As in Figma, the art spans the whole banner behind the text, the terrain running
      under the console (ADR 0014). The art column stays as the gap between console
-     and headline. isolation keeps the canvas above the banner's own background, and
+     and headline, where the data columns run behind the art. The container is
+     isolated (above), so the canvas stays over the banner's own background, and
      grid-area: auto frames it by the whole container, not its old grid cell. */
-  .banner .container {
-    isolation: isolate;
-  }
-
   .banner-scene {
     grid-area: auto;
     position: absolute;

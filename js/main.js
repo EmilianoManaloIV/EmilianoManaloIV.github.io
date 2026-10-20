@@ -376,18 +376,24 @@ let scrambleTimer = 0;
 let scrambleStart = 0;
 let scrambledOnce = false;
 
-function scrambleFrame() {
-  const elapsed = performance.now() - scrambleStart;
+// Shows each element's text decoding from glyphs: character c of element i locks in
+// once `elapsed` reaches delay(i, c) ms. Returns true when every character has.
+function decodeStep(els, texts, elapsed, delay) {
   let done = true;
-  words.forEach((el, i) => {
+  els.forEach((el, i) => {
     let out = "";
-    for (let c = 0; c < originals[i].length; c++) {
-      const locked = elapsed >= i * 220 + c * 45 + 150;
+    for (let c = 0; c < texts[i].length; c++) {
+      const locked = elapsed >= delay(i, c);
       if (!locked) done = false;
-      out += locked ? originals[i][c] : glyphs[rand(glyphs.length)];
+      out += locked ? texts[i][c] : glyphs[rand(glyphs.length)];
     }
     el.textContent = out;
   });
+  return done;
+}
+
+function scrambleFrame() {
+  const done = decodeStep(words, originals, performance.now() - scrambleStart, (i, c) => i * 220 + c * 45 + 150);
   if (done) {
     scrambleStart = 0;
     scrambleTimer = setTimeout(beginScramble, 12000);
@@ -457,6 +463,80 @@ function tickClock() {
   clockTimer = setTimeout(tickClock, 1000 - (Date.now() % 1000));
 }
 
+// == Data columns (ADR 0016): faint streams of made-up readouts behind the banner art
+// and the footer teapot, unrelated to the console. Each column adds a line at its own
+// pace while motion is on and it is on screen, and holds still otherwise.
+
+const hex = (n, len) => n.toString(16).toUpperCase().padStart(len, "0");
+const kinds = {
+  addr(s) {
+    s.n = (s.n + 1) & 0xffff;
+    s.v = Math.min(60, Math.max(30, s.v + Math.random() - 0.5));
+    return `0x${hex(s.n, 4)}  ${s.v.toFixed(1)}`;
+  },
+  angle(s) {
+    s.v = (s.v + 0.01 + Math.random() * 0.04) % TAU;
+    return `R${"XYZ"[s.n++ % 3]} ${s.v.toFixed(3)}`;
+  },
+  bytes: () => [0, 0, 0].map(() => hex(rand(256), 2)).join(" "),
+  bits: () => [0, 0].map(() => rand(16).toString(2).padStart(4, "0")).join(" "),
+};
+// Milliseconds per line, 0.5 to 0.9 s.
+const paces = { addr: 520, angle: 690, bytes: 610, bits: 830 };
+const streams = [...document.querySelectorAll("[data-stream]")].map((el) => ({
+  el,
+  box: el.closest(".data-columns"),
+  next: kinds[el.dataset.stream],
+  n: rand(0x10000),
+  v: 30 + Math.random() * 30,
+  lines: [],
+  pace: paces[el.dataset.stream], // each kind its own, so the columns never march together
+  timer: 0,
+}));
+
+// Fill a column to its height, keeping the newest lines at the bottom.
+function fillStream(s) {
+  const rows = Math.ceil(s.el.clientHeight / parseFloat(getComputedStyle(s.el).lineHeight)) || 0;
+  while (s.lines.length < rows) s.lines.push(s.next(s));
+  s.lines.splice(0, s.lines.length - rows);
+  s.el.textContent = s.lines.join("\n");
+}
+
+function stepStream(s) {
+  s.lines.push(s.next(s));
+  s.lines.shift();
+  s.el.textContent = s.lines.join("\n");
+  s.timer = setTimeout(() => stepStream(s), s.pace);
+}
+
+// == Barcode row (ADR 0016): it decodes like the headline each time it arrives on
+// screen while motion is on. Its real text is in the markup, so it reads without JS.
+
+const codes = [...document.querySelectorAll("[data-decode]")];
+const codeTexts = codes.map((el) => el.textContent);
+let codeTimer = 0;
+
+function decodeCodes(start) {
+  const done = decodeStep(codes, codeTexts, performance.now() - start, (i, c) => i * 60 + c * 35 + 80);
+  codeTimer = done ? 0 : setTimeout(() => decodeCodes(start), 40);
+}
+
+function restoreCodes() {
+  clearTimeout(codeTimer);
+  codeTimer = 0;
+  codes.forEach((el, i) => (el.textContent = codeTexts[i]));
+}
+
+const strip = document.querySelector(".barcode-strip");
+if (strip && codes.length) {
+  new IntersectionObserver(
+    (entries) => {
+      if (entries.at(-1).isIntersecting && motion && !document.hidden && !codeTimer) decodeCodes(performance.now());
+    },
+    { threshold: 0.6 },
+  ).observe(strip);
+}
+
 // == One gate for all motion
 // Everything moves only when motion is on, the tab is visible, and its element is on screen.
 
@@ -497,12 +577,25 @@ function schedule() {
     clearTimeout(clockTimer);
     clockTimer = 0;
   }
+  for (const s of streams) {
+    if (awake && s.box.seen) s.timer ||= setTimeout(() => stepStream(s), s.pace);
+    else {
+      clearTimeout(s.timer);
+      s.timer = 0;
+    }
+  }
+  // Pausing mid-decode puts the real text straight back.
+  if (!awake && codeTimer) restoreCodes();
 }
 
 const resizer = new ResizeObserver((entries) => {
   for (const entry of entries) {
     if (entry.target === terminal) {
       fitTerminal();
+      continue;
+    }
+    if (entry.target.classList.contains("data-columns")) {
+      for (const s of streams) if (s.box === entry.target) fillStream(s);
       continue;
     }
     const scene = scenes.find((s) => s.canvas === entry.target);
@@ -514,6 +607,7 @@ const watcher = new IntersectionObserver((entries) => {
   for (const entry of entries) {
     if (entry.target === banner) bannerVisible = entry.isIntersecting;
     else if (entry.target.localName === "video") entry.target.seen = entry.isIntersecting;
+    else if (entry.target.classList.contains("data-columns")) entry.target.seen = entry.isIntersecting;
     else if (entry.target.localName === "pre") echoSeen = entry.isIntersecting;
     else scenes.find((s) => s.canvas === entry.target).visible = entry.isIntersecting;
   }
@@ -524,6 +618,10 @@ for (const scene of scenes) {
   watcher.observe(scene.canvas);
 }
 for (const clip of clips) watcher.observe(clip);
+for (const box of new Set(streams.map((s) => s.box))) {
+  resizer.observe(box);
+  watcher.observe(box);
+}
 // On subpages the echo is what's on screen; on the home page the banner gates it.
 if (!terminal) for (const echo of echoes) watcher.observe(echo);
 if (terminal) resizer.observe(terminal);

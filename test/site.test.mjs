@@ -539,6 +539,46 @@ test("the home page's sections drop their visible numbered headings but keep one
   assert.match(html("about/index.html"), /class="section-index"/);
 });
 
+test("data columns are decorative, sit behind the banner art and every footer teapot, and never print (ADR 0016)", () => {
+  // The kinds the markup may ask for are exactly the ones main.js can draw, each with a pace.
+  const main = read("js/main.js");
+  const kinds = Object.keys(Object.fromEntries([...main.match(/const paces = \{([^}]*)\}/)[1].matchAll(/(\w+):/g)].map((m) => [m[1], 1])));
+  const table = main.match(/const kinds = \{[\s\S]*?\n\};/)[0];
+  for (const kind of kinds) assert.match(table, new RegExp(`\\n  ${kind}[(:]`), `main.js draws ${kind}`);
+  const check = (block, where) => {
+    assert.match(block, /^<div class="data-columns" aria-hidden="true">/, `${where}: decorative and hidden from screen readers`);
+    const streams = [...block.matchAll(/<pre data-stream="(\w+)"><\/pre>/g)].map((m) => m[1]);
+    assert.ok(streams.length >= 3, `${where}: at least three columns`);
+    for (const kind of streams) assert.ok(kinds.includes(kind), `${where}: unknown stream ${kind}`);
+  };
+  const columns = /<div class="data-columns"[^>]*>[\s\S]*?<\/div>/;
+  const banner = html("index.html").match(/<section class="banner[\s\S]*?<\/section>/)[0];
+  check(banner.match(columns)?.[0] ?? "", "banner");
+  for (const page of pages.filter((p) => p.endsWith(".html"))) {
+    const teapot = html(page).match(/<figure class="model model-teapot">[\s\S]*?<\/figure>/)?.[0] ?? "";
+    check(teapot.match(columns)?.[0] ?? "", `${page} footer`);
+  }
+  const css = withoutComments(read("styles.css"));
+  const print = css.match(/@media print \{[\s\S]*?display: none !important;/)[0];
+  assert.match(print, /\.data-columns/, "hidden in print");
+  assert.match(css, /html:not\(\.js\) \.data-columns \{\s*display: none;/, "hidden without JavaScript");
+  // Behind the art, never growing its box: below its isolated parent's content.
+  assert.match(css, /\.data-columns \{[^}]*contain: size;/, "lines never grow the box");
+  for (const parent of ["\\.banner \\.container", "\\.site-footer \\.model-teapot"]) {
+    assert.match(css, new RegExp(`(^|\\n)${parent} \\{[^}]*isolation: isolate;`), `${parent} is isolated`);
+  }
+  for (const where of ["\\.banner", "\\.site-footer"]) {
+    assert.match(css, new RegExp(`${where} \\.data-columns \\{[^}]*z-index: -1;`), `${where} columns sit behind`);
+  }
+});
+
+test("the barcode row keeps its real text in the markup and decodes only inside the hidden row (ADR 0016)", () => {
+  const row = html("index.html").match(/<div class="barcode-strip" aria-hidden="true">[\s\S]*?<\/div>/)?.[0] ?? "";
+  const texts = [...row.matchAll(/<(span|strong) data-decode>([^<]+)<\/\1>/g)].map((m) => m[2]);
+  assert.deepEqual(texts, ["ERC", "ID", "092829123", "Batch", "XS/22"]);
+  assert.equal((html("index.html").match(/data-decode/g) ?? []).length, texts.length, "nothing outside the row decodes");
+});
+
 test("hands-on models are focusable, labelled, and resettable (ADR 0009)", () => {
   let models = 0;
   for (const page of pages.filter((p) => p.endsWith(".html"))) {
