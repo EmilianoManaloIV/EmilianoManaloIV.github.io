@@ -363,14 +363,12 @@ button {
   .section-rail,
   .section-bar,
   .banner,
-  .terminal-echo,
   .model,
   .toggle,
   .action,
   .barcode-strip,
   .ticks,
-  .footer-motion,
-  .data-columns {
+  .footer-motion {
     display: none !important;
   }
 
@@ -599,10 +597,21 @@ html:not(.js) .model {
   gap: var(--space-3);
 }
 
+/* Outline icons as in Figma (ADR 0017), each a 24px target at least (WCAG 2.5.8);
+   the link's aria-label names it. */
 .socials a {
-  font-size: var(--text-small);
-  font-weight: 500;
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 4px;
   text-decoration: none;
+}
+
+.socials .icon {
+  display: block;
+}
+
+.socials a:hover {
+  color: var(--color-marker);
 }
 
 /* ==========================================================================
@@ -747,45 +756,6 @@ html:not(.js) .model {
   }
 }
 
-/* Console echoes (ADR 0008): faint, decorative copies of the console's finished
-   lines in empty space beside the name and above the values. Hidden on phones. */
-/* clip, not hidden: a hidden overflow would become the scroll container that the
-   scroll reveals measure against, and they would stop following the page. */
-.hero,
-.page-hero,
-.values {
-  position: relative;
-  isolation: isolate;
-  overflow: clip;
-}
-
-.terminal-echo {
-  display: none;
-  position: absolute;
-  z-index: -1;
-  margin: 0;
-  overflow: hidden;
-  font-size: 0.6875rem;
-  line-height: 1.5;
-  white-space: pre;
-  opacity: 0.1;
-  pointer-events: none;
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-mask-image: linear-gradient(transparent, #000 25%, #000 75%, transparent);
-  mask-image: linear-gradient(transparent, #000 25%, #000 75%, transparent);
-}
-
-html.js-ready:not(.motion-off) .terminal-echo {
-  animation: echo-drift 9s ease-in-out infinite alternate;
-}
-
-@keyframes echo-drift {
-  to {
-    transform: translateY(-1.5em);
-  }
-}
-
 .banner-scene {
   grid-area: art;
   width: 100%;
@@ -793,55 +763,10 @@ html.js-ready:not(.motion-off) .terminal-echo {
   color: var(--brand-mint);
 }
 
-/* Data columns (ADR 0016): faint, decorative streams of made-up readouts behind the
-   banner art and the footer teapot, filled and stepped by js/main.js. contain: size
-   keeps their lines from growing the box they fill. */
-.data-columns {
-  display: flex;
-  justify-content: space-around;
-  gap: var(--space-4);
-  overflow: hidden;
-  contain: size;
-  pointer-events: none;
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-mask-image: linear-gradient(transparent, #000 20%, #000 80%, transparent);
-  mask-image: linear-gradient(transparent, #000 20%, #000 80%, transparent);
-}
-
-.data-columns pre {
-  margin: 0;
-  overflow: hidden;
-  font-size: 0.625rem;
-  line-height: 1.6;
-  opacity: 0.14;
-}
-
-html:not(.js) .data-columns {
-  display: none;
-}
-
-/* In the banner they share the art's grid cell, behind the canvas; the container
-   is isolated so z-index -1 stays above the banner's own background. */
+/* The banner container is isolated, so the desktop canvas's z-index -1 (ADR 0014)
+   stays above the banner's own background. */
 .banner .container {
   isolation: isolate;
-}
-
-.banner .data-columns {
-  grid-area: art;
-  align-self: stretch;
-  position: relative;
-  z-index: -1;
-}
-
-/* In the footer they sit in the teapot's frame, behind it. */
-.site-footer .data-columns {
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  z-index: -1;
-  aspect-ratio: 3 / 2;
 }
 
 .banner-head {
@@ -916,34 +841,65 @@ html:not(.js) .data-columns {
   grid-area: labels;
   display: flex;
   flex-wrap: wrap;
-  align-items: stretch;
-  gap: var(--space-2);
+  align-items: flex-end;
+  gap: var(--space-3);
   font-size: 0.625rem;
   line-height: 1.4;
   text-transform: uppercase;
 }
 
-.tech-label {
-  padding: var(--space-1) var(--space-2);
+/* Figma's "Technicals labels" (ADR 0017): one bordered grid of cells in mint, the
+   globe in its own cell, the system lines beside it, and Batch over Serial on the
+   right. Cells share their borders, so the grid reads as one instrument plate. */
+.tech-grid {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   border: 1px solid var(--color-panel-rule);
+  color: var(--brand-mint);
 }
 
-.tech-label strong {
-  display: block;
-  color: var(--brand-mint);
+.tech-cell {
+  padding: var(--space-2) var(--space-3);
+}
+
+.tech-cell strong {
   font-weight: 400;
 }
 
-.tech-label-core {
+.tech-globe {
+  display: grid;
+  place-items: center;
+  border-right: 1px solid var(--color-panel-rule);
+}
+
+.tech-core {
+  display: grid;
+  align-content: center;
+}
+
+.tech-side {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--color-panel-rule);
+}
+
+.tech-side .tech-cell {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  white-space: nowrap;
+}
+
+.tech-side .tech-cell + .tech-cell {
+  border-left: 1px solid var(--color-panel-rule);
 }
 
 .globe-scene {
   flex: none;
-  width: 2rem;
-  height: 2rem;
+  width: 2.25rem;
+  min-width: 2.25rem; /* an auto-sized grid cell would otherwise shrink it to nothing */
+  height: 2.25rem;
   color: var(--brand-mint);
 }
 
@@ -958,28 +914,64 @@ html:not(.js) .data-columns {
   padding-block: var(--space-12) var(--space-6);
 }
 
+/* Figma's ID strip (ADR 0017): one bordered row of cells, each with a small label
+   above its value and a crossed-box marker in its corner, ending in the barcode. */
 .barcode-strip {
   grid-column: 1 / -1;
+  justify-self: start;
   display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: var(--space-2);
-  font-size: 0.625rem;
-  line-height: 1.4;
+  max-width: 100%;
+  border: 1px solid var(--color-panel-rule);
+  font-size: 0.75rem;
+  line-height: 1.3;
   text-transform: uppercase;
 }
 
-.barcode-strip .tech-label strong {
-  display: inline;
-  margin-right: var(--space-2);
+.strip-cell {
+  position: relative;
+  display: grid;
+  flex: 1 1 auto;
+  align-content: center;
+  min-width: 0;
+  padding: var(--space-1) var(--space-4) var(--space-2) var(--space-2);
+}
+
+.strip-cell + .strip-cell {
+  border-left: 1px solid var(--color-panel-rule);
+}
+
+.strip-cell strong {
   color: var(--color-panel-ink-muted);
+  font-size: 0.625rem;
+  font-weight: 400;
+}
+
+.strip-cell::after {
+  content: "";
+  position: absolute;
+  right: 5px;
+  bottom: 4px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--color-panel-rule);
+  background: linear-gradient(45deg, transparent 44%, var(--color-panel-rule) 44% 56%, transparent 56%);
+}
+
+.strip-mark {
+  min-width: 0;
+  padding-right: var(--space-2);
+  font-size: 0.875rem;
+  letter-spacing: 0.04em;
+}
+
+.strip-mark::after,
+.barcode::after {
+  content: none;
 }
 
 .barcode {
-  width: 5rem;
-  min-height: 1.5rem;
-  padding: 3px 4px;
-  border: 1px solid var(--color-panel-rule);
+  flex: 0 0 4rem;
+  padding: 5px 6px;
   background: repeating-linear-gradient(
     90deg,
     var(--color-panel-ink) 0 1px,
@@ -1561,10 +1553,9 @@ html:not(.js) .data-columns {
 }
 
 /* The teapot ends every page (ADR 0015); the footer grid's gap already spaces it
-   from the brand. isolation keeps its data columns behind it (ADR 0016). */
+   from the brand. */
 .site-footer .model-teapot {
   margin-top: 0;
-  isolation: isolate;
 }
 
 /* Hands-on models (ADR 0009). The grab cursor and focus ring say "you can move
@@ -1741,20 +1732,6 @@ html:not(.js) .data-columns {
     font-size: 0.75rem;
   }
 
-  /* Above the values: the barcode row sits left, the echo fills the right. */
-  .values .container {
-    padding-top: var(--space-24);
-  }
-
-  .values .terminal-echo {
-    display: block;
-    top: var(--space-4);
-    right: max(var(--gutter), (100% - var(--content-max)) / 2);
-    width: 50%;
-    height: 7.5em;
-    text-align: right;
-  }
-
   .card {
     grid-template-columns: 1fr 1fr;
     gap: var(--space-12);
@@ -1806,35 +1783,9 @@ html:not(.js) .data-columns {
     min-height: min(calc(100svh - 4rem), 48rem);
   }
 
-  /* Either side of the name, in the space the centred heading leaves. */
-  .hero .terminal-echo {
-    display: block;
-    top: 0;
-    bottom: 0;
-    left: var(--space-6);
-    width: 16rem;
-  }
-
-  .hero .terminal-echo + .terminal-echo {
-    left: auto;
-    right: var(--space-6);
-    text-align: right;
-  }
-
-  /* Subpage headings: the echo fills the empty right half (behind the R&D headset). */
-  .page-hero .terminal-echo {
-    display: block;
-    top: 0;
-    bottom: 0;
-    right: max(var(--gutter), (100% - var(--content-max)) / 2);
-    width: 24rem;
-    text-align: right;
-  }
-
-
   /* As in Figma, the art spans the whole banner behind the text, the terrain running
      under the console (ADR 0014). The art column stays as the gap between console
-     and headline, where the data columns run behind the art. The container is
+     and headline. The container is
      isolated (above), so the canvas stays over the banner's own background, and
      grid-area: auto frames it by the whole container, not its old grid cell. */
   .banner-scene {
@@ -1851,6 +1802,44 @@ html:not(.js) .data-columns {
   .tech-labels {
     justify-content: flex-end;
     align-self: end;
+  }
+
+  /* The ID strip's cells keep Figma's widths once there is room. */
+  .strip-cell {
+    flex: none;
+    min-width: 6.5rem;
+    padding-right: var(--space-6);
+  }
+
+  .strip-mark {
+    min-width: 0;
+  }
+
+  .barcode {
+    flex-basis: 6rem;
+    min-width: 0;
+  }
+
+  /* The labels as Figma's single row on desktop: globe, system lines, then Batch over Serial. */
+  .tech-grid {
+    grid-template-columns: auto auto auto;
+  }
+
+  .tech-core {
+    white-space: nowrap;
+    border-right: 1px solid var(--color-panel-rule);
+  }
+
+  .tech-side {
+    grid-column: auto;
+    grid-template-columns: none;
+    grid-template-rows: 1fr 1fr;
+    border-top: 0;
+  }
+
+  .tech-side .tech-cell + .tech-cell {
+    border-top: 1px solid var(--color-panel-rule);
+    border-left: 0;
   }
 }
 

@@ -7,7 +7,7 @@ Visitors mostly arrive on a phone by scanning a QR code, often on slow Wi-Fi.
 
 Hand-written static HTML, CSS, and a little first-party JavaScript. **Zero dependencies.**
 A zero-dependency build (`tools/build.mjs`) runs in CI and turns GitHub Discussions into R&D posts,
-comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 0007). Read the ADRs in `docs/decisions/` (0001 to 0016) before changing this.
+comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 0007). Read the ADRs in `docs/decisions/` (0001 to 0017) before changing this.
 
 - `index.html` is the home page: a fast overview with sections anchored by id.
 - `about/index.html` (About & CV), `rd/index.html` (the R&D blog), and `guestbook/index.html` are subpages.
@@ -27,7 +27,7 @@ comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 00
 - Screens 1600px and up scale the layout (`--content-max: 80rem`, larger root font). Titled subpage sections carry `data-label="NN — Title"` for their margin label; keep it in step with the title (a test checks). The home page has no visible section headings, only `visually-hidden` ones, and no margin labels (ADR 0014).
 - Hands-on canvases are `tabindex="0" role="img" aria-roledescription="3D model"` with a visible hint and a `data-reset` button; decorative ones stay `aria-hidden` (ADR 0009).
 - `js/ui.js` runs wayfinding and share and copy. It reads sections from `main section[id]` on any page.
-- Faint data columns (`.data-columns` with `pre[data-stream]`) sit behind the banner art and the footer teapot; `main.js` fills and steps them under the motion gate. Text marked `data-decode` (the values band's barcode row) decodes on arrival with the headline's `decodeStep()` (ADR 0016).
+- Text marked `data-decode` (the values band's ID strip) decodes on arrival with the headline's `decodeStep()` (ADR 0016). The social icons are inline outline SVG (Tabler-style, MIT); SVG is allowed only inside `ul.socials`, and a test enforces it (ADR 0017).
 - `assets/fonts/` holds self-hosted `.woff2` files with their OFL licenses. Never link a font CDN.
 - `assets/img/` holds images.
 

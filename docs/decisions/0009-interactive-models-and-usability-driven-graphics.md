@@ -34,7 +34,7 @@ After the video clips (0007) and ambient motion (0008), `js/` was 10 bytes under
 - Sideways drags turn the model, and `touch-action: pan-y` keeps vertical swipes scrolling the page on phones.
 - A visitor's turn redraws even with motion paused, because the visitor is the one driving it.
 
-**Echoes on subpages:** the R&D, About, and Guestbook headings get the faint console echo from 0008. Those pages have no console, so `main.js` runs the same telemetry without one: one finished line every couple of seconds, gated like the console by motion, tab visibility, and the echo being on screen.
+**Echoes on subpages** (removed in 0017): the R&D, About, and Guestbook headings get the faint console echo from 0008. Those pages have no console, so `main.js` runs the same telemetry without one: one finished line every couple of seconds, gated like the console by motion, tab visibility, and the echo being on screen.
 
 **Progress bar:** it is a status display, not decoration, so it follows scrolling under reduced motion and with the motion toggle off. Browsers without scroll timelines don't show it. A site test exempts it by name from the 0008 motion gates, and checks that it is in every page's shared header.
 

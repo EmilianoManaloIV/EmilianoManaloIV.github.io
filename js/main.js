@@ -267,8 +267,8 @@ cursor.className = "cursor";
 const angle = (a) => (((a % TAU) + TAU) % TAU).toFixed(3);
 const pose = (name) => posed(name).map((a, i) => `${i ? "RY" : "RX"} ${angle(a)}`).join("  ");
 const shown = (name) => (scenes.find((s) => s.canvas.dataset.scene === name)?.visible ? 1 : 0);
-// Each line names the scene it reports on. The home console reports everything; a
-// subpage's echo reports only what is on that page (ADR 0009).
+// Each line names the scene it reports on, so the console reports only what is on
+// the page (ADR 0009).
 const sceneOf = (mesh) => (mesh === "core" || mesh === "terrain" ? "banner" : mesh === "icosa" ? "ambient" : mesh);
 // A scene counts only if it is actually shown (the ambient sphere is display:none
 // below 1600px, for instance).
@@ -301,13 +301,10 @@ let step = 0;
 let typing = 0;
 
 function fitTerminal() {
-  if (terminal) {
-    const style = getComputedStyle(terminal);
-    const inner = terminal.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
-    maxLines = Math.max(3, Math.floor(inner / parseFloat(style.lineHeight)) - 1);
-  } else {
-    maxLines = 12; // subpages: the echoes alone, which show about a dozen lines
-  }
+  if (!terminal) return;
+  const style = getComputedStyle(terminal);
+  const inner = terminal.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+  maxLines = Math.max(3, Math.floor(inner / parseFloat(style.lineHeight)) - 1);
   while (lines.length > maxLines) lines.shift();
   if (!target) target = next();
   fillTerminal();
@@ -326,43 +323,27 @@ function fillTerminal() {
   renderTerminal();
 }
 
-// Faint copies of the console behind empty areas (ADR 0008), refreshed per finished
-// line. Subpages have echoes but no console; the same telemetry runs for them alone.
-const echoes = document.querySelectorAll(".terminal-echo");
-let echoSeen = false;
-let lineAt = 0;
 function renderTerminal() {
-  if (terminal) {
-    terminal.textContent = lines.concat(current).join("\n");
-    terminal.append(cursor);
-  }
-  if (!current) for (const echo of echoes) echo.textContent = lines.join("\n");
+  terminal.textContent = lines.concat(current).join("\n");
+  terminal.append(cursor);
 }
 
 function type() {
   typing = 0;
   if (current.length < target.length) {
-    // Typed a character at a time where someone can read it; whole lines otherwise.
-    current = terminal ? target.slice(0, current.length + 1) : target;
+    current = target.slice(0, current.length + 1);
   } else {
     lines.push(current);
     while (lines.length > maxLines) lines.shift();
-    // On a subpage with no model on screen, no frames advance the shapes' clock, so
-    // the echo would repeat frozen readings; keep the clock running in real time.
-    if (!terminal) {
-      const now = performance.now();
-      if (!frame) time += Math.min((now - (lineAt || now)) / 1000, 3);
-      lineAt = now;
-    }
     target = next();
     current = "";
   }
   renderTerminal();
-  typing = setTimeout(type, current !== "" ? 22 : terminal ? 260 : 1800);
+  typing = setTimeout(type, current !== "" ? 22 : 260);
 }
 
 function startTerminal() {
-  if (typing || !(terminal || echoes.length)) return;
+  if (typing || !terminal) return;
   if (!target) fitTerminal();
   type();
 }
@@ -463,52 +444,6 @@ function tickClock() {
   clockTimer = setTimeout(tickClock, 1000 - (Date.now() % 1000));
 }
 
-// == Data columns (ADR 0016): faint streams of made-up readouts behind the banner art
-// and the footer teapot, unrelated to the console. Each column adds a line at its own
-// pace while motion is on and it is on screen, and holds still otherwise.
-
-const hex = (n, len) => n.toString(16).toUpperCase().padStart(len, "0");
-const kinds = {
-  addr(s) {
-    s.n = (s.n + 1) & 0xffff;
-    s.v = Math.min(60, Math.max(30, s.v + Math.random() - 0.5));
-    return `0x${hex(s.n, 4)}  ${s.v.toFixed(1)}`;
-  },
-  angle(s) {
-    s.v = (s.v + 0.01 + Math.random() * 0.04) % TAU;
-    return `R${"XYZ"[s.n++ % 3]} ${s.v.toFixed(3)}`;
-  },
-  bytes: () => [0, 0, 0].map(() => hex(rand(256), 2)).join(" "),
-  bits: () => [0, 0].map(() => rand(16).toString(2).padStart(4, "0")).join(" "),
-};
-// Milliseconds per line, 0.5 to 0.9 s.
-const paces = { addr: 520, angle: 690, bytes: 610, bits: 830 };
-const streams = [...document.querySelectorAll("[data-stream]")].map((el) => ({
-  el,
-  box: el.closest(".data-columns"),
-  next: kinds[el.dataset.stream],
-  n: rand(0x10000),
-  v: 30 + Math.random() * 30,
-  lines: [],
-  pace: paces[el.dataset.stream], // each kind its own, so the columns never march together
-  timer: 0,
-}));
-
-// Fill a column to its height, keeping the newest lines at the bottom.
-function fillStream(s) {
-  const rows = Math.ceil(s.el.clientHeight / parseFloat(getComputedStyle(s.el).lineHeight)) || 0;
-  while (s.lines.length < rows) s.lines.push(s.next(s));
-  s.lines.splice(0, s.lines.length - rows);
-  s.el.textContent = s.lines.join("\n");
-}
-
-function stepStream(s) {
-  s.lines.push(s.next(s));
-  s.lines.shift();
-  s.el.textContent = s.lines.join("\n");
-  s.timer = setTimeout(() => stepStream(s), s.pace);
-}
-
 // == Barcode row (ADR 0016): it decodes like the headline each time it arrives on
 // screen while motion is on. Its real text is in the markup, so it reads without JS.
 
@@ -563,26 +498,16 @@ function schedule() {
     clearInterval(ambientTimer);
     ambientTimer = 0;
   }
-  if (awake && (bannerVisible || echoSeen)) {
-    startTerminal();
-  } else {
-    clearTimeout(typing);
-    typing = 0;
-  }
   if (awake && bannerVisible) {
+    startTerminal();
     startScramble();
     if (!clockTimer && field("clock")) tickClock();
   } else {
+    clearTimeout(typing);
+    typing = 0;
     stopScramble();
     clearTimeout(clockTimer);
     clockTimer = 0;
-  }
-  for (const s of streams) {
-    if (awake && s.box.seen) s.timer ||= setTimeout(() => stepStream(s), s.pace);
-    else {
-      clearTimeout(s.timer);
-      s.timer = 0;
-    }
   }
   // Pausing mid-decode puts the real text straight back.
   if (!awake && codeTimer) restoreCodes();
@@ -594,10 +519,6 @@ const resizer = new ResizeObserver((entries) => {
       fitTerminal();
       continue;
     }
-    if (entry.target.classList.contains("data-columns")) {
-      for (const s of streams) if (s.box === entry.target) fillStream(s);
-      continue;
-    }
     const scene = scenes.find((s) => s.canvas === entry.target);
     resize(scene);
     draw(scene);
@@ -607,8 +528,6 @@ const watcher = new IntersectionObserver((entries) => {
   for (const entry of entries) {
     if (entry.target === banner) bannerVisible = entry.isIntersecting;
     else if (entry.target.localName === "video") entry.target.seen = entry.isIntersecting;
-    else if (entry.target.classList.contains("data-columns")) entry.target.seen = entry.isIntersecting;
-    else if (entry.target.localName === "pre") echoSeen = entry.isIntersecting;
     else scenes.find((s) => s.canvas === entry.target).visible = entry.isIntersecting;
   }
   schedule();
@@ -618,12 +537,6 @@ for (const scene of scenes) {
   watcher.observe(scene.canvas);
 }
 for (const clip of clips) watcher.observe(clip);
-for (const box of new Set(streams.map((s) => s.box))) {
-  resizer.observe(box);
-  watcher.observe(box);
-}
-// On subpages the echo is what's on screen; on the home page the banner gates it.
-if (!terminal) for (const echo of echoes) watcher.observe(echo);
 if (terminal) resizer.observe(terminal);
 if (banner) watcher.observe(banner);
 document.addEventListener("visibilitychange", schedule);

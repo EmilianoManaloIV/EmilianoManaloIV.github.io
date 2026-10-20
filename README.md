@@ -172,3 +172,9 @@ The hourly rebuild pauses after 60 days without any activity in the repository. 
 ## For developers
 
 How the site is built, tested, and changed is in [`CLAUDE.md`](CLAUDE.md) and the decision records in [`docs/decisions/`](docs/decisions/), especially [0005](docs/decisions/0005-discussions-as-content-built-in-ci.md), [0006](docs/decisions/0006-projects-and-skills-from-discussions.md), and [0007](docs/decisions/0007-video-clips-instead-of-gifs.md).
+
+## Credits
+
+- **Fonts:** Inter, Space Grotesk, and IBM Plex Mono, self-hosted under the SIL Open Font License (`assets/fonts/`).
+- **Utah teapot:** Martin Newell's 1975 model, from its public Bézier patch data.
+- **Social icons:** drawn after [Tabler Icons](https://tabler.io/icons) (MIT License, © Paweł Kuna).

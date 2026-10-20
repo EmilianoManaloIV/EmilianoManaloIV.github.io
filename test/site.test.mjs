@@ -67,8 +67,13 @@ test("no built page has an unfilled template value or build marker", () => {
 // only checked for URLs, so harmless visitor text ("javascript: is a language") passes.
 const SAFE_TAGS = new Set(("a article b blockquote body br button canvas code del details div em figcaption figure footer " +
   "h1 h2 h3 h4 h5 h6 head header hr html i img ins kbd li link main meta nav ol p pre s script section span strong " +
-  "sub summary sup table tbody td th thead time title tr ul video").split(" "));
+  "sub summary sup table tbody td th thead time title tr ul video " +
+  // The social icons' own inline SVG (ADR 0017); a test below keeps SVG to those lists.
+  "svg rect circle path").split(" "));
 const SAFE_ATTRS = /^(alt|align|as|charset|class|content|controls|crossorigin|datetime|download|height|href|http-equiv|id|lang|loading|loop|media|muted|name|playsinline|preload|property|rel|role|src|start|tabindex|title|type|width|aria-[a-z]+|data-[a-z-]+)$/;
+// Presentation attributes, accepted only on the icon SVG tags themselves.
+const SVG_TAGS = new Set(["svg", "rect", "circle", "path"]);
+const SVG_ATTRS = /^(viewbox|fill|stroke|stroke-width|stroke-linecap|stroke-linejoin|focusable|x|y|rx|cx|cy|r|d)$/;
 // No "//host" or "/\host" (both leave the site), and any scheme must be http(s) or mailto.
 // Decoded first, as a browser would: "javascript&colon;" and "java&#9;script:" are schemes too.
 const TEMPLATES = ["templates/rd-post.html", "templates/project.html"];
@@ -94,11 +99,27 @@ test("no built page carries anything outside the tag, attribute, and URL allowli
       // Browsers accept "/" as well as whitespace before an attribute (<a/onclick=...>).
       for (const [, attr, dq, sq, bare] of rest.matchAll(/[\s/]+([^\s"'=<>/]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g)) {
         const value = dq ?? sq ?? bare ?? "";
-        assert.match(attr.toLowerCase(), SAFE_ATTRS, `${page}: attribute ${attr} in ${tag.slice(0, 80)}`);
+        const safe = SAFE_ATTRS.test(attr.toLowerCase()) || (SVG_TAGS.has(name.toLowerCase()) && SVG_ATTRS.test(attr.toLowerCase()));
+        assert.ok(safe, `${page}: attribute ${attr} in ${tag.slice(0, 80)}`);
         if (/^(href|src)$/i.test(attr)) assert.ok(SAFE_URL(value), `${page}: unsafe URL ${value}`);
       }
     }
     assert.equal((text.match(/<script\b/gi) ?? []).length, (text.match(/<script\b[^>]*\ssrc="\/?js\/[\w.]+(\?v=[0-9a-f]{10})?"[^>]*><\/script>/gi) ?? []).length, `${page}: script other than the site's own`);
+  }
+});
+
+test("inline SVG appears only as the social icons, each hidden and named by its link (ADR 0017)", () => {
+  for (const page of allPages) {
+    const text = html(page);
+    const lists = text.match(/<ul class="socials"[^>]*>[\s\S]*?<\/ul>/g) ?? [];
+    // Each list has one icon per social link the site sets (at most four).
+    for (const list of lists) assert.ok((list.match(/<svg\b/g) ?? []).length <= 4, `${page}: too many icons in a list`);
+    const icons = lists.join("");
+    assert.equal((text.match(/<svg\b/g) ?? []).length, (icons.match(/<svg\b/g) ?? []).length, `${page}: SVG outside the social icons`);
+    for (const [link] of icons.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)) {
+      assert.match(link, /^<a [^>]*aria-label="[^"]+"/, `${page}: icon link without a name`);
+      assert.match(link, /<svg [^>]*aria-hidden="true"/, `${page}: icon not hidden from screen readers`);
+    }
   }
 });
 
@@ -458,7 +479,7 @@ test("styles.css: looping animations run only under html.js-ready:not(.motion-of
       assert.ok(/^html\.js-ready:not\(\.motion-off\)\s/.test(part) || allowed.has(part), `infinite animation not gated by motion: ${part}`);
     }
   }
-  assert.ok(loops >= 3, "the grid drift, dot shimmer, and echo drift should be found");
+  assert.ok(loops >= 2, "the grid drift and dot shimmer should be found");
   const main = read("js/main.js");
   assert.match(main, /classList\.toggle\("motion-off", !on\)/);
   assert.match(main, /classList\.add\("js-ready"\)/);
@@ -539,43 +560,10 @@ test("the home page's sections drop their visible numbered headings but keep one
   assert.match(html("about/index.html"), /class="section-index"/);
 });
 
-test("data columns are decorative, sit behind the banner art and every footer teapot, and never print (ADR 0016)", () => {
-  // The kinds the markup may ask for are exactly the ones main.js can draw, each with a pace.
-  const main = read("js/main.js");
-  const kinds = Object.keys(Object.fromEntries([...main.match(/const paces = \{([^}]*)\}/)[1].matchAll(/(\w+):/g)].map((m) => [m[1], 1])));
-  const table = main.match(/const kinds = \{[\s\S]*?\n\};/)[0];
-  for (const kind of kinds) assert.match(table, new RegExp(`\\n  ${kind}[(:]`), `main.js draws ${kind}`);
-  const check = (block, where) => {
-    assert.match(block, /^<div class="data-columns" aria-hidden="true">/, `${where}: decorative and hidden from screen readers`);
-    const streams = [...block.matchAll(/<pre data-stream="(\w+)"><\/pre>/g)].map((m) => m[1]);
-    assert.ok(streams.length >= 3, `${where}: at least three columns`);
-    for (const kind of streams) assert.ok(kinds.includes(kind), `${where}: unknown stream ${kind}`);
-  };
-  const columns = /<div class="data-columns"[^>]*>[\s\S]*?<\/div>/;
-  const banner = html("index.html").match(/<section class="banner[\s\S]*?<\/section>/)[0];
-  check(banner.match(columns)?.[0] ?? "", "banner");
-  for (const page of pages.filter((p) => p.endsWith(".html"))) {
-    const teapot = html(page).match(/<figure class="model model-teapot">[\s\S]*?<\/figure>/)?.[0] ?? "";
-    check(teapot.match(columns)?.[0] ?? "", `${page} footer`);
-  }
-  const css = withoutComments(read("styles.css"));
-  const print = css.match(/@media print \{[\s\S]*?display: none !important;/)[0];
-  assert.match(print, /\.data-columns/, "hidden in print");
-  assert.match(css, /html:not\(\.js\) \.data-columns \{\s*display: none;/, "hidden without JavaScript");
-  // Behind the art, never growing its box: below its isolated parent's content.
-  assert.match(css, /\.data-columns \{[^}]*contain: size;/, "lines never grow the box");
-  for (const parent of ["\\.banner \\.container", "\\.site-footer \\.model-teapot"]) {
-    assert.match(css, new RegExp(`(^|\\n)${parent} \\{[^}]*isolation: isolate;`), `${parent} is isolated`);
-  }
-  for (const where of ["\\.banner", "\\.site-footer"]) {
-    assert.match(css, new RegExp(`${where} \\.data-columns \\{[^}]*z-index: -1;`), `${where} columns sit behind`);
-  }
-});
-
-test("the barcode row keeps its real text in the markup and decodes only inside the hidden row (ADR 0016)", () => {
+test("the barcode row keeps its real text in the markup and decodes only inside the hidden row (ADR 0016, 0017)", () => {
   const row = html("index.html").match(/<div class="barcode-strip" aria-hidden="true">[\s\S]*?<\/div>/)?.[0] ?? "";
   const texts = [...row.matchAll(/<(span|strong) data-decode>([^<]+)<\/\1>/g)].map((m) => m[2]);
-  assert.deepEqual(texts, ["ERC", "ID", "092829123", "Batch", "XS/22"]);
+  assert.deepEqual(texts, ["ERC", "ID", "092829123", "Batch", "X5/22"]);
   assert.equal((html("index.html").match(/data-decode/g) ?? []).length, texts.length, "nothing outside the row decodes");
 });
 
@@ -604,13 +592,14 @@ test("hands-on models are focusable, labelled, and resettable (ADR 0009)", () =>
   assert.match(html("rd/index.html"), /data-scene="headset"/);
 });
 
-test("console echoes are decorative and hidden from screen readers", () => {
-  const echoes = pages.flatMap((p) => html(p).match(/<pre class="terminal-echo"[^>]*>/g) ?? []);
-  assert.ok(echoes.length >= 6, "three on the home page, one on each subpage heading");
-  for (const tag of echoes) assert.match(tag, /aria-hidden="true"/, tag);
-  for (const page of ["about/index.html", "rd/index.html", "guestbook/index.html"]) {
-    assert.match(html(page), /class="page-hero[^"]*">\s*(?:<!--[^>]*-->\s*)?<pre class="terminal-echo" aria-hidden="true"><\/pre>/, page);
+test("the faint console echoes and data columns are gone; the banner console stays (ADR 0017)", () => {
+  for (const page of pages.filter((p) => p.endsWith(".html"))) {
+    assert.doesNotMatch(html(page), /terminal-echo|data-columns|data-stream/, `${page}: no echoes or data columns`);
   }
+  assert.match(html("index.html"), /<pre class="terminal" aria-hidden="true">/, "the banner console stays");
+  const css = withoutComments(read("styles.css"));
+  assert.doesNotMatch(css, /terminal-echo|data-columns|echo-drift/, "no leftover styles");
+  assert.doesNotMatch(read("js/main.js"), /terminal-echo|data-stream|echoSeen/, "no leftover script");
 });
 
 test("every media figure has a numbered caption", () => {
@@ -814,7 +803,7 @@ test("contrast: every text and control colour meets WCAG AA in both themes (ADR 
   const css = withoutComments(read("styles.css"));
   // [foreground, background, minimum, where]. 4.5:1 for text, 3:1 for large text
   // (24px+, or 18.66px+ bold) and for focus rings. Decorative, aria-hidden marks
-  // (frame corners, ticks, margin labels, echoes) are left out on purpose.
+  // (frame corners, ticks, margin labels) are left out on purpose.
   const pairs = [
     ["--color-ink", "--color-bg", 4.5, "body text"],
     ["--color-ink-muted", "--color-bg", 4.5, "muted text, section titles, captions"],
@@ -883,7 +872,7 @@ test("print: always black on white, with decoration and controls left out (ADR 0
   const tokens = [["--color-bg", "#fff"], ["--color-ink", "#000"], ["--color-panel-ink", "#000"], ["--brand-mint", "#000"], ["--color-tag-ink", "#000"], ["--color-tag-primary-ink", "#000"]];
   for (const [token, value] of tokens) assert.ok(print.includes(`${token}: ${value};`), `print sets ${token}`);
   const hiddenRule = print.match(/([^{}]+)\{\s*display: none !important;\s*\}/)?.[1] ?? "";
-  for (const hidden of [".site-header", ".banner", ".model", ".terminal-echo", ".ambient-scene", ".toggle", ".action", ".skip-link"]) {
+  for (const hidden of [".site-header", ".banner", ".model", ".ambient-scene", ".toggle", ".action", ".skip-link"]) {
     assert.ok(selectorList(hiddenRule).includes(hidden), `print hides ${hidden}`);
   }
   assert.match(print, /a\[href\^="http"\]::after \{\s*content: " \(" attr\(href\) "\)";/, "outside links show their address");

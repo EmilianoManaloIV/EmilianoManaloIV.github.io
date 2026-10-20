@@ -1,6 +1,6 @@
 # 0016: Background data columns, a decoding barcode row, and a bigger teapot
 
-Status: Accepted (2026-10-19). Builds on 0008 (echoes, the motion gate), 0014 (banner art), and 0015 (the footer teapot).
+Status: Accepted (2026-10-19). Builds on 0008 (echoes, the motion gate), 0014 (banner art), and 0015 (the footer teapot). The data columns were removed in 0017, so the sections below about them are historical; the decode and the bigger teapot remain.
 
 ## Context
 

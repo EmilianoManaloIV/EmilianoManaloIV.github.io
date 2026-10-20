@@ -43,12 +43,11 @@
         </ul>
       </nav>
       <div class="header-tools">
-        <!-- TODO(figma): replace text labels with the social icons exported from Figma. -->
         <ul class="socials" aria-label="Social profiles">
-          <li><a href="https://www.instagram.com/TODO" data-link="instagram" aria-label="Instagram">IG</a></li>
-          <li><a href="https://www.linkedin.com/in/TODO" data-link="linkedin" aria-label="LinkedIn">in</a></li>
-          <li><a href="https://x.com/TODO" data-link="x" aria-label="X">X</a></li>
-          <li><a href="https://github.com/EmilianoManaloIV" data-link="github" aria-label="GitHub">GH</a></li>
+          <li><a href="https://www.instagram.com/TODO" data-link="instagram" aria-label="Instagram"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="12" cy="12" r="3"/><path d="M16.5 7.5v.01"/></svg></a></li>
+          <li><a href="https://www.linkedin.com/in/TODO" data-link="linkedin" aria-label="LinkedIn"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 11v5M8 8v.01M12 16v-5M16 16v-3a2 2 0 0 0-4 0"/></svg></a></li>
+          <li><a href="https://x.com/TODO" data-link="x" aria-label="X"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4l11.733 16h4.267l-11.733-16zM4 20l6.768-6.768M13.228 10.772L20 4"/></svg></a></li>
+          <li><a href="https://github.com/EmilianoManaloIV" data-link="github" aria-label="GitHub"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li>
         </ul>
         <button class="toggle" type="button" id="theme-toggle" aria-pressed="false">Dark mode<span data-state aria-hidden="true">: off</span></button>
       </div>
@@ -64,9 +63,6 @@
 
   <main id="main">
     <section id="home" class="hero">
-      <!-- Faint copies of the banner console, filled by js/main.js (ADR 0008). -->
-      <pre class="terminal-echo" aria-hidden="true"></pre>
-      <pre class="terminal-echo" aria-hidden="true"></pre>
       <div class="container">
         <h1>Emiliano Panday Manalo IV</h1>
         <p data-text="home-subtitle">Aspiring Creative Technologist, Technical Artist, And Software Engineer</p>
@@ -84,8 +80,6 @@ SET R ON FUN          HLD   A-2
 SPC FUN               SPR   F-7
 LFT                   SPN
 WND UPD TO LVL 10/11  PRP   I-I</pre>
-        <!-- Faint data columns behind the 3D art, filled by js/main.js (ADR 0016). -->
-        <div class="data-columns" aria-hidden="true"><pre data-stream="addr"></pre><pre data-stream="angle"></pre><pre data-stream="bytes"></pre><pre data-stream="bits"></pre></div>
         <canvas class="banner-scene" data-scene="banner" aria-hidden="true"></canvas>
         <div class="banner-head">
           <canvas class="cube-scene" data-scene="cube" aria-hidden="true"></canvas>
@@ -99,12 +93,15 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
           <div class="norm-label" aria-hidden="true"><span class="norm-code">EPM—IV</span><span class="norm-bar"></span></div>
         </div>
         <div class="tech-labels">
-          <div class="tech-label tech-label-core" aria-hidden="true">
-            <canvas class="globe-scene" data-scene="globe"></canvas>
-            <div><strong data-device="title">System Core V7</strong><span data-device="spec">Module sector 128</span><br><span data-device="display">Inspect due 2026-07</span></div>
+          <!-- One connected grid of cells, as Figma's "Technicals labels" (ADR 0017). -->
+          <div class="tech-grid" aria-hidden="true">
+            <div class="tech-cell tech-globe"><canvas class="globe-scene" data-scene="globe"></canvas></div>
+            <div class="tech-cell tech-core"><strong data-device="title">System Core X7</strong><span data-device="spec">Module sector 12B</span><span data-device="display">Inspect due 2026-07</span></div>
+            <div class="tech-side">
+              <div class="tech-cell"><strong data-device="clock-title">Batch</strong> <span data-device="clock">X5-77</span></div>
+              <div class="tech-cell"><strong data-device="link-title">Serial</strong> <span data-device="link">IN-2087-A</span></div>
+            </div>
           </div>
-          <div class="tech-label" aria-hidden="true"><strong data-device="clock-title">Batch</strong><span data-device="clock">05-77</span></div>
-          <div class="tech-label" aria-hidden="true"><strong data-device="link-title">Serial</strong><span data-device="link">09-2087-4</span></div>
           <button class="toggle" type="button" id="motion-toggle" data-motion-toggle aria-pressed="true">Motion<span data-state aria-hidden="true">: on</span></button>
         </div>
       </div>
@@ -142,14 +139,13 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
     </section>
 
     <section class="values panel" aria-label="Values">
-      <pre class="terminal-echo" aria-hidden="true"></pre>
       <div class="container">
         <div class="barcode-strip" aria-hidden="true">
           <!-- Each data-decode text decodes from glyphs as the row arrives (ADR 0016). -->
-          <span class="tech-label"><span data-decode>ERC</span></span>
-          <span class="tech-label"><strong data-decode>ID</strong><span data-decode>092829123</span></span>
-          <span class="tech-label"><strong data-decode>Batch</strong><span data-decode>XS/22</span></span>
-          <span class="barcode"></span>
+          <span class="strip-cell strip-mark"><span data-decode>ERC</span></span>
+          <span class="strip-cell"><strong data-decode>ID</strong><span data-decode>092829123</span></span>
+          <span class="strip-cell"><strong data-decode>Batch</strong><span data-decode>X5/22</span></span>
+          <span class="strip-cell barcode"></span>
         </div>
         <div class="value">
           <h3 data-text="value-1-heading">Cross Disciplined</h3>
@@ -191,14 +187,13 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
         <p class="footer-links"><a href="/guestbook/">Sign the guestbook</a> · <a href="/card/">Show my QR card</a></p>
         <p class="footer-motion"><button class="toggle" type="button" data-motion-toggle aria-pressed="true">Motion<span data-state aria-hidden="true">: on</span></button></p>
         <ul class="socials" aria-label="Social profiles">
-          <li><a href="https://www.instagram.com/TODO" data-link="instagram" aria-label="Instagram">IG</a></li>
-          <li><a href="https://www.linkedin.com/in/TODO" data-link="linkedin" aria-label="LinkedIn">in</a></li>
-          <li><a href="https://x.com/TODO" data-link="x" aria-label="X">X</a></li>
-          <li><a href="https://github.com/EmilianoManaloIV" data-link="github" aria-label="GitHub">GH</a></li>
+          <li><a href="https://www.instagram.com/TODO" data-link="instagram" aria-label="Instagram"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="12" cy="12" r="3"/><path d="M16.5 7.5v.01"/></svg></a></li>
+          <li><a href="https://www.linkedin.com/in/TODO" data-link="linkedin" aria-label="LinkedIn"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 11v5M8 8v.01M12 16v-5M16 16v-3a2 2 0 0 0-4 0"/></svg></a></li>
+          <li><a href="https://x.com/TODO" data-link="x" aria-label="X"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4l11.733 16h4.267l-11.733-16zM4 20l6.768-6.768M13.228 10.772L20 4"/></svg></a></li>
+          <li><a href="https://github.com/EmilianoManaloIV" data-link="github" aria-label="GitHub"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li>
         </ul>
       </div>
       <figure class="model model-teapot">
-        <div class="data-columns" aria-hidden="true"><pre data-stream="addr"></pre><pre data-stream="bytes"></pre><pre data-stream="angle"></pre></div>
         <canvas class="teapot-scene" data-scene="teapot" tabindex="0" role="img" aria-roledescription="3D model" aria-label="Utah teapot wireframe"></canvas>
         <figcaption>Utah teapot, Newell 1975</figcaption>
         <p class="model-controls"><span class="model-hint" aria-hidden="true">Drag or use arrow keys</span> <button class="toggle model-reset" type="button" data-reset>Reset view</button></p>
