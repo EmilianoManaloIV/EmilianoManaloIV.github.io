@@ -7,7 +7,7 @@ Visitors mostly arrive on a phone by scanning a QR code, often on slow Wi-Fi.
 
 Hand-written static HTML, CSS, and a little first-party JavaScript. **Zero dependencies.**
 A zero-dependency build (`tools/build.mjs`) runs in CI and turns GitHub Discussions into R&D posts,
-comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 0007). Read the ADRs in `docs/decisions/` (0001 to 0014) before changing this.
+comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 0007). Read the ADRs in `docs/decisions/` (0001 to 0015) before changing this.
 
 - `index.html` is the home page: a fast overview with sections anchored by id.
 - `about/index.html` (About & CV), `rd/index.html` (the R&D blog), and `guestbook/index.html` are subpages.
@@ -18,7 +18,7 @@ comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 00
 - Every footer carries the AI-use disclosure linking to `/about/#made`, whose text is in `site-text.md`; R&D posts labelled `opinion` show an Opinion tag (ADR 0013).
 - `/card/` is the conference QR card; the build draws `card/qr.svg` with `tools/qr.mjs` (dependency-free, tested in `test/qr.test.mjs`) and writes `sitemap.xml` and `robots.txt` (ADR 0011). Preview and iOS-icon tags appear only when `assets/img/share.png` or `apple-touch-icon.png` exist.
 - `tools/render.mjs` holds the pure build helpers (sanitizer, images, video clips, markup), tested in `test/render.test.mjs`.
-- Every page repeats the home page's header and footer exactly; a test enforces it (ADR 0004). Change the nav or footer in every page at once.
+- Every page repeats the home page's header and footer exactly; a test enforces it (ADR 0004). Change the nav or footer in every page at once. The nav links only whole pages (Home, About, R&D, Guestbook); the footer holds the contact details (`id="contact"`) and the hands-on teapot (ADR 0015).
 - `styles.css` holds design tokens in `:root` at the top, then components.
 - `js/theme.js` applies a saved theme in `<head>`. `js/main.js` runs the canvas wireframes, terminal, and toggles.
 - `js/geometry.js` is pure mesh and projection math, unit-tested in `test/geometry.test.mjs`. The banner art matches Figma (ADR 0014): `piercedSpheroid()` and `terrainHeight()`, placed by `artSpots` in `main.js`; on desktop the banner canvas spans the whole banner behind the text.

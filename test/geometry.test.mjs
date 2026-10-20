@@ -1,15 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { torus, lathe, piercedSpheroid, POLAR, BORE, grid, sphere, cube, terrainHeight, DRIFT, rotate, orient, project, bezierPatches, uprightUnit, fitUnit, headset, icosphere, fitScale } from "../js/geometry.js";
+import { lathe, piercedSpheroid, POLAR, BORE, grid, sphere, cube, terrainHeight, DRIFT, rotate, orient, project, bezierPatches, uprightUnit, fitUnit, headset, icosphere, fitScale } from "../js/geometry.js";
 import { teapotPoints, teapotPatches } from "../js/models.js";
 
 const length = ([x, y, z]) => Math.hypot(x, y, z);
-
-test("torus has one vertex per ring/tube pair and two edges each", () => {
-  const mesh = torus(1, 0.4, 12, 8);
-  assert.equal(mesh.vertices.length, 96);
-  assert.equal(mesh.edges.length, 192);
-});
 
 test("lathe connects each ring to the previous one", () => {
   const mesh = lathe([[1, 0], [0.5, 1]], 6);
@@ -18,7 +12,7 @@ test("lathe connects each ring to the previous one", () => {
 });
 
 test("every edge references an existing vertex", () => {
-  for (const mesh of [torus(1, 0.3, 10, 6), piercedSpheroid(), grid(5), cube(2), sphere(8, 5)]) {
+  for (const mesh of [piercedSpheroid(), grid(5), cube(2), sphere(8, 5)]) {
     for (const [a, b] of mesh.edges) {
       assert.ok(mesh.vertices[a] && mesh.vertices[b], `bad edge ${a}-${b}`);
     }
@@ -215,7 +209,7 @@ test("the geodesic sphere has 12, then 42 vertices on the unit sphere", () => {
 });
 
 test("fitScale keeps a model inside its frame at every orientation", () => {
-  for (const [name, mesh, distance] of [["headset", fitUnit(headset()), 5], ["torus", torus(1, 0.42, 36, 16), 4]]) {
+  for (const [name, mesh, distance] of [["headset", fitUnit(headset()), 5], ["teapot", uprightUnit(bezierPatches(teapotPoints, teapotPatches, 3, 6)), 5]]) {
     const scale = fitScale(mesh, distance); // in units of half the frame's shorter side
     let worst = 0;
     for (let ax = 0; ax < Math.PI * 2; ax += 0.07) {

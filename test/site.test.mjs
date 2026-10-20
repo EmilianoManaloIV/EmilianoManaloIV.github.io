@@ -206,16 +206,36 @@ test("every page repeats the home page's header and footer exactly", () => {
   }
 });
 
-test("each subpage marks exactly its own nav item; home, guestbook, and 404 mark none", () => {
+test("the nav links whole pages only, and each page marks its own (ADR 0015)", () => {
+  const nav = html("index.html").match(/<ul class="nav-list">([\s\S]*?)<\/ul>/)[1];
+  const hrefs = [...nav.matchAll(/<a href="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(hrefs, ["/", "/about/", "/rd/", "/guestbook/"], "Home, About, R&D, Guestbook, with no #section links");
+  const numbers = [...nav.matchAll(/<span class="nav-index" aria-hidden="true">(\d{2})<\/span>/g)].map((m) => m[1]);
+  assert.deepEqual(numbers, ["00", "01", "02", "03"], "numbered in order, with no gaps");
   const marks = (file) => html(file).match(/<a href="([^"]+)" aria-current="page">/g) ?? [];
-  for (const page of ["index.html", "404.html", "guestbook/index.html"]) assert.deepEqual(marks(page), [], page);
-  assert.deepEqual(marks("about/index.html"), ['<a href="/#about" aria-current="page">']);
-  for (const page of pages.filter((p) => p.startsWith("projects/"))) {
-    assert.deepEqual(marks(page), ['<a href="/#projects" aria-current="page">'], page);
+  assert.deepEqual(marks("index.html"), ['<a href="/" aria-current="page">']);
+  assert.deepEqual(marks("about/index.html"), ['<a href="/about/" aria-current="page">']);
+  assert.deepEqual(marks("guestbook/index.html"), ['<a href="/guestbook/" aria-current="page">']);
+  for (const page of ["404.html", "card/index.html", ...pages.filter((p) => p.startsWith("projects/"))]) {
+    assert.deepEqual(marks(page), [], page);
   }
   for (const page of pages.filter((p) => p.startsWith("rd/"))) {
     assert.deepEqual(marks(page), ['<a href="/rd/" aria-current="page">'], page);
   }
+});
+
+test("every page's footer holds the contact details and the teapot, and no torus remains (ADR 0015)", () => {
+  for (const page of pages.filter((p) => p.endsWith(".html"))) {
+    const footer = html(page).match(/<footer class="site-footer">[\s\S]*?<\/footer>/)?.[0] ?? "";
+    assert.match(footer, /<div class="footer-contact" id="contact">\s*<h2 class="visually-hidden">Contact<\/h2>/, `${page}: contact block`);
+    assert.match(footer, /data-copy-email="[^"]*" aria-label="Copy email address">Copy<\/button>/, `${page}: copy email`);
+    assert.match(footer, /<a class="tag tag-link" href="\/emiliano-manalo\.vcf" download>Save contact<\/a>/, `${page}: save contact`);
+    assert.match(footer, /<p class="copy-status" role="status" data-copy-status><\/p>/, `${page}: copy feedback`);
+    assert.match(footer, /data-scene="teapot"/, `${page}: the teapot ends the page`);
+    assert.doesNotMatch(html(page), /torus-scene|data-scene="torus"|model-torus/, `${page}: the torus is gone`);
+    assert.equal((html(page).match(/data-scene="teapot"/g) ?? []).length, 1, `${page}: one teapot per page`);
+  }
+  assert.doesNotMatch(html("index.html"), /<section id="contact"/, "Contact is no longer a home section");
 });
 
 test("every page loads the shared scripts and a skip link", () => {
@@ -280,7 +300,7 @@ test("guestbook links to GitHub Discussions and explains signing", () => {
   const text = html("guestbook/index.html");
   assert.match(text, /<a class="tag tag-link" href="https:\/\/github\.com\/EmilianoManaloIV\/EmilianoManaloIV\.github\.io\/discussions[^"]*">Sign the guestbook<\/a>/);
   assert.match(text, /Signing uses your GitHub account/);
-  assert.match(html("index.html"), /<a href="\/guestbook\/">sign the guestbook<\/a>/, "Contact links the guestbook");
+  assert.match(html("index.html"), /<a href="\/guestbook\/">Sign the guestbook<\/a>/, "the footer links the guestbook");
 });
 
 // ADR 0007: clips are local files that never autoplay from markup; js/main.js plays
@@ -374,7 +394,7 @@ test("index.html: interaction aids from ADR 0003 are present and named", () => {
   assert.match(page, /<button[^>]*data-copy-email="[^"]*" aria-label="Copy email address">Copy<\/button>/);
   assert.match(page, /<p class="copy-status" role="status" data-copy-status><\/p>/, "live region for copy feedback");
   const rail = page.match(/<nav class="section-rail" aria-label="Sections">[\s\S]*?<\/nav>/)[0];
-  assert.equal((rail.match(/<a href="#\w+" aria-label="\w+"><\/a>/g) ?? []).length, 4, "one named rail dot per home section");
+  assert.equal((rail.match(/<a href="#\w+" aria-label="\w+"><\/a>/g) ?? []).length, 3, "one named rail dot per home section: Home, About, Projects");
   assert.match(page, /<a class="section-bar" href="#site-nav"/);
   assert.match(page, /<script type="module" src="js\/ui\.js\?v=[0-9a-f]{10}"><\/script>/);
 });
@@ -507,7 +527,8 @@ test("the home page's sections drop their visible numbered headings but keep one
   const home = html("index.html");
   assert.doesNotMatch(home, /class="section-index"/, "no '01 /' headings on the home page");
   assert.doesNotMatch(home, /data-label=/, "no margin labels on the home page");
-  for (const [id, name] of [["about", "About"], ["projects", "Projects"], ["contact", "Contact"]]) {
+  // Contact moved to the footer in ADR 0015, where its own test checks its heading.
+  for (const [id, name] of [["about", "About"], ["projects", "Projects"]]) {
     const body = home.match(new RegExp(`<section id="${id}"[^>]*>([\\s\\S]*?)</section>`))?.[1] ?? "";
     const headings = [...body.matchAll(/<h2\b[^>]*>([^<]*)<\/h2>/g)];
     assert.equal(headings.length, 1, `#${id} has exactly one h2`);
@@ -538,7 +559,7 @@ test("hands-on models are focusable, labelled, and resettable (ADR 0009)", () =>
     assert.equal(resets, turnable, `${page}: every hands-on model needs a Reset view button`);
     assert.equal(hints, turnable, `${page}: every hands-on model needs a visible hint`);
   }
-  assert.ok(models >= 3, "the torus, teapot, and headset should be found");
+  assert.ok(models >= 3, "the footer teapot and the R&D headset should be found");
   assert.match(html("index.html"), /data-scene="teapot"/);
   assert.match(html("rd/index.html"), /data-scene="headset"/);
 });

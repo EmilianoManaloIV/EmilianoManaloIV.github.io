@@ -11,7 +11,7 @@ Visitors reach the site on a phone after a conversation, often on slow Wi-Fi. Th
 Add one interaction module, `js/ui.js`, separate from the motion code in `js/main.js`, plus pure time logic in `js/status.js`, which is unit-tested in Node.
 
 - **Wayfinding:**
-  - The nav marks the section in view with `aria-current`.
+  - The nav marks the section in view with `aria-current`. (Since 0015 the nav links only pages; the rail and phone bar mark the section.)
   - Wide screens get a dot rail.
   - Phones get a sticky section bar that links back to the menu.
 - **Share and copy:**

@@ -17,7 +17,7 @@ ADR 0001 rejected a build step for a single page, noting that shared markup woul
 Add pages as plain HTML files with clean folder URLs: `/about/`, `/rd/`, and `/rd/<slug>/`. There is still no build step and no generator.
 
 - **Shared chrome:** every page repeats the home page's header and footer verbatim.
-  - Nav links are root-absolute (`/#about`, `/rd/`), so the same markup works everywhere.
+  - Nav links are root-absolute (`/about/`, `/rd/`; pages only since 0015), so the same markup works everywhere.
   - Each subpage marks its own nav item with `aria-current="page"`.
 - **Drift protection:** `test/site.test.mjs` fails if any page's header or footer differs from `index.html`, ignoring `aria-current`. This replaces a templating tool.
 - **Posts:** each post is a copy of `templates/rd-post.html`. The template is not deployed. Tests require every post to be listed on the R&D index, dated with `<time datetime>`, and linked to its own GitHub Discussions thread.

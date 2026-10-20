@@ -36,11 +36,10 @@
       <a class="monogram" href="/" aria-label="Emiliano Panday Manalo IV, home">EM</a>
       <nav id="site-nav" aria-label="Primary">
         <ul class="nav-list">
-          <li><a href="/#home"><span class="nav-index" aria-hidden="true">00</span> Home</a></li>
-          <li><a href="/#about" aria-current="page"><span class="nav-index" aria-hidden="true">01</span> About</a></li>
-          <li><a href="/#projects"><span class="nav-index" aria-hidden="true">02</span> Projects</a></li>
-          <li><a href="/rd/"><span class="nav-index" aria-hidden="true">03</span> R&amp;D</a></li>
-          <li><a href="/#contact"><span class="nav-index" aria-hidden="true">04</span> Contact</a></li>
+          <li><a href="/"><span class="nav-index" aria-hidden="true">00</span> Home</a></li>
+          <li><a href="/about/" aria-current="page"><span class="nav-index" aria-hidden="true">01</span> About</a></li>
+          <li><a href="/rd/"><span class="nav-index" aria-hidden="true">02</span> R&amp;D</a></li>
+          <li><a href="/guestbook/"><span class="nav-index" aria-hidden="true">03</span> Guestbook</a></li>
         </ul>
       </nav>
       <div class="header-tools">
@@ -148,7 +147,20 @@
 
   <footer class="site-footer">
     <div class="container">
-      <div>
+      <div class="footer-contact" id="contact">
+        <h2 class="visually-hidden">Contact</h2>
+        <ul class="contact-list">
+          <li>Email: <a href="mailto:TODO@example.com" data-link="email" data-link-text>TODO@example.com</a> <button class="action" type="button" data-link="email" data-copy-email="TODO@example.com" aria-label="Copy email address">Copy</button></li>
+          <li>LinkedIn: <a href="https://www.linkedin.com/in/TODO" data-link="linkedin" data-link-text>linkedin.com/in/TODO</a></li>
+          <li>GitHub: <a href="https://github.com/EmilianoManaloIV" data-link="github" data-link-text>github.com/EmilianoManaloIV</a></li>
+        </ul>
+        <ul class="tags">
+          <li><a class="tag tag-link" href="/emiliano-manalo.vcf" download>Save contact</a></li>
+          <li><button class="action" type="button" data-share>Share this page</button></li>
+        </ul>
+        <p class="copy-status" role="status" data-copy-status></p>
+      </div>
+      <div class="footer-brand-block">
         <hr class="footer-rule">
         <p class="footer-brand">EM</p>
         <p class="footer-tagline">Blending Engineering Practices With Art</p>
@@ -162,10 +174,11 @@
           <li><a href="https://github.com/EmilianoManaloIV" data-link="github" aria-label="GitHub">GH</a></li>
         </ul>
       </div>
-      <div class="model model-torus">
-        <canvas class="torus-scene" data-scene="torus" tabindex="0" role="img" aria-roledescription="3D model" aria-label="Torus wireframe"></canvas>
+      <figure class="model model-teapot">
+        <canvas class="teapot-scene" data-scene="teapot" tabindex="0" role="img" aria-roledescription="3D model" aria-label="Utah teapot wireframe"></canvas>
+        <figcaption>Utah teapot, Newell 1975</figcaption>
         <p class="model-controls"><span class="model-hint" aria-hidden="true">Drag or use arrow keys</span> <button class="toggle model-reset" type="button" data-reset>Reset view</button></p>
-      </div>
+      </figure>
     </div>
   </footer>
 </body>

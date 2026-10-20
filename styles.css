@@ -369,8 +369,7 @@ button {
   .action,
   .barcode-strip,
   .ticks,
-  .footer-motion,
-  .torus-scene {
+  .footer-motion {
     display: none !important;
   }
 
@@ -1499,10 +1498,19 @@ html.js-ready:not(.motion-off) .terminal-echo {
   font-size: var(--text-xs);
 }
 
-.torus-scene {
-  width: 100%;
-  aspect-ratio: 1;
-  color: var(--color-ink);
+/* Contact sits first in every page's footer (ADR 0015). The QR card shows its own
+   contact actions, so its footer skips the duplicate. */
+.footer-contact .tags {
+  margin-top: var(--space-4);
+}
+
+:root:has(.card-page) .footer-contact {
+  display: none;
+}
+
+/* The footer grid's gap already spaces the teapot from the brand. */
+.site-footer .model-teapot {
+  margin-top: 0;
 }
 
 /* Hands-on models (ADR 0009). The grab cursor and focus ring say "you can move
@@ -1511,11 +1519,6 @@ html.js-ready:not(.motion-off) .terminal-echo {
   position: relative;
   width: 100%;
   margin: 0;
-}
-
-.model-torus {
-  max-width: 26rem;
-  justify-self: center;
 }
 
 .model canvas {
@@ -1610,7 +1613,7 @@ html.js-ready:not(.motion-off) .terminal-echo {
   padding-inline: var(--space-4);
 }
 
-/* Headings with a model beside them: the 404 teapot and the R&D headset. */
+/* A heading with a model beside it: the R&D headset. */
 @media (min-width: 800px) {
   .hero-split .container {
     display: grid;
@@ -1717,32 +1720,18 @@ html.js-ready:not(.motion-off) .terminal-echo {
     gap: var(--space-8);
   }
 
+  /* Footer (ADR 0015): contact above the brand on the left, the teapot beside both. */
   .site-footer .container {
-    grid-template-columns: 1fr 1fr;
-    align-items: center;
-    gap: var(--space-24);
-  }
-
-  .model-torus {
-    justify-self: end;
-  }
-
-  /* Contact: details on the left, the teapot beside them. */
-  #contact .container {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 22rem);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 24rem);
     column-gap: var(--space-12);
+    row-gap: var(--space-12);
     align-items: start;
   }
 
-  #contact .container > * {
-    grid-column: 1;
-  }
-
-  /* The heading is visually hidden (ADR 0014), so the details start in row 1. */
-  #contact .model-teapot {
+  .site-footer .model-teapot {
     grid-column: 2;
-    grid-row: 1 / span 3;
+    grid-row: 1 / span 2;
+    align-self: center;
     margin-top: 0;
   }
 }

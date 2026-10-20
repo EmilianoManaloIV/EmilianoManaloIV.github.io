@@ -36,11 +36,10 @@
       <a class="monogram" href="/" aria-label="Emiliano Panday Manalo IV, home">EM</a>
       <nav id="site-nav" aria-label="Primary">
         <ul class="nav-list">
-          <li><a href="/#home"><span class="nav-index" aria-hidden="true">00</span> Home</a></li>
-          <li><a href="/#about"><span class="nav-index" aria-hidden="true">01</span> About</a></li>
-          <li><a href="/#projects"><span class="nav-index" aria-hidden="true">02</span> Projects</a></li>
-          <li><a href="/rd/"><span class="nav-index" aria-hidden="true">03</span> R&amp;D</a></li>
-          <li><a href="/#contact"><span class="nav-index" aria-hidden="true">04</span> Contact</a></li>
+          <li><a href="/" aria-current="page"><span class="nav-index" aria-hidden="true">00</span> Home</a></li>
+          <li><a href="/about/"><span class="nav-index" aria-hidden="true">01</span> About</a></li>
+          <li><a href="/rd/"><span class="nav-index" aria-hidden="true">02</span> R&amp;D</a></li>
+          <li><a href="/guestbook/"><span class="nav-index" aria-hidden="true">03</span> Guestbook</a></li>
         </ul>
       </nav>
       <div class="header-tools">
@@ -60,9 +59,8 @@
     <a href="#home" aria-label="Home"></a>
     <a href="#about" aria-label="About"></a>
     <a href="#projects" aria-label="Projects"></a>
-    <a href="#contact" aria-label="Contact"></a>
   </nav>
-  <a class="section-bar" href="#site-nav" data-section-bar><span data-section-label>00 / Home</span><span class="section-bar-menu">Menu <span aria-hidden="true">↑</span></span></a>
+  <a class="section-bar" href="#site-nav" data-section-bar><span data-section-label>Home</span><span class="section-bar-menu">Menu <span aria-hidden="true">↑</span></span></a>
 
   <main id="main">
     <section id="home" class="hero">
@@ -165,33 +163,24 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
         <div class="ticks" aria-hidden="true"><span>S S S S S S</span><span>S S S S S S</span></div>
       </div>
     </section>
+  </main>
 
-    <section id="contact" class="section">
-      <div class="container">
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-contact" id="contact">
         <h2 class="visually-hidden">Contact</h2>
         <ul class="contact-list">
           <li>Email: <a href="mailto:TODO@example.com" data-link="email" data-link-text>TODO@example.com</a> <button class="action" type="button" data-link="email" data-copy-email="TODO@example.com" aria-label="Copy email address">Copy</button></li>
           <li>LinkedIn: <a href="https://www.linkedin.com/in/TODO" data-link="linkedin" data-link-text>linkedin.com/in/TODO</a></li>
           <li>GitHub: <a href="https://github.com/EmilianoManaloIV" data-link="github" data-link-text>github.com/EmilianoManaloIV</a></li>
-          <li>Guestbook: <a href="/guestbook/">sign the guestbook</a></li>
         </ul>
         <ul class="tags">
-          <li><a class="tag tag-link" href="emiliano-manalo.vcf" download>Save contact</a></li>
+          <li><a class="tag tag-link" href="/emiliano-manalo.vcf" download>Save contact</a></li>
           <li><button class="action" type="button" data-share>Share this page</button></li>
         </ul>
         <p class="copy-status" role="status" data-copy-status></p>
-        <figure class="model model-teapot">
-          <canvas class="teapot-scene" data-scene="teapot" tabindex="0" role="img" aria-roledescription="3D model" aria-label="Utah teapot wireframe"></canvas>
-          <figcaption>FIG. 04.1 / Utah teapot, Newell 1975</figcaption>
-          <p class="model-controls"><span class="model-hint" aria-hidden="true">Drag or use arrow keys</span> <button class="toggle model-reset" type="button" data-reset>Reset view</button></p>
-        </figure>
       </div>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="container">
-      <div>
+      <div class="footer-brand-block">
         <hr class="footer-rule">
         <p class="footer-brand">EM</p>
         <p class="footer-tagline">Blending Engineering Practices With Art</p>
@@ -205,10 +194,11 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
           <li><a href="https://github.com/EmilianoManaloIV" data-link="github" aria-label="GitHub">GH</a></li>
         </ul>
       </div>
-      <div class="model model-torus">
-        <canvas class="torus-scene" data-scene="torus" tabindex="0" role="img" aria-roledescription="3D model" aria-label="Torus wireframe"></canvas>
+      <figure class="model model-teapot">
+        <canvas class="teapot-scene" data-scene="teapot" tabindex="0" role="img" aria-roledescription="3D model" aria-label="Utah teapot wireframe"></canvas>
+        <figcaption>Utah teapot, Newell 1975</figcaption>
         <p class="model-controls"><span class="model-hint" aria-hidden="true">Drag or use arrow keys</span> <button class="toggle model-reset" type="button" data-reset>Reset view</button></p>
-      </div>
+      </figure>
     </div>
   </footer>
 </body>

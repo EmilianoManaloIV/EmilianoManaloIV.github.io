@@ -3,24 +3,6 @@
 
 const TAU = Math.PI * 2;
 
-// Torus around the y axis. R is the ring radius, r the tube radius.
-export function torus(R, r, ringSegments, tubeSegments) {
-  const vertices = [];
-  const edges = [];
-  for (let i = 0; i < ringSegments; i++) {
-    const u = (i / ringSegments) * TAU;
-    for (let j = 0; j < tubeSegments; j++) {
-      const v = (j / tubeSegments) * TAU;
-      const d = R + r * Math.cos(v);
-      vertices.push([d * Math.cos(u), r * Math.sin(v), d * Math.sin(u)]);
-      const a = i * tubeSegments + j;
-      edges.push([a, i * tubeSegments + ((j + 1) % tubeSegments)]);
-      edges.push([a, ((i + 1) % ringSegments) * tubeSegments + j]);
-    }
-  }
-  return { vertices, edges };
-}
-
 // Surface of revolution around the y axis from a profile of [radius, height].
 export function lathe(profile, segments) {
   const vertices = [];

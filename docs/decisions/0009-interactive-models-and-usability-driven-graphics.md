@@ -16,10 +16,10 @@ After the video clips (0007) and ambient motion (0008), `js/` was 10 bytes under
 
 | Addition | Principle | What it does |
 |---|---|---|
-| Hands-on models | Direct manipulation, feedback | The teapot and the footer torus follow the hand when dragged, or turn with the arrow keys. A visible hint and "Reset view" sit under each one, Home also resets, and the console logs `USER ROTATE`. |
+| Hands-on models | Direct manipulation, feedback | The teapot (in every footer since 0015, replacing the torus) and the headset follow the hand when dragged, or turn with the arrow keys. A visible hint and "Reset view" sit under each one, Home also resets, and the console logs `USER ROTATE`. |
 | Reading-progress bar | Visibility of system status | A thin brand-gradient bar at the top shows how far down the page the reader is. |
 | Section markers | Wayfinding | Each section rule ends in a registration mark and draws in as the section arrives. |
-| 404 teapot | Error recovery | The 404 page explains itself with a nod to HTTP 418 and offers three large, named ways back. |
+| 404 page | Error recovery | The 404 page explains itself with a nod to HTTP 418 and offers three large, named ways back. (Its own teapot was removed in 0015; the footer teapot ends every page.) |
 | Hover and focus feedback | Affordance | Card brackets close in, link arrows nudge forward, and card titles underline when pointed at or focused. |
 
 **Models:**
@@ -55,6 +55,6 @@ After the video clips (0007) and ambient motion (0008), `js/` was 10 bytes under
 
 ## Consequences
 
-- **Every page loads the teapot data,** about 2 KB gzipped, because static imports are the only kind allowed (0002) and the footer torus shares the module.
+- **Every page loads the teapot data,** about 2 KB gzipped, because static imports are the only kind allowed (0002) and the footer teapot (0015) needs it on every page anyway.
 - **Credit the teapot** in any derived use as a Utah Teapot.
 - **New interactive canvases** must keep the focus, label, and reset pattern, or the site test fails.

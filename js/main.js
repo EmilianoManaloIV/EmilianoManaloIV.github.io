@@ -1,5 +1,5 @@
 // Motion, console, headline, device readout, and toggles; see ADR 0002. No network use.
-import { torus, piercedSpheroid, grid, cube, sphere, terrainHeight, DRIFT, rotate, orient, project, bezierPatches, uprightUnit, fitUnit, headset, icosphere, fitScale } from "./geometry.js";
+import { piercedSpheroid, grid, cube, sphere, terrainHeight, DRIFT, rotate, orient, project, bezierPatches, uprightUnit, fitUnit, headset, icosphere, fitScale } from "./geometry.js";
 import { teapotPoints, teapotPatches } from "./models.js";
 
 const root = document.documentElement;
@@ -31,7 +31,6 @@ const pad = (n, len = 2) => String(n).padStart(len, "0");
 const meshes = {
   core: piercedSpheroid(24, 9),
   terrain: grid(22),
-  torus: torus(1, 0.42, 36, 16),
   cube: cube(4),
   globe: sphere(10, 7),
   teapot: uprightUnit(bezierPatches(teapotPoints, teapotPatches, 3, 6)),
@@ -59,7 +58,6 @@ const poses = {
   terrain: () => [-0.3, -0.35],
   cube: (t) => [0.55 + t * 0.12, t * 0.22],
   globe: (t) => [0.35, t * 0.6],
-  torus: (t) => [1 + Math.sin(t * 0.3) * 0.25, t * 0.4],
   teapot: (t) => [0.35 + Math.sin(t * 0.25) * 0.15, t * 0.3],
   headset: (t) => [0.3 + Math.sin(t * 0.2) * 0.12, 2.6 + t * 0.28],
   ambient: (t) => [0.4 + Math.sin(t * 0.05) * 0.2, (t * TAU) / 90], // one turn per 90 s
@@ -169,10 +167,6 @@ const painters = {
     const [ax, ay] = poses.globe(t);
     strokeMesh(ctx, meshes.globe, (p) => project(rotate(p, ax, ay), w / 2, h / 2, w * 0.44, 6));
   },
-  torus(ctx, w, h) {
-    const [ax, ay] = posed("torus");
-    strokeMesh(ctx, meshes.torus, (p) => project(rotate(p, ax, ay), w / 2, h / 2, Math.min(w, h) * 0.3));
-  },
   teapot(ctx, w, h) {
     const [ax, ay] = posed("teapot");
     strokeMesh(ctx, meshes.teapot, (p) => project(rotate(p, ax, ay), w / 2, h / 2, Math.min(w, h) * 0.6, 5));
@@ -257,7 +251,7 @@ function tick(now) {
   if (delta) dt += (delta - dt) * 0.1;
   // Log each full Y turn a shape completes, only while the console is on screen
   // to read it; off screen the count still advances so nothing replays stale.
-  for (const name of ["core", "cube", "globe", "torus"]) {
+  for (const name of ["core", "cube", "globe", "teapot"]) {
     const rev = Math.floor(poses[name](time)[1] / TAU);
     if (bannerVisible && rev > (revs[name] ?? rev)) log(`${name.toUpperCase().padEnd(6)} REV ${pad(rev)} COMPLETE`);
     revs[name] = rev;
@@ -287,12 +281,11 @@ const script = [
   ["banner", () => `TERR   PEAK ${peak().toFixed(3)}  DRIFT ${((time * DRIFT) % 2).toFixed(3)}`],
   ["cube", () => `CUBE   ${pose("cube")}  EDG ${meshes.cube.edges.length}`],
   ["globe", () => `GLOBE  RY ${angle(poses.globe(time)[1])}  VTX ${meshes.globe.vertices.length}`],
-  ["torus", () => `TORUS  ${pose("torus")}  VIS ${shown("torus")}`],
   ["teapot", () => `TEAPOT ${pose("teapot")}  PATCH ${teapotPatches.length / 16}`],
   ["headset", () => `HMD    ${pose("headset")}  VTX ${meshes.headset.vertices.length}`],
   // Before any frame is drawn, DT and FPS would be placeholders; say so instead.
   [null, () => (frames ? `FRAME  ${frames}  DT ${dt.toFixed(1)}ms  FPS ${Math.round(1000 / dt)}` : "FRAME  IDLE  NO SCENE ON SCREEN")],
-  ["banner", () => `SCENE  BANNER ${shown("banner")}  CUBE ${shown("cube")}  GLOBE ${shown("globe")}  TORUS ${shown("torus")}`],
+  ["banner", () => `SCENE  BANNER ${shown("banner")}  CUBE ${shown("cube")}  GLOBE ${shown("globe")}  TEAPOT ${shown("teapot")}`],
 ]
   .filter(([scene]) => onPage(scene))
   .map(([, line]) => line);
