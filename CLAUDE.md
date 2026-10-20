@@ -7,7 +7,7 @@ Visitors mostly arrive on a phone by scanning a QR code, often on slow Wi-Fi.
 
 Hand-written static HTML, CSS, and a little first-party JavaScript. **Zero dependencies.**
 A zero-dependency build (`tools/build.mjs`) runs in CI and turns GitHub Discussions into R&D posts,
-comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 0007). Read the ADRs in `docs/decisions/` (0001 to 0013) before changing this.
+comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 0007). Read the ADRs in `docs/decisions/` (0001 to 0017) before changing this.
 
 - `index.html` is the home page: a fast overview with sections anchored by id.
 - `about/index.html` (About & CV), `rd/index.html` (the R&D blog), and `guestbook/index.html` are subpages.
@@ -18,15 +18,16 @@ comments, the guestbook, and projects (ADR 0005, 0006), with video clips (ADR 00
 - Every footer carries the AI-use disclosure linking to `/about/#made`, whose text is in `site-text.md`; R&D posts labelled `opinion` show an Opinion tag (ADR 0013).
 - `/card/` is the conference QR card; the build draws `card/qr.svg` with `tools/qr.mjs` (dependency-free, tested in `test/qr.test.mjs`) and writes `sitemap.xml` and `robots.txt` (ADR 0011). Preview and iOS-icon tags appear only when `assets/img/share.png` or `apple-touch-icon.png` exist.
 - `tools/render.mjs` holds the pure build helpers (sanitizer, images, video clips, markup), tested in `test/render.test.mjs`.
-- Every page repeats the home page's header and footer exactly; a test enforces it (ADR 0004). Change the nav or footer in every page at once.
+- Every page repeats the home page's header and footer exactly; a test enforces it (ADR 0004). Change the nav or footer in every page at once. The nav links only whole pages (Home, About, R&D, Guestbook); the footer holds the contact details (`id="contact"`) and the hands-on teapot (ADR 0015).
 - `styles.css` holds design tokens in `:root` at the top, then components.
 - `js/theme.js` applies a saved theme in `<head>`. `js/main.js` runs the canvas wireframes, terminal, and toggles.
-- `js/geometry.js` is pure mesh and projection math, unit-tested in `test/geometry.test.mjs`.
+- `js/geometry.js` is pure mesh and projection math, unit-tested in `test/geometry.test.mjs`. The banner art matches Figma (ADR 0014): `piercedSpheroid()` and `terrainHeight()`, placed by `artSpots` in `main.js`; on desktop the banner canvas spans the whole banner behind the text.
 - `js/models.js` holds model data (the Utah teapot's Bézier patches, ADR 0009). Credit it as a Utah Teapot. The VR headset is built in code by `headset()` in `geometry.js`.
 - The shared header holds the reading-progress bar and the big-screen ambient canvas (ADR 0009).
-- Screens 1600px and up scale the layout (`--content-max: 80rem`, larger root font). Titled sections carry `data-label="NN — Title"` for their margin label; keep it in step with the title (a test checks).
+- Screens 1600px and up scale the layout (`--content-max: 80rem`, larger root font). Titled subpage sections carry `data-label="NN — Title"` for their margin label; keep it in step with the title (a test checks). The home page has no visible section headings, only `visually-hidden` ones, and no margin labels (ADR 0014).
 - Hands-on canvases are `tabindex="0" role="img" aria-roledescription="3D model"` with a visible hint and a `data-reset` button; decorative ones stay `aria-hidden` (ADR 0009).
 - `js/ui.js` runs wayfinding and share and copy. It reads sections from `main section[id]` on any page.
+- Text marked `data-decode` (the values band's ID strip) decodes on arrival with the headline's `decodeStep()` (ADR 0016). The social icons are inline outline SVG (Tabler-style, MIT); SVG is allowed only inside `ul.socials`, and a test enforces it (ADR 0017).
 - `assets/fonts/` holds self-hosted `.woff2` files with their OFL licenses. Never link a font CDN.
 - `assets/img/` holds images.
 

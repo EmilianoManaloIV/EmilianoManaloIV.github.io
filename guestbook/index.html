@@ -36,20 +36,18 @@
       <a class="monogram" href="/" aria-label="Emiliano Panday Manalo IV, home">EM</a>
       <nav id="site-nav" aria-label="Primary">
         <ul class="nav-list">
-          <li><a href="/#home"><span class="nav-index" aria-hidden="true">00</span> Home</a></li>
-          <li><a href="/#about"><span class="nav-index" aria-hidden="true">01</span> About</a></li>
-          <li><a href="/#projects"><span class="nav-index" aria-hidden="true">02</span> Projects</a></li>
-          <li><a href="/rd/"><span class="nav-index" aria-hidden="true">03</span> R&amp;D</a></li>
-          <li><a href="/#contact"><span class="nav-index" aria-hidden="true">04</span> Contact</a></li>
+          <li><a href="/"><span class="nav-index" aria-hidden="true">00</span> Home</a></li>
+          <li><a href="/about/"><span class="nav-index" aria-hidden="true">01</span> About</a></li>
+          <li><a href="/rd/"><span class="nav-index" aria-hidden="true">02</span> R&amp;D</a></li>
+          <li><a href="/guestbook/" aria-current="page"><span class="nav-index" aria-hidden="true">03</span> Guestbook</a></li>
         </ul>
       </nav>
       <div class="header-tools">
-        <!-- TODO(figma): replace text labels with the social icons exported from Figma. -->
         <ul class="socials" aria-label="Social profiles">
-          <li><a href="https://www.instagram.com/TODO" data-link="instagram" aria-label="Instagram">IG</a></li>
-          <li><a href="https://www.linkedin.com/in/TODO" data-link="linkedin" aria-label="LinkedIn">in</a></li>
-          <li><a href="https://x.com/TODO" data-link="x" aria-label="X">X</a></li>
-          <li><a href="https://github.com/EmilianoManaloIV" data-link="github" aria-label="GitHub">GH</a></li>
+          <li><a href="https://www.instagram.com/TODO" data-link="instagram" aria-label="Instagram"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="12" cy="12" r="3"/><path d="M16.5 7.5v.01"/></svg></a></li>
+          <li><a href="https://www.linkedin.com/in/TODO" data-link="linkedin" aria-label="LinkedIn"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 11v5M8 8v.01M12 16v-5M16 16v-3a2 2 0 0 0-4 0"/></svg></a></li>
+          <li><a href="https://x.com/TODO" data-link="x" aria-label="X"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4l11.733 16h4.267l-11.733-16zM4 20l6.768-6.768M13.228 10.772L20 4"/></svg></a></li>
+          <li><a href="https://github.com/EmilianoManaloIV" data-link="github" aria-label="GitHub"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li>
         </ul>
         <button class="toggle" type="button" id="theme-toggle" aria-pressed="false">Dark mode<span data-state aria-hidden="true">: off</span></button>
       </div>
@@ -58,8 +56,6 @@
 
   <main id="main">
     <section id="guestbook" class="page-hero">
-      <!-- A faint copy of the site telemetry, filled by js/main.js (ADR 0008, 0009). -->
-      <pre class="terminal-echo" aria-hidden="true"></pre>
       <div class="container">
         <p class="eyebrow"><a href="/">Home</a> / Guestbook</p>
         <h1>Guestbook</h1>
@@ -81,7 +77,21 @@
 
   <footer class="site-footer">
     <div class="container">
-      <div>
+      <div class="footer-contact" id="contact">
+        <h2 class="visually-hidden">Contact</h2>
+        <hr class="section-rule" aria-hidden="true">
+        <ul class="contact-list">
+          <li>Email: <a href="mailto:TODO@example.com" data-link="email" data-link-text>TODO@example.com</a> <button class="action" type="button" data-link="email" data-copy-email="TODO@example.com" aria-label="Copy email address">Copy</button></li>
+          <li>LinkedIn: <a href="https://www.linkedin.com/in/TODO" data-link="linkedin" data-link-text>linkedin.com/in/TODO</a></li>
+          <li>GitHub: <a href="https://github.com/EmilianoManaloIV" data-link="github" data-link-text>github.com/EmilianoManaloIV</a></li>
+        </ul>
+        <ul class="tags">
+          <li><a class="tag tag-link" href="/emiliano-manalo.vcf" download>Save contact</a></li>
+          <li><button class="action" type="button" data-share>Share this page</button></li>
+        </ul>
+        <p class="copy-status" role="status" data-copy-status></p>
+      </div>
+      <div class="footer-brand-block">
         <hr class="footer-rule">
         <p class="footer-brand">EM</p>
         <p class="footer-tagline">Blending Engineering Practices With Art</p>
@@ -89,16 +99,17 @@
         <p class="footer-links"><a href="/guestbook/">Sign the guestbook</a> · <a href="/card/">Show my QR card</a></p>
         <p class="footer-motion"><button class="toggle" type="button" data-motion-toggle aria-pressed="true">Motion<span data-state aria-hidden="true">: on</span></button></p>
         <ul class="socials" aria-label="Social profiles">
-          <li><a href="https://www.instagram.com/TODO" data-link="instagram" aria-label="Instagram">IG</a></li>
-          <li><a href="https://www.linkedin.com/in/TODO" data-link="linkedin" aria-label="LinkedIn">in</a></li>
-          <li><a href="https://x.com/TODO" data-link="x" aria-label="X">X</a></li>
-          <li><a href="https://github.com/EmilianoManaloIV" data-link="github" aria-label="GitHub">GH</a></li>
+          <li><a href="https://www.instagram.com/TODO" data-link="instagram" aria-label="Instagram"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="12" cy="12" r="3"/><path d="M16.5 7.5v.01"/></svg></a></li>
+          <li><a href="https://www.linkedin.com/in/TODO" data-link="linkedin" aria-label="LinkedIn"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 11v5M8 8v.01M12 16v-5M16 16v-3a2 2 0 0 0-4 0"/></svg></a></li>
+          <li><a href="https://x.com/TODO" data-link="x" aria-label="X"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4l11.733 16h4.267l-11.733-16zM4 20l6.768-6.768M13.228 10.772L20 4"/></svg></a></li>
+          <li><a href="https://github.com/EmilianoManaloIV" data-link="github" aria-label="GitHub"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li>
         </ul>
       </div>
-      <div class="model model-torus">
-        <canvas class="torus-scene" data-scene="torus" tabindex="0" role="img" aria-roledescription="3D model" aria-label="Torus wireframe"></canvas>
+      <figure class="model model-teapot">
+        <canvas class="teapot-scene" data-scene="teapot" tabindex="0" role="img" aria-roledescription="3D model" aria-label="Utah teapot wireframe"></canvas>
+        <figcaption>Utah teapot, Newell 1975</figcaption>
         <p class="model-controls"><span class="model-hint" aria-hidden="true">Drag or use arrow keys</span> <button class="toggle model-reset" type="button" data-reset>Reset view</button></p>
-      </div>
+      </figure>
     </div>
   </footer>
 </body>

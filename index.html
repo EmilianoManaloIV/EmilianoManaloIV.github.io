@@ -36,20 +36,18 @@
       <a class="monogram" href="/" aria-label="Emiliano Panday Manalo IV, home">EM</a>
       <nav id="site-nav" aria-label="Primary">
         <ul class="nav-list">
-          <li><a href="/#home"><span class="nav-index" aria-hidden="true">00</span> Home</a></li>
-          <li><a href="/#about"><span class="nav-index" aria-hidden="true">01</span> About</a></li>
-          <li><a href="/#projects"><span class="nav-index" aria-hidden="true">02</span> Projects</a></li>
-          <li><a href="/rd/"><span class="nav-index" aria-hidden="true">03</span> R&amp;D</a></li>
-          <li><a href="/#contact"><span class="nav-index" aria-hidden="true">04</span> Contact</a></li>
+          <li><a href="/" aria-current="page"><span class="nav-index" aria-hidden="true">00</span> Home</a></li>
+          <li><a href="/about/"><span class="nav-index" aria-hidden="true">01</span> About</a></li>
+          <li><a href="/rd/"><span class="nav-index" aria-hidden="true">02</span> R&amp;D</a></li>
+          <li><a href="/guestbook/"><span class="nav-index" aria-hidden="true">03</span> Guestbook</a></li>
         </ul>
       </nav>
       <div class="header-tools">
-        <!-- TODO(figma): replace text labels with the social icons exported from Figma. -->
         <ul class="socials" aria-label="Social profiles">
-          <li><a href="https://www.instagram.com/TODO" data-link="instagram" aria-label="Instagram">IG</a></li>
-          <li><a href="https://www.linkedin.com/in/TODO" data-link="linkedin" aria-label="LinkedIn">in</a></li>
-          <li><a href="https://x.com/TODO" data-link="x" aria-label="X">X</a></li>
-          <li><a href="https://github.com/EmilianoManaloIV" data-link="github" aria-label="GitHub">GH</a></li>
+          <li><a href="https://www.instagram.com/TODO" data-link="instagram" aria-label="Instagram"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="12" cy="12" r="3"/><path d="M16.5 7.5v.01"/></svg></a></li>
+          <li><a href="https://www.linkedin.com/in/TODO" data-link="linkedin" aria-label="LinkedIn"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 11v5M8 8v.01M12 16v-5M16 16v-3a2 2 0 0 0-4 0"/></svg></a></li>
+          <li><a href="https://x.com/TODO" data-link="x" aria-label="X"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4l11.733 16h4.267l-11.733-16zM4 20l6.768-6.768M13.228 10.772L20 4"/></svg></a></li>
+          <li><a href="https://github.com/EmilianoManaloIV" data-link="github" aria-label="GitHub"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li>
         </ul>
         <button class="toggle" type="button" id="theme-toggle" aria-pressed="false">Dark mode<span data-state aria-hidden="true">: off</span></button>
       </div>
@@ -60,15 +58,11 @@
     <a href="#home" aria-label="Home"></a>
     <a href="#about" aria-label="About"></a>
     <a href="#projects" aria-label="Projects"></a>
-    <a href="#contact" aria-label="Contact"></a>
   </nav>
-  <a class="section-bar" href="#site-nav" data-section-bar><span data-section-label>00 / Home</span><span class="section-bar-menu">Menu <span aria-hidden="true">↑</span></span></a>
+  <a class="section-bar" href="#site-nav" data-section-bar><span data-section-label>Home</span><span class="section-bar-menu">Menu <span aria-hidden="true">↑</span></span></a>
 
   <main id="main">
     <section id="home" class="hero">
-      <!-- Faint copies of the banner console, filled by js/main.js (ADR 0008). -->
-      <pre class="terminal-echo" aria-hidden="true"></pre>
-      <pre class="terminal-echo" aria-hidden="true"></pre>
       <div class="container">
         <h1>Emiliano Panday Manalo IV</h1>
         <p data-text="home-subtitle">Aspiring Creative Technologist, Technical Artist, And Software Engineer</p>
@@ -99,20 +93,24 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
           <div class="norm-label" aria-hidden="true"><span class="norm-code">EPM—IV</span><span class="norm-bar"></span></div>
         </div>
         <div class="tech-labels">
-          <div class="tech-label tech-label-core" aria-hidden="true">
-            <canvas class="globe-scene" data-scene="globe"></canvas>
-            <div><strong data-device="title">System Core V7</strong><span data-device="spec">Module sector 128</span><br><span data-device="display">Inspect due 2026-07</span></div>
+          <!-- One connected grid of cells, as Figma's "Technicals labels" (ADR 0017). -->
+          <div class="tech-grid" aria-hidden="true">
+            <div class="tech-cell tech-globe"><canvas class="globe-scene" data-scene="globe"></canvas></div>
+            <div class="tech-cell tech-core"><strong data-device="title">System Core X7</strong><span data-device="spec">Module sector 12B</span><span data-device="display">Inspect due 2026-07</span></div>
+            <div class="tech-side">
+              <div class="tech-cell"><strong data-device="clock-title">Batch</strong> <span data-device="clock">X5-77</span></div>
+              <div class="tech-cell"><strong data-device="link-title">Serial</strong> <span data-device="link">IN-2087-A</span></div>
+            </div>
           </div>
-          <div class="tech-label" aria-hidden="true"><strong data-device="clock-title">Batch</strong><span data-device="clock">05-77</span></div>
-          <div class="tech-label" aria-hidden="true"><strong data-device="link-title">Serial</strong><span data-device="link">09-2087-4</span></div>
           <button class="toggle" type="button" id="motion-toggle" data-motion-toggle aria-pressed="true">Motion<span data-state aria-hidden="true">: on</span></button>
         </div>
       </div>
     </section>
 
-    <section id="about" class="section" data-label="01 — About">
+    <section id="about" class="section">
       <div class="container">
-        <h2 class="section-title"><span class="section-index" aria-hidden="true">01 /</span> About</h2>
+        <h2 class="visually-hidden">About</h2>
+        <hr class="section-rule" aria-hidden="true">
         <article class="card">
           <div class="card-body">
             <h3 data-text="home-about-heading">TODO: About heading</h3>
@@ -132,9 +130,10 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
       </div>
     </section>
 
-    <section id="projects" class="section" data-label="02 — Projects">
+    <section id="projects" class="section">
       <div class="container">
-        <h2 class="section-title"><span class="section-index" aria-hidden="true">02 /</span> Projects</h2>
+        <h2 class="visually-hidden">Projects</h2>
+        <hr class="section-rule" aria-hidden="true">
         <!-- The build (tools/build.mjs) fills this from the Projects discussions, newest first (ADR 0006). -->
         <div class="project-list"><!-- PROJECTS --></div>
         <p class="empty-state">Projects are on their way.</p>
@@ -142,13 +141,13 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
     </section>
 
     <section class="values panel" aria-label="Values">
-      <pre class="terminal-echo" aria-hidden="true"></pre>
       <div class="container">
         <div class="barcode-strip" aria-hidden="true">
-          <span class="tech-label">ERC</span>
-          <span class="tech-label"><strong>ID</strong>092829123</span>
-          <span class="tech-label"><strong>Batch</strong>XS/22</span>
-          <span class="barcode"></span>
+          <!-- Each data-decode text decodes from glyphs as the row arrives (ADR 0016). -->
+          <span class="strip-cell strip-mark"><span data-decode>ERC</span></span>
+          <span class="strip-cell"><strong data-decode>ID</strong><span data-decode>092829123</span></span>
+          <span class="strip-cell"><strong data-decode>Batch</strong><span data-decode>X5/22</span></span>
+          <span class="strip-cell barcode"></span>
         </div>
         <div class="value">
           <h3 data-text="value-1-heading">Cross Disciplined</h3>
@@ -165,33 +164,25 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
         <div class="ticks" aria-hidden="true"><span>S S S S S S</span><span>S S S S S S</span></div>
       </div>
     </section>
-
-    <section id="contact" class="section" data-label="04 — Contact">
-      <div class="container">
-        <h2 class="section-title"><span class="section-index" aria-hidden="true">04 /</span> Contact</h2>
-        <ul class="contact-list">
-          <li>Email: <a href="mailto:TODO@example.com" data-link="email" data-link-text>TODO@example.com</a> <button class="action" type="button" data-link="email" data-copy-email="TODO@example.com" aria-label="Copy email address">Copy</button></li>
-          <li>LinkedIn: <a href="https://www.linkedin.com/in/TODO" data-link="linkedin" data-link-text>linkedin.com/in/TODO</a></li>
-          <li>GitHub: <a href="https://github.com/EmilianoManaloIV" data-link="github" data-link-text>github.com/EmilianoManaloIV</a></li>
-          <li>Guestbook: <a href="/guestbook/">sign the guestbook</a></li>
-        </ul>
-        <ul class="tags">
-          <li><a class="tag tag-link" href="emiliano-manalo.vcf" download>Save contact</a></li>
-          <li><button class="action" type="button" data-share>Share this page</button></li>
-        </ul>
-        <p class="copy-status" role="status" data-copy-status></p>
-        <figure class="model model-teapot">
-          <canvas class="teapot-scene" data-scene="teapot" tabindex="0" role="img" aria-roledescription="3D model" aria-label="Utah teapot wireframe"></canvas>
-          <figcaption>FIG. 04.1 / Utah teapot, Newell 1975</figcaption>
-          <p class="model-controls"><span class="model-hint" aria-hidden="true">Drag or use arrow keys</span> <button class="toggle model-reset" type="button" data-reset>Reset view</button></p>
-        </figure>
-      </div>
-    </section>
   </main>
 
   <footer class="site-footer">
     <div class="container">
-      <div>
+      <div class="footer-contact" id="contact">
+        <h2 class="visually-hidden">Contact</h2>
+        <hr class="section-rule" aria-hidden="true">
+        <ul class="contact-list">
+          <li>Email: <a href="mailto:TODO@example.com" data-link="email" data-link-text>TODO@example.com</a> <button class="action" type="button" data-link="email" data-copy-email="TODO@example.com" aria-label="Copy email address">Copy</button></li>
+          <li>LinkedIn: <a href="https://www.linkedin.com/in/TODO" data-link="linkedin" data-link-text>linkedin.com/in/TODO</a></li>
+          <li>GitHub: <a href="https://github.com/EmilianoManaloIV" data-link="github" data-link-text>github.com/EmilianoManaloIV</a></li>
+        </ul>
+        <ul class="tags">
+          <li><a class="tag tag-link" href="/emiliano-manalo.vcf" download>Save contact</a></li>
+          <li><button class="action" type="button" data-share>Share this page</button></li>
+        </ul>
+        <p class="copy-status" role="status" data-copy-status></p>
+      </div>
+      <div class="footer-brand-block">
         <hr class="footer-rule">
         <p class="footer-brand">EM</p>
         <p class="footer-tagline">Blending Engineering Practices With Art</p>
@@ -199,16 +190,17 @@ WND UPD TO LVL 10/11  PRP   I-I</pre>
         <p class="footer-links"><a href="/guestbook/">Sign the guestbook</a> · <a href="/card/">Show my QR card</a></p>
         <p class="footer-motion"><button class="toggle" type="button" data-motion-toggle aria-pressed="true">Motion<span data-state aria-hidden="true">: on</span></button></p>
         <ul class="socials" aria-label="Social profiles">
-          <li><a href="https://www.instagram.com/TODO" data-link="instagram" aria-label="Instagram">IG</a></li>
-          <li><a href="https://www.linkedin.com/in/TODO" data-link="linkedin" aria-label="LinkedIn">in</a></li>
-          <li><a href="https://x.com/TODO" data-link="x" aria-label="X">X</a></li>
-          <li><a href="https://github.com/EmilianoManaloIV" data-link="github" aria-label="GitHub">GH</a></li>
+          <li><a href="https://www.instagram.com/TODO" data-link="instagram" aria-label="Instagram"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="12" cy="12" r="3"/><path d="M16.5 7.5v.01"/></svg></a></li>
+          <li><a href="https://www.linkedin.com/in/TODO" data-link="linkedin" aria-label="LinkedIn"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 11v5M8 8v.01M12 16v-5M16 16v-3a2 2 0 0 0-4 0"/></svg></a></li>
+          <li><a href="https://x.com/TODO" data-link="x" aria-label="X"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4l11.733 16h4.267l-11.733-16zM4 20l6.768-6.768M13.228 10.772L20 4"/></svg></a></li>
+          <li><a href="https://github.com/EmilianoManaloIV" data-link="github" aria-label="GitHub"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li>
         </ul>
       </div>
-      <div class="model model-torus">
-        <canvas class="torus-scene" data-scene="torus" tabindex="0" role="img" aria-roledescription="3D model" aria-label="Torus wireframe"></canvas>
+      <figure class="model model-teapot">
+        <canvas class="teapot-scene" data-scene="teapot" tabindex="0" role="img" aria-roledescription="3D model" aria-label="Utah teapot wireframe"></canvas>
+        <figcaption>Utah teapot, Newell 1975</figcaption>
         <p class="model-controls"><span class="model-hint" aria-hidden="true">Drag or use arrow keys</span> <button class="toggle model-reset" type="button" data-reset>Reset view</button></p>
-      </div>
+      </figure>
     </div>
   </footer>
 </body>

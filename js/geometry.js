@@ -3,24 +3,6 @@
 
 const TAU = Math.PI * 2;
 
-// Torus around the y axis. R is the ring radius, r the tube radius.
-export function torus(R, r, ringSegments, tubeSegments) {
-  const vertices = [];
-  const edges = [];
-  for (let i = 0; i < ringSegments; i++) {
-    const u = (i / ringSegments) * TAU;
-    for (let j = 0; j < tubeSegments; j++) {
-      const v = (j / tubeSegments) * TAU;
-      const d = R + r * Math.cos(v);
-      vertices.push([d * Math.cos(u), r * Math.sin(v), d * Math.sin(u)]);
-      const a = i * tubeSegments + j;
-      edges.push([a, i * tubeSegments + ((j + 1) % tubeSegments)]);
-      edges.push([a, ((i + 1) % ringSegments) * tubeSegments + j]);
-    }
-  }
-  return { vertices, edges };
-}
-
 // Surface of revolution around the y axis from a profile of [radius, height].
 export function lathe(profile, segments) {
   const vertices = [];
@@ -37,15 +19,26 @@ export function lathe(profile, segments) {
   return { vertices, edges };
 }
 
-// Dome with a turned-up brim, like the banner art in the Figma design.
-export function dome(segments = 24) {
-  const profile = [];
-  for (let k = 0; k <= 6; k++) {
-    const a = (k / 6) * (Math.PI / 2);
-    profile.push([Math.sin(a), 0.75 * Math.cos(a)]);
-  }
-  profile.push([1.25, 0.05], [1.4, 0.18]);
-  return lathe(profile, segments);
+// Oblate spheroid (equatorial radius 1, polar radius POLAR) with a cylinder of radius
+// BORE bored through its short axis, like the banner art in the Figma design (ADR 0014).
+// One lathe profile runs from the bore's top rim over the outside to the bottom rim
+// (`rings` evenly spaced latitude rings, plus two close to each rim for the thick lip
+// Figma draws around the opening), then up the bore wall (3 rings); a last set of
+// edges closes the wall back onto the top rim.
+export const POLAR = 0.62;
+export const BORE = 0.32;
+export function piercedSpheroid(segments = 24, rings = 9) {
+  const rim = Math.acos(BORE); // latitude where the bore meets the surface
+  const lats = Array.from({ length: rings }, (_, k) => rim - (k / (rings - 1)) * 2 * rim);
+  lats.splice(1, 0, rim - 0.05, rim - 0.12);
+  lats.splice(-1, 0, 0.12 - rim, 0.05 - rim);
+  const profile = lats.map((a) => [Math.cos(a), POLAR * Math.sin(a)]);
+  const top = POLAR * Math.sin(rim);
+  for (const f of [-0.5, 0, 0.5]) profile.push([BORE, f * top]);
+  const mesh = lathe(profile, segments);
+  const last = (profile.length - 1) * segments;
+  for (let s = 0; s < segments; s++) mesh.edges.push([last + s, s]);
+  return mesh;
 }
 
 // Sphere of radius 1 as latitude rings and meridians, skipping the degenerate poles.
@@ -249,11 +242,48 @@ export function grid(n) {
   return { vertices, edges };
 }
 
-// Rippling height field used for the wave surface. t is time in seconds.
-export function waveHeight(x, z, t) {
-  const r = Math.hypot(x, z);
-  // A ripple from the centre plus a diagonal travelling swell; |height| <= 0.29.
-  return 0.22 * Math.sin(r * 6 - t * 2.2) * Math.exp(-r) + 0.07 * Math.sin(x * 3 + z * 2 + t * 1.4);
+// Integer hash to 0..1, so the terrain is the same on every visit (no Math.random).
+function hash(i, j) {
+  let h = (Math.imul(i, 374761393) + Math.imul(j, 668265263)) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
+}
+
+// Value noise in -0.5..0.5 with `f` cells per unit, repeating every 2 units along w.
+// Straight-line blending between lattice points keeps the creases that make it jagged.
+function noise(x, w, f) {
+  const u = (x + 1) * f;
+  const v = w * f;
+  const i = Math.floor(u);
+  const j = Math.floor(v);
+  const p = 2 * f;
+  const at = (a, b) => hash(a, ((b % p) + p) % p);
+  const fu = u - i;
+  const fv = v - j;
+  const top = at(i, j) * (1 - fu) + at(i + 1, j) * fu;
+  const bottom = at(i, j + 1) * (1 - fu) + at(i + 1, j + 1) * fu;
+  return top * (1 - fv) + bottom * fv - 0.5;
+}
+
+// Broad hills as [x, w, height, width]: the tall peak right of centre and the smaller
+// bumps around it, as in the Figma design.
+const HILLS = [[0.2, 0.05, 0.5, 0.33], [-0.3, 0.45, 0.2, 0.25], [-0.45, -0.35, 0.14, 0.25], [0.55, -0.45, 0.12, 0.2]];
+export const DRIFT = 0.08; // units per second toward the viewer
+
+// Height of the terrain surface at grid point (x, z), both -1..1. t is time in seconds:
+// the land drifts toward the viewer (-z) and repeats every 2 / DRIFT seconds. Edges
+// fade to flat, as in Figma, so hills rise in at the back and sink at the front.
+export function terrainHeight(x, z, t) {
+  const w = z + t * DRIFT;
+  const wrap = (d) => ((((d + 1) % 2) + 2) % 2) - 1; // nearest repeat of a w distance
+  let h = 0;
+  for (const [hx, hw, height, width] of HILLS) h += height * Math.exp(-((x - hx) ** 2 + wrap(w - hw) ** 2) / (width * width));
+  h += 0.22 * noise(x, w, 2) + 0.11 * noise(x, w, 4) + 0.06 * noise(x, w, 8);
+  const fade = (u) => {
+    const s = Math.min(1, Math.max(0, (1 - Math.abs(u)) / 0.35));
+    return s * s * (3 - 2 * s);
+  };
+  return h * fade(x) * fade(z);
 }
 
 // Rotate a point around the x axis, then the y axis.
@@ -265,6 +295,16 @@ export function rotate([x, y, z], ax, ay) {
   const cy = Math.cos(ay);
   const sy = Math.sin(ay);
   return [x * cy + z1 * sy, y1, -x * sy + z1 * cy];
+}
+
+// Turn a point around the y axis, tilt it around the x axis, then roll it in the
+// screen plane (z axis). Unlike rotate(), the turn comes first, so a shape can spin
+// on its own axis while that axis holds a fixed lean, as the banner art does.
+export function orient(p, tilt, turn, roll = 0) {
+  const [x, y, z] = rotate(rotate(p, 0, turn), tilt, 0);
+  const c = Math.cos(roll);
+  const s = Math.sin(roll);
+  return [x * c - y * s, x * s + y * c, z];
 }
 
 // The largest projection scale, as a fraction of half the frame's shorter side, at

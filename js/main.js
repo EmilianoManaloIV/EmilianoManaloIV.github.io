@@ -1,5 +1,5 @@
 // Motion, console, headline, device readout, and toggles; see ADR 0002. No network use.
-import { torus, dome, grid, cube, sphere, waveHeight, rotate, project, bezierPatches, uprightUnit, fitUnit, headset, icosphere, fitScale } from "./geometry.js";
+import { piercedSpheroid, grid, cube, sphere, terrainHeight, DRIFT, rotate, orient, project, bezierPatches, uprightUnit, fitUnit, headset, icosphere, fitScale } from "./geometry.js";
 import { teapotPoints, teapotPatches } from "./models.js";
 
 const root = document.documentElement;
@@ -29,9 +29,8 @@ const pad = (n, len = 2) => String(n).padStart(len, "0");
 // == Wireframe scenes
 
 const meshes = {
-  dome: dome(28),
-  wave: grid(18),
-  torus: torus(1, 0.42, 36, 16),
+  core: piercedSpheroid(24, 9),
+  terrain: grid(22),
   cube: cube(4),
   globe: sphere(10, 7),
   teapot: uprightUnit(bezierPatches(teapotPoints, teapotPatches, 3, 6)),
@@ -53,11 +52,12 @@ function strokeMesh(ctx, mesh, transform) {
 // and the console telemetry both read these, so the numbers match the shapes.
 const TAU = Math.PI * 2;
 const poses = {
-  dome: (t) => [0.45, t * 0.35],
-  wave: () => [0.55, -0.6], // the surface itself ripples with phase t * 2.2
+  // The banner art (ADR 0014) uses orient(): [tilt, turn]. The core spins on its own
+  // bore axis, which holds Figma's lean; the terrain holds still while the land drifts.
+  core: (t) => [-0.7, t * 0.3],
+  terrain: () => [-0.3, -0.35],
   cube: (t) => [0.55 + t * 0.12, t * 0.22],
   globe: (t) => [0.35, t * 0.6],
-  torus: (t) => [1 + Math.sin(t * 0.3) * 0.25, t * 0.4],
   teapot: (t) => [0.35 + Math.sin(t * 0.25) * 0.15, t * 0.3],
   headset: (t) => [0.3 + Math.sin(t * 0.2) * 0.12, 2.6 + t * 0.28],
   ambient: (t) => [0.4 + Math.sin(t * 0.05) * 0.2, (t * TAU) / 90], // one turn per 90 s
@@ -66,53 +66,98 @@ const poses = {
 const turns = {};
 const posed = (name) => poses[name](time).map((a, i) => a + (turns[name]?.[i] || 0));
 
-// Banner layout: the dome and wave at their designed spots, shrunk and nudged only
-// when they would spill past the canvas (narrow phones). Measured once per size
-// over sampled poses, so the moving shapes never hit the edge.
+// The banner art at time t, before projection (ADR 0014): the pierced core, leaning up
+// and to the right as in Figma, and the terrain, its land drifting toward the viewer.
+const CORE_ROLL = -0.45;
+const bannerArt = {
+  core: (t) => (p) => orient(p, ...poses.core(t), CORE_ROLL),
+  terrain: (t) => ([x, , z]) => orient([x, terrainHeight(x, z, t), z], ...poses.terrain(t)),
+};
+
+// Where the banner art goes, as [centre x, centre y, width], all fractions of the
+// canvas. Desktop matches Figma's 1280 x 542 banner, the canvas spanning all of it
+// behind the text (the core sits 1.4% left of Figma's 0.574, clearing the site's
+// larger headline); tablets and phones give the art its own 4:3 box.
+const artSpots = {
+  full: { core: [0.56, 0.274, 0.224], terrain: [0.27, 0.62, 0.4] },
+  boxed: { core: [0.62, 0.32, 0.52], terrain: [0.42, 0.74, 0.9] },
+};
+
+// Each shape's projected box at unit scale around (0, 0): `still` at t = 0, the frame
+// Figma shows, which sets its size and centre; `all` over its whole motion (the terrain
+// repeats every 2 / DRIFT seconds), which keeps it inside the canvas. Projection is
+// linear in scale and centre, so these place the shapes at any size.
+const unitBoxes = {};
+for (const name of ["core", "terrain"]) {
+  const boxes = {};
+  for (const [kind, samples] of [["still", 1], ["all", 12]]) {
+    const box = [Infinity, Infinity, -Infinity, -Infinity];
+    for (let i = 0; i < samples; i++) {
+      const at = bannerArt[name]((i / samples) * (2 / DRIFT));
+      for (const p of meshes[name].vertices) {
+        const [x, y] = project(at(p), 0, 0, 1);
+        box[0] = Math.min(box[0], x);
+        box[1] = Math.min(box[1], y);
+        box[2] = Math.max(box[2], x);
+        box[3] = Math.max(box[3], y);
+      }
+    }
+    boxes[kind] = box;
+  }
+  unitBoxes[name] = boxes;
+}
+
+// Banner layout: each shape scaled to its designed width and centred on its spot. In
+// the boxed layout the pair is then shrunk and nudged only when it would spill past
+// the canvas (narrow phones). Cached per size and mode.
 let layoutKey = "";
 let layout = null;
-function bannerLayout(w, h) {
-  if (layoutKey === `${w}x${h}`) return layout;
+function bannerLayout(w, h, full) {
+  const key = `${w}x${h}${full ? "f" : ""}`;
+  if (layoutKey === key) return layout;
   const m = 8;
+  const spots = artSpots[full ? "full" : "boxed"];
+  const place = (k, ox, oy) => {
+    const out = {};
+    for (const [name, [fx, fy, fw]] of Object.entries(spots)) {
+      const [x0, y0, x1, y1] = unitBoxes[name].still;
+      const s = ((fw * w) / (x1 - x0)) * k;
+      out[name] = [fx * w + ox - (s * (x0 + x1)) / 2, fy * h + oy - (s * (y0 + y1)) / 2, s];
+    }
+    return out;
+  };
   // A collapsed or tiny canvas has nothing to fit; avoid a negative or NaN scale.
-  if (w <= 4 * m || h <= 4 * m) return { dome: [w * 0.36, h * 0.36, 0], wave: [w * 0.62, h * 0.72, 0] };
-  const s = Math.min(w, h);
-  const place = (k, ox, oy) => ({
-    dome: [w * 0.36 + ox, h * 0.36 + oy, s * 0.24 * k],
-    wave: [w * 0.62 + ox, h * 0.72 + oy, s * 0.42 * k],
-  });
-  const bounds = (spots) => {
+  if (w <= 4 * m || h <= 4 * m) return place(0, 0, 0);
+  const bounds = (placed) => {
     const box = [Infinity, Infinity, -Infinity, -Infinity];
-    const add = ([x, y]) => {
-      box[0] = Math.min(box[0], x);
-      box[1] = Math.min(box[1], y);
-      box[2] = Math.max(box[2], x);
-      box[3] = Math.max(box[3], y);
-    };
-    for (let i = 0; i < 8; i++) {
-      const t = i * 2.5;
-      const [dx, dy] = poses.dome(t);
-      for (const p of meshes.dome.vertices) add(project(rotate(p, dx, dy), ...spots.dome));
-      for (const [x, , z] of meshes.wave.vertices) add(project(rotate([x, waveHeight(x, z, t), z], ...poses.wave(t)), ...spots.wave));
+    for (const [name, [cx, cy, s]] of Object.entries(placed)) {
+      const [x0, y0, x1, y1] = unitBoxes[name].all;
+      box[0] = Math.min(box[0], cx + s * x0);
+      box[1] = Math.min(box[1], cy + s * y0);
+      box[2] = Math.max(box[2], cx + s * x1);
+      box[3] = Math.max(box[3], cy + s * y1);
     }
     return box;
   };
+  layoutKey = key;
+  if (full) return (layout = place(1, 0, 0));
   let box = bounds(place(1, 0, 0));
   const k = Math.min(1, (w - 2 * m) / (box[2] - box[0]), (h - 2 * m) / (box[3] - box[1]));
   box = bounds(place(k, 0, 0));
   const shift = (lo, hi, size) => (lo < m ? m - lo : hi > size - m ? size - m - hi : 0);
-  layoutKey = `${w}x${h}`;
   layout = place(k, shift(box[0], box[2], w), shift(box[1], box[3], h));
   return layout;
 }
 
 const painters = {
-  banner(ctx, w, h, t) {
-    const spots = bannerLayout(w, h);
-    const [dx, dy] = poses.dome(t);
-    const [wx, wy] = poses.wave(t);
-    strokeMesh(ctx, meshes.dome, (p) => project(rotate(p, dx, dy), ...spots.dome));
-    strokeMesh(ctx, meshes.wave, ([x, , z]) => project(rotate([x, waveHeight(x, z, t), z], wx, wy), ...spots.wave));
+  banner(ctx, w, h, t, scene) {
+    // On desktop the stylesheet lifts the canvas out of the grid to span the banner;
+    // resize() notes which, since that also changes the canvas size.
+    const spots = bannerLayout(w, h, scene.full);
+    for (const name of ["core", "terrain"]) {
+      const at = bannerArt[name](t);
+      strokeMesh(ctx, meshes[name], (p) => project(at(p), ...spots[name]));
+    }
   },
   cube(ctx, w, h, t) {
     const [ax, ay] = poses.cube(t);
@@ -121,10 +166,6 @@ const painters = {
   globe(ctx, w, h, t) {
     const [ax, ay] = poses.globe(t);
     strokeMesh(ctx, meshes.globe, (p) => project(rotate(p, ax, ay), w / 2, h / 2, w * 0.44, 6));
-  },
-  torus(ctx, w, h) {
-    const [ax, ay] = posed("torus");
-    strokeMesh(ctx, meshes.torus, (p) => project(rotate(p, ax, ay), w / 2, h / 2, Math.min(w, h) * 0.3));
   },
   teapot(ctx, w, h) {
     const [ax, ay] = posed("teapot");
@@ -171,6 +212,7 @@ function resize(scene) {
   scene.canvas.width = Math.round(w * dpr);
   scene.canvas.height = Math.round(h * dpr);
   scene.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  scene.full = getComputedStyle(scene.canvas).position === "absolute";
 }
 
 function draw(scene) {
@@ -185,7 +227,7 @@ function draw(scene) {
   ctx.strokeStyle = scene.color;
   ctx.globalAlpha = 0.85;
   ctx.lineWidth = 0.75;
-  scene.paint(ctx, w, h, time);
+  scene.paint(ctx, w, h, time, scene);
 }
 
 function refreshColors() {
@@ -209,7 +251,7 @@ function tick(now) {
   if (delta) dt += (delta - dt) * 0.1;
   // Log each full Y turn a shape completes, only while the console is on screen
   // to read it; off screen the count still advances so nothing replays stale.
-  for (const name of ["dome", "cube", "globe", "torus"]) {
+  for (const name of ["core", "cube", "globe", "teapot"]) {
     const rev = Math.floor(poses[name](time)[1] / TAU);
     if (bannerVisible && rev > (revs[name] ?? rev)) log(`${name.toUpperCase().padEnd(6)} REV ${pad(rev)} COMPLETE`);
     revs[name] = rev;
@@ -225,25 +267,25 @@ cursor.className = "cursor";
 const angle = (a) => (((a % TAU) + TAU) % TAU).toFixed(3);
 const pose = (name) => posed(name).map((a, i) => `${i ? "RY" : "RX"} ${angle(a)}`).join("  ");
 const shown = (name) => (scenes.find((s) => s.canvas.dataset.scene === name)?.visible ? 1 : 0);
-// Each line names the scene it reports on. The home console reports everything; a
-// subpage's echo reports only what is on that page (ADR 0009).
-const sceneOf = (mesh) => (mesh === "dome" || mesh === "wave" ? "banner" : mesh === "icosa" ? "ambient" : mesh);
+// Each line names the scene it reports on, so the console reports only what is on
+// the page (ADR 0009).
+const sceneOf = (mesh) => (mesh === "core" || mesh === "terrain" ? "banner" : mesh === "icosa" ? "ambient" : mesh);
 // A scene counts only if it is actually shown (the ambient sphere is display:none
 // below 1600px, for instance).
 const onPage = (scene) => !scene || scenes.some((s) => s.canvas.dataset.scene === scene && s.canvas.getClientRects().length);
 // Console names fit the 6-character column; the headset is an HMD (head-mounted display).
-const label = (mesh) => (mesh === "headset" ? "HMD" : mesh.toUpperCase());
+const label = (mesh) => (mesh === "headset" ? "HMD" : mesh === "terrain" ? "TERR" : mesh.toUpperCase());
+const peak = () => Math.max(...meshes.terrain.vertices.map(([x, , z]) => terrainHeight(x, z, time)));
 const script = [
-  ["banner", () => `DOME   ${pose("dome")}  VTX ${meshes.dome.vertices.length}`],
-  ["banner", () => `WAVE   PHASE ${angle(time * 2.2)}  CTR ${(Math.round(waveHeight(0, 0, time) * 1000) / 1000 || 0).toFixed(3)}`],
+  ["banner", () => `CORE   ${pose("core")}  VTX ${meshes.core.vertices.length}`],
+  ["banner", () => `TERR   PEAK ${peak().toFixed(3)}  DRIFT ${((time * DRIFT) % 2).toFixed(3)}`],
   ["cube", () => `CUBE   ${pose("cube")}  EDG ${meshes.cube.edges.length}`],
   ["globe", () => `GLOBE  RY ${angle(poses.globe(time)[1])}  VTX ${meshes.globe.vertices.length}`],
-  ["torus", () => `TORUS  ${pose("torus")}  VIS ${shown("torus")}`],
   ["teapot", () => `TEAPOT ${pose("teapot")}  PATCH ${teapotPatches.length / 16}`],
   ["headset", () => `HMD    ${pose("headset")}  VTX ${meshes.headset.vertices.length}`],
   // Before any frame is drawn, DT and FPS would be placeholders; say so instead.
   [null, () => (frames ? `FRAME  ${frames}  DT ${dt.toFixed(1)}ms  FPS ${Math.round(1000 / dt)}` : "FRAME  IDLE  NO SCENE ON SCREEN")],
-  ["banner", () => `SCENE  BANNER ${shown("banner")}  CUBE ${shown("cube")}  GLOBE ${shown("globe")}  TORUS ${shown("torus")}`],
+  ["banner", () => `SCENE  BANNER ${shown("banner")}  CUBE ${shown("cube")}  GLOBE ${shown("globe")}  TEAPOT ${shown("teapot")}`],
 ]
   .filter(([scene]) => onPage(scene))
   .map(([, line]) => line);
@@ -259,13 +301,10 @@ let step = 0;
 let typing = 0;
 
 function fitTerminal() {
-  if (terminal) {
-    const style = getComputedStyle(terminal);
-    const inner = terminal.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
-    maxLines = Math.max(3, Math.floor(inner / parseFloat(style.lineHeight)) - 1);
-  } else {
-    maxLines = 12; // subpages: the echoes alone, which show about a dozen lines
-  }
+  if (!terminal) return;
+  const style = getComputedStyle(terminal);
+  const inner = terminal.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+  maxLines = Math.max(3, Math.floor(inner / parseFloat(style.lineHeight)) - 1);
   while (lines.length > maxLines) lines.shift();
   if (!target) target = next();
   fillTerminal();
@@ -284,43 +323,27 @@ function fillTerminal() {
   renderTerminal();
 }
 
-// Faint copies of the console behind empty areas (ADR 0008), refreshed per finished
-// line. Subpages have echoes but no console; the same telemetry runs for them alone.
-const echoes = document.querySelectorAll(".terminal-echo");
-let echoSeen = false;
-let lineAt = 0;
 function renderTerminal() {
-  if (terminal) {
-    terminal.textContent = lines.concat(current).join("\n");
-    terminal.append(cursor);
-  }
-  if (!current) for (const echo of echoes) echo.textContent = lines.join("\n");
+  terminal.textContent = lines.concat(current).join("\n");
+  terminal.append(cursor);
 }
 
 function type() {
   typing = 0;
   if (current.length < target.length) {
-    // Typed a character at a time where someone can read it; whole lines otherwise.
-    current = terminal ? target.slice(0, current.length + 1) : target;
+    current = target.slice(0, current.length + 1);
   } else {
     lines.push(current);
     while (lines.length > maxLines) lines.shift();
-    // On a subpage with no model on screen, no frames advance the shapes' clock, so
-    // the echo would repeat frozen readings; keep the clock running in real time.
-    if (!terminal) {
-      const now = performance.now();
-      if (!frame) time += Math.min((now - (lineAt || now)) / 1000, 3);
-      lineAt = now;
-    }
     target = next();
     current = "";
   }
   renderTerminal();
-  typing = setTimeout(type, current !== "" ? 22 : terminal ? 260 : 1800);
+  typing = setTimeout(type, current !== "" ? 22 : 260);
 }
 
 function startTerminal() {
-  if (typing || !(terminal || echoes.length)) return;
+  if (typing || !terminal) return;
   if (!target) fitTerminal();
   type();
 }
@@ -334,18 +357,24 @@ let scrambleTimer = 0;
 let scrambleStart = 0;
 let scrambledOnce = false;
 
-function scrambleFrame() {
-  const elapsed = performance.now() - scrambleStart;
+// Shows each element's text decoding from glyphs: character c of element i locks in
+// once `elapsed` reaches delay(i, c) ms. Returns true when every character has.
+function decodeStep(els, texts, elapsed, delay) {
   let done = true;
-  words.forEach((el, i) => {
+  els.forEach((el, i) => {
     let out = "";
-    for (let c = 0; c < originals[i].length; c++) {
-      const locked = elapsed >= i * 220 + c * 45 + 150;
+    for (let c = 0; c < texts[i].length; c++) {
+      const locked = elapsed >= delay(i, c);
       if (!locked) done = false;
-      out += locked ? originals[i][c] : glyphs[rand(glyphs.length)];
+      out += locked ? texts[i][c] : glyphs[rand(glyphs.length)];
     }
     el.textContent = out;
   });
+  return done;
+}
+
+function scrambleFrame() {
+  const done = decodeStep(words, originals, performance.now() - scrambleStart, (i, c) => i * 220 + c * 45 + 150);
   if (done) {
     scrambleStart = 0;
     scrambleTimer = setTimeout(beginScramble, 12000);
@@ -415,6 +444,34 @@ function tickClock() {
   clockTimer = setTimeout(tickClock, 1000 - (Date.now() % 1000));
 }
 
+// == Barcode row (ADR 0016): it decodes like the headline each time it arrives on
+// screen while motion is on. Its real text is in the markup, so it reads without JS.
+
+const codes = [...document.querySelectorAll("[data-decode]")];
+const codeTexts = codes.map((el) => el.textContent);
+let codeTimer = 0;
+
+function decodeCodes(start) {
+  const done = decodeStep(codes, codeTexts, performance.now() - start, (i, c) => i * 60 + c * 35 + 80);
+  codeTimer = done ? 0 : setTimeout(() => decodeCodes(start), 40);
+}
+
+function restoreCodes() {
+  clearTimeout(codeTimer);
+  codeTimer = 0;
+  codes.forEach((el, i) => (el.textContent = codeTexts[i]));
+}
+
+const strip = document.querySelector(".barcode-strip");
+if (strip && codes.length) {
+  new IntersectionObserver(
+    (entries) => {
+      if (entries.at(-1).isIntersecting && motion && !document.hidden && !codeTimer) decodeCodes(performance.now());
+    },
+    { threshold: 0.6 },
+  ).observe(strip);
+}
+
 // == One gate for all motion
 // Everything moves only when motion is on, the tab is visible, and its element is on screen.
 
@@ -441,20 +498,19 @@ function schedule() {
     clearInterval(ambientTimer);
     ambientTimer = 0;
   }
-  if (awake && (bannerVisible || echoSeen)) {
-    startTerminal();
-  } else {
-    clearTimeout(typing);
-    typing = 0;
-  }
   if (awake && bannerVisible) {
+    startTerminal();
     startScramble();
     if (!clockTimer && field("clock")) tickClock();
   } else {
+    clearTimeout(typing);
+    typing = 0;
     stopScramble();
     clearTimeout(clockTimer);
     clockTimer = 0;
   }
+  // Pausing mid-decode puts the real text straight back.
+  if (!awake && codeTimer) restoreCodes();
 }
 
 const resizer = new ResizeObserver((entries) => {
@@ -472,7 +528,6 @@ const watcher = new IntersectionObserver((entries) => {
   for (const entry of entries) {
     if (entry.target === banner) bannerVisible = entry.isIntersecting;
     else if (entry.target.localName === "video") entry.target.seen = entry.isIntersecting;
-    else if (entry.target.localName === "pre") echoSeen = entry.isIntersecting;
     else scenes.find((s) => s.canvas === entry.target).visible = entry.isIntersecting;
   }
   schedule();
@@ -482,8 +537,6 @@ for (const scene of scenes) {
   watcher.observe(scene.canvas);
 }
 for (const clip of clips) watcher.observe(clip);
-// On subpages the echo is what's on screen; on the home page the banner gates it.
-if (!terminal) for (const echo of echoes) watcher.observe(echo);
 if (terminal) resizer.observe(terminal);
 if (banner) watcher.observe(banner);
 document.addEventListener("visibilitychange", schedule);

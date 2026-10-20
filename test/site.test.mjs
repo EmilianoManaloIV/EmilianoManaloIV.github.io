@@ -67,8 +67,13 @@ test("no built page has an unfilled template value or build marker", () => {
 // only checked for URLs, so harmless visitor text ("javascript: is a language") passes.
 const SAFE_TAGS = new Set(("a article b blockquote body br button canvas code del details div em figcaption figure footer " +
   "h1 h2 h3 h4 h5 h6 head header hr html i img ins kbd li link main meta nav ol p pre s script section span strong " +
-  "sub summary sup table tbody td th thead time title tr ul video").split(" "));
+  "sub summary sup table tbody td th thead time title tr ul video " +
+  // The social icons' own inline SVG (ADR 0017); a test below keeps SVG to those lists.
+  "svg rect circle path").split(" "));
 const SAFE_ATTRS = /^(alt|align|as|charset|class|content|controls|crossorigin|datetime|download|height|href|http-equiv|id|lang|loading|loop|media|muted|name|playsinline|preload|property|rel|role|src|start|tabindex|title|type|width|aria-[a-z]+|data-[a-z-]+)$/;
+// Presentation attributes, accepted only on the icon SVG tags themselves.
+const SVG_TAGS = new Set(["svg", "rect", "circle", "path"]);
+const SVG_ATTRS = /^(viewbox|fill|stroke|stroke-width|stroke-linecap|stroke-linejoin|focusable|x|y|rx|cx|cy|r|d)$/;
 // No "//host" or "/\host" (both leave the site), and any scheme must be http(s) or mailto.
 // Decoded first, as a browser would: "javascript&colon;" and "java&#9;script:" are schemes too.
 const TEMPLATES = ["templates/rd-post.html", "templates/project.html"];
@@ -94,11 +99,27 @@ test("no built page carries anything outside the tag, attribute, and URL allowli
       // Browsers accept "/" as well as whitespace before an attribute (<a/onclick=...>).
       for (const [, attr, dq, sq, bare] of rest.matchAll(/[\s/]+([^\s"'=<>/]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g)) {
         const value = dq ?? sq ?? bare ?? "";
-        assert.match(attr.toLowerCase(), SAFE_ATTRS, `${page}: attribute ${attr} in ${tag.slice(0, 80)}`);
+        const safe = SAFE_ATTRS.test(attr.toLowerCase()) || (SVG_TAGS.has(name.toLowerCase()) && SVG_ATTRS.test(attr.toLowerCase()));
+        assert.ok(safe, `${page}: attribute ${attr} in ${tag.slice(0, 80)}`);
         if (/^(href|src)$/i.test(attr)) assert.ok(SAFE_URL(value), `${page}: unsafe URL ${value}`);
       }
     }
     assert.equal((text.match(/<script\b/gi) ?? []).length, (text.match(/<script\b[^>]*\ssrc="\/?js\/[\w.]+(\?v=[0-9a-f]{10})?"[^>]*><\/script>/gi) ?? []).length, `${page}: script other than the site's own`);
+  }
+});
+
+test("inline SVG appears only as the social icons, each hidden and named by its link (ADR 0017)", () => {
+  for (const page of allPages) {
+    const text = html(page);
+    const lists = text.match(/<ul class="socials"[^>]*>[\s\S]*?<\/ul>/g) ?? [];
+    // Each list has one icon per social link the site sets (at most four).
+    for (const list of lists) assert.ok((list.match(/<svg\b/g) ?? []).length <= 4, `${page}: too many icons in a list`);
+    const icons = lists.join("");
+    assert.equal((text.match(/<svg\b/g) ?? []).length, (icons.match(/<svg\b/g) ?? []).length, `${page}: SVG outside the social icons`);
+    for (const [link] of icons.matchAll(/<a\b[^>]*>[\s\S]*?<\/a>/g)) {
+      assert.match(link, /^<a [^>]*aria-label="[^"]+"/, `${page}: icon link without a name`);
+      assert.match(link, /<svg [^>]*aria-hidden="true"/, `${page}: icon not hidden from screen readers`);
+    }
   }
 });
 
@@ -206,16 +227,36 @@ test("every page repeats the home page's header and footer exactly", () => {
   }
 });
 
-test("each subpage marks exactly its own nav item; home, guestbook, and 404 mark none", () => {
+test("the nav links whole pages only, and each page marks its own (ADR 0015)", () => {
+  const nav = html("index.html").match(/<ul class="nav-list">([\s\S]*?)<\/ul>/)[1];
+  const hrefs = [...nav.matchAll(/<a href="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(hrefs, ["/", "/about/", "/rd/", "/guestbook/"], "Home, About, R&D, Guestbook, with no #section links");
+  const numbers = [...nav.matchAll(/<span class="nav-index" aria-hidden="true">(\d{2})<\/span>/g)].map((m) => m[1]);
+  assert.deepEqual(numbers, ["00", "01", "02", "03"], "numbered in order, with no gaps");
   const marks = (file) => html(file).match(/<a href="([^"]+)" aria-current="page">/g) ?? [];
-  for (const page of ["index.html", "404.html", "guestbook/index.html"]) assert.deepEqual(marks(page), [], page);
-  assert.deepEqual(marks("about/index.html"), ['<a href="/#about" aria-current="page">']);
-  for (const page of pages.filter((p) => p.startsWith("projects/"))) {
-    assert.deepEqual(marks(page), ['<a href="/#projects" aria-current="page">'], page);
+  assert.deepEqual(marks("index.html"), ['<a href="/" aria-current="page">']);
+  assert.deepEqual(marks("about/index.html"), ['<a href="/about/" aria-current="page">']);
+  assert.deepEqual(marks("guestbook/index.html"), ['<a href="/guestbook/" aria-current="page">']);
+  for (const page of ["404.html", "card/index.html", ...pages.filter((p) => p.startsWith("projects/"))]) {
+    assert.deepEqual(marks(page), [], page);
   }
   for (const page of pages.filter((p) => p.startsWith("rd/"))) {
     assert.deepEqual(marks(page), ['<a href="/rd/" aria-current="page">'], page);
   }
+});
+
+test("every page's footer holds the contact details and the teapot, and no torus remains (ADR 0015)", () => {
+  for (const page of pages.filter((p) => p.endsWith(".html"))) {
+    const footer = html(page).match(/<footer class="site-footer">[\s\S]*?<\/footer>/)?.[0] ?? "";
+    assert.match(footer, /<div class="footer-contact" id="contact">\s*<h2 class="visually-hidden">Contact<\/h2>/, `${page}: contact block`);
+    assert.match(footer, /data-copy-email="[^"]*" aria-label="Copy email address">Copy<\/button>/, `${page}: copy email`);
+    assert.match(footer, /<a class="tag tag-link" href="\/emiliano-manalo\.vcf" download>Save contact<\/a>/, `${page}: save contact`);
+    assert.match(footer, /<p class="copy-status" role="status" data-copy-status><\/p>/, `${page}: copy feedback`);
+    assert.match(footer, /data-scene="teapot"/, `${page}: the teapot ends the page`);
+    assert.doesNotMatch(html(page), /torus-scene|data-scene="torus"|model-torus/, `${page}: the torus is gone`);
+    assert.equal((html(page).match(/data-scene="teapot"/g) ?? []).length, 1, `${page}: one teapot per page`);
+  }
+  assert.doesNotMatch(html("index.html"), /<section id="contact"/, "Contact is no longer a home section");
 });
 
 test("every page loads the shared scripts and a skip link", () => {
@@ -280,7 +321,7 @@ test("guestbook links to GitHub Discussions and explains signing", () => {
   const text = html("guestbook/index.html");
   assert.match(text, /<a class="tag tag-link" href="https:\/\/github\.com\/EmilianoManaloIV\/EmilianoManaloIV\.github\.io\/discussions[^"]*">Sign the guestbook<\/a>/);
   assert.match(text, /Signing uses your GitHub account/);
-  assert.match(html("index.html"), /<a href="\/guestbook\/">sign the guestbook<\/a>/, "Contact links the guestbook");
+  assert.match(html("index.html"), /<a href="\/guestbook\/">Sign the guestbook<\/a>/, "the footer links the guestbook");
 });
 
 // ADR 0007: clips are local files that never autoplay from markup; js/main.js plays
@@ -374,7 +415,7 @@ test("index.html: interaction aids from ADR 0003 are present and named", () => {
   assert.match(page, /<button[^>]*data-copy-email="[^"]*" aria-label="Copy email address">Copy<\/button>/);
   assert.match(page, /<p class="copy-status" role="status" data-copy-status><\/p>/, "live region for copy feedback");
   const rail = page.match(/<nav class="section-rail" aria-label="Sections">[\s\S]*?<\/nav>/)[0];
-  assert.equal((rail.match(/<a href="#\w+" aria-label="\w+"><\/a>/g) ?? []).length, 4, "one named rail dot per home section");
+  assert.equal((rail.match(/<a href="#\w+" aria-label="\w+"><\/a>/g) ?? []).length, 3, "one named rail dot per home section: Home, About, Projects");
   assert.match(page, /<a class="section-bar" href="#site-nav"/);
   assert.match(page, /<script type="module" src="js\/ui\.js\?v=[0-9a-f]{10}"><\/script>/);
 });
@@ -438,7 +479,7 @@ test("styles.css: looping animations run only under html.js-ready:not(.motion-of
       assert.ok(/^html\.js-ready:not\(\.motion-off\)\s/.test(part) || allowed.has(part), `infinite animation not gated by motion: ${part}`);
     }
   }
-  assert.ok(loops >= 3, "the grid drift, dot shimmer, and echo drift should be found");
+  assert.ok(loops >= 2, "the grid drift and dot shimmer should be found");
   const main = read("js/main.js");
   assert.match(main, /classList\.toggle\("motion-off", !on\)/);
   assert.match(main, /classList\.add\("js-ready"\)/);
@@ -499,7 +540,36 @@ test("named sections carry a margin label matching their title (ADR 0009)", () =
       assert.equal(label, `${title[1]} — ${title[2].trim()}`, `${page}: margin label missing or disagrees with the title: ${tag}`);
     }
   }
-  assert.ok(labels >= 10, "home, About, R&D, and Guestbook sections should be found");
+  // The home page has none since ADR 0014 (checked in its own test below).
+  assert.ok(labels >= 7, "About, R&D, and Guestbook sections should be found");
+});
+
+test("the home page's sections drop their visible numbered headings but keep one for screen readers (ADR 0014)", () => {
+  const home = html("index.html");
+  assert.doesNotMatch(home, /class="section-index"/, "no '01 /' headings on the home page");
+  assert.doesNotMatch(home, /data-label=/, "no margin labels on the home page");
+  // Contact moved to the footer in ADR 0015, where its own test checks its heading.
+  for (const [id, name] of [["about", "About"], ["projects", "Projects"]]) {
+    const body = home.match(new RegExp(`<section id="${id}"[^>]*>([\\s\\S]*?)</section>`))?.[1] ?? "";
+    const headings = [...body.matchAll(/<h2\b[^>]*>([^<]*)<\/h2>/g)];
+    assert.equal(headings.length, 1, `#${id} has exactly one h2`);
+    assert.match(headings[0][0], /class="visually-hidden"/, `#${id}'s heading is visually hidden`);
+    assert.equal(headings[0][1], name);
+  }
+  // Subpages keep theirs.
+  assert.match(html("about/index.html"), /class="section-index"/);
+  // A plain line still separates each section, as the headings' rule did (ADR 0017).
+  for (const [id, name] of [["about", "About"], ["projects", "Projects"]]) {
+    assert.match(home, new RegExp(`<section id="${id}"[^>]*>\\s*<div class="container">\\s*<h2 class="visually-hidden">${name}</h2>\\s*<hr class="section-rule" aria-hidden="true">`), `#${id} rule`);
+  }
+  assert.match(home, /<div class="footer-contact" id="contact">\s*<h2 class="visually-hidden">Contact<\/h2>\s*<hr class="section-rule" aria-hidden="true">/, "contact rule");
+});
+
+test("the barcode row keeps its real text in the markup and decodes only inside the hidden row (ADR 0016, 0017)", () => {
+  const row = html("index.html").match(/<div class="barcode-strip" aria-hidden="true">[\s\S]*?<\/div>/)?.[0] ?? "";
+  const texts = [...row.matchAll(/<(span|strong) data-decode>([^<]+)<\/\1>/g)].map((m) => m[2]);
+  assert.deepEqual(texts, ["ERC", "ID", "092829123", "Batch", "X5/22"]);
+  assert.equal((html("index.html").match(/data-decode/g) ?? []).length, texts.length, "nothing outside the row decodes");
 });
 
 test("hands-on models are focusable, labelled, and resettable (ADR 0009)", () => {
@@ -522,18 +592,19 @@ test("hands-on models are focusable, labelled, and resettable (ADR 0009)", () =>
     assert.equal(resets, turnable, `${page}: every hands-on model needs a Reset view button`);
     assert.equal(hints, turnable, `${page}: every hands-on model needs a visible hint`);
   }
-  assert.ok(models >= 3, "the torus, teapot, and headset should be found");
+  assert.ok(models >= 3, "the footer teapot and the R&D headset should be found");
   assert.match(html("index.html"), /data-scene="teapot"/);
   assert.match(html("rd/index.html"), /data-scene="headset"/);
 });
 
-test("console echoes are decorative and hidden from screen readers", () => {
-  const echoes = pages.flatMap((p) => html(p).match(/<pre class="terminal-echo"[^>]*>/g) ?? []);
-  assert.ok(echoes.length >= 6, "three on the home page, one on each subpage heading");
-  for (const tag of echoes) assert.match(tag, /aria-hidden="true"/, tag);
-  for (const page of ["about/index.html", "rd/index.html", "guestbook/index.html"]) {
-    assert.match(html(page), /class="page-hero[^"]*">\s*(?:<!--[^>]*-->\s*)?<pre class="terminal-echo" aria-hidden="true"><\/pre>/, page);
+test("the faint console echoes and data columns are gone; the banner console stays (ADR 0017)", () => {
+  for (const page of pages.filter((p) => p.endsWith(".html"))) {
+    assert.doesNotMatch(html(page), /terminal-echo|data-columns|data-stream/, `${page}: no echoes or data columns`);
   }
+  assert.match(html("index.html"), /<pre class="terminal" aria-hidden="true">/, "the banner console stays");
+  const css = withoutComments(read("styles.css"));
+  assert.doesNotMatch(css, /terminal-echo|data-columns|echo-drift/, "no leftover styles");
+  assert.doesNotMatch(read("js/main.js"), /terminal-echo|data-stream|echoSeen/, "no leftover script");
 });
 
 test("every media figure has a numbered caption", () => {
@@ -737,7 +808,7 @@ test("contrast: every text and control colour meets WCAG AA in both themes (ADR 
   const css = withoutComments(read("styles.css"));
   // [foreground, background, minimum, where]. 4.5:1 for text, 3:1 for large text
   // (24px+, or 18.66px+ bold) and for focus rings. Decorative, aria-hidden marks
-  // (frame corners, ticks, margin labels, echoes) are left out on purpose.
+  // (frame corners, ticks, margin labels) are left out on purpose.
   const pairs = [
     ["--color-ink", "--color-bg", 4.5, "body text"],
     ["--color-ink-muted", "--color-bg", 4.5, "muted text, section titles, captions"],
@@ -806,7 +877,7 @@ test("print: always black on white, with decoration and controls left out (ADR 0
   const tokens = [["--color-bg", "#fff"], ["--color-ink", "#000"], ["--color-panel-ink", "#000"], ["--brand-mint", "#000"], ["--color-tag-ink", "#000"], ["--color-tag-primary-ink", "#000"]];
   for (const [token, value] of tokens) assert.ok(print.includes(`${token}: ${value};`), `print sets ${token}`);
   const hiddenRule = print.match(/([^{}]+)\{\s*display: none !important;\s*\}/)?.[1] ?? "";
-  for (const hidden of [".site-header", ".banner", ".model", ".terminal-echo", ".ambient-scene", ".toggle", ".action", ".skip-link"]) {
+  for (const hidden of [".site-header", ".banner", ".model", ".ambient-scene", ".toggle", ".action", ".skip-link"]) {
     assert.ok(selectorList(hiddenRule).includes(hidden), `print hides ${hidden}`);
   }
   assert.match(print, /a\[href\^="http"\]::after \{\s*content: " \(" attr\(href\) "\)";/, "outside links show their address");

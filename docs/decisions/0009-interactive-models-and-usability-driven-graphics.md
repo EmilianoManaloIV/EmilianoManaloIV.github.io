@@ -16,10 +16,10 @@ After the video clips (0007) and ambient motion (0008), `js/` was 10 bytes under
 
 | Addition | Principle | What it does |
 |---|---|---|
-| Hands-on models | Direct manipulation, feedback | The teapot and the footer torus follow the hand when dragged, or turn with the arrow keys. A visible hint and "Reset view" sit under each one, Home also resets, and the console logs `USER ROTATE`. |
+| Hands-on models | Direct manipulation, feedback | The teapot (in every footer since 0015, replacing the torus) and the headset follow the hand when dragged, or turn with the arrow keys. A visible hint and "Reset view" sit under each one, Home also resets, and the console logs `USER ROTATE`. |
 | Reading-progress bar | Visibility of system status | A thin brand-gradient bar at the top shows how far down the page the reader is. |
 | Section markers | Wayfinding | Each section rule ends in a registration mark and draws in as the section arrives. |
-| 404 teapot | Error recovery | The 404 page explains itself with a nod to HTTP 418 and offers three large, named ways back. |
+| 404 page | Error recovery | The 404 page explains itself with a nod to HTTP 418 and offers three large, named ways back. (Its own teapot was removed in 0015; the footer teapot ends every page.) |
 | Hover and focus feedback | Affordance | Card brackets close in, link arrows nudge forward, and card titles underline when pointed at or focused. |
 
 **Models:**
@@ -34,7 +34,7 @@ After the video clips (0007) and ambient motion (0008), `js/` was 10 bytes under
 - Sideways drags turn the model, and `touch-action: pan-y` keeps vertical swipes scrolling the page on phones.
 - A visitor's turn redraws even with motion paused, because the visitor is the one driving it.
 
-**Echoes on subpages:** the R&D, About, and Guestbook headings get the faint console echo from 0008. Those pages have no console, so `main.js` runs the same telemetry without one: one finished line every couple of seconds, gated like the console by motion, tab visibility, and the echo being on screen.
+**Echoes on subpages** (removed in 0017): the R&D, About, and Guestbook headings get the faint console echo from 0008. Those pages have no console, so `main.js` runs the same telemetry without one: one finished line every couple of seconds, gated like the console by motion, tab visibility, and the echo being on screen.
 
 **Progress bar:** it is a status display, not decoration, so it follows scrolling under reduced motion and with the motion toggle off. Browsers without scroll timelines don't show it. A site test exempts it by name from the 0008 motion gates, and checks that it is in every page's shared header.
 
@@ -43,7 +43,7 @@ After the video clips (0007) and ambient motion (0008), `js/` was 10 bytes under
 **Big screens (1600 px and up):** on a full-screen 16:9 display the 1152 px column left 40% of the screen as margin. So the layout uses the space it has, rather than adding clutter to fill it:
 - **Scale-up:** the content column grows to 80rem and the root font size to 17 px at 1600 and 18 px at 1920. Everything built in `rem` grows with it, and the margins shrink to about 240 px at 1920.
 - **Full-width banner:** the banner's grid drops its max-width, so the console pins to the screen's left edge and the headline to its right.
-- **Margin labels (wayfinding):** each titled section carries `data-label="02 — Projects"`, shown by CSS alone as a faint vertical note in the right margin. It is sticky, so it stays beside the section being read. Each label is a fixed-height, zero-width box floated against the screen edge and slid into the margin with `translate`, and its section is a flow root. So a label can never slide into the next section's, and it takes no width from content beside it. (A first version with a real width shifted the Contact grid 90 px left, because a grid narrows for any float in its row.) A side effect: a very short section, like R&D's Entries before any posts, is at least as tall as its label on big screens. A site test checks every label matches its title.
+- **Margin labels (wayfinding):** each titled section carries `data-label="02 — Projects"`, shown by CSS alone as a faint vertical note in the right margin. It is sticky, so it stays beside the section being read. Each label is a fixed-height, zero-width box floated against the screen edge and slid into the margin with `translate`, and its section is a flow root. So a label can never slide into the next section's, and it takes no width from content beside it. (A first version with a real width shifted the Contact grid 90 px left, because a grid narrows for any float in its row.) A side effect: a very short section, like R&D's Entries before any posts, is at least as tall as its label on big screens. A site test checks every label matches its title. Since 0014 the home page has no visible section headings, so it has no margin labels; the subpages keep theirs.
 - **Ambient wireframe (depth):** one oversized geodesic sphere (`icosphere(1)`, 42 vertices) drifts behind the page at about 7% opacity, masked out behind the content column and cropped by the screen edge. It draws at 1x pixel ratio and on its own timer of about 15 frames a second, so it never keeps the full-rate frame loop running by itself. It stops with the Motion toggle like every other scene.
 
 ## Alternatives
@@ -55,6 +55,6 @@ After the video clips (0007) and ambient motion (0008), `js/` was 10 bytes under
 
 ## Consequences
 
-- **Every page loads the teapot data,** about 2 KB gzipped, because static imports are the only kind allowed (0002) and the footer torus shares the module.
+- **Every page loads the teapot data,** about 2 KB gzipped, because static imports are the only kind allowed (0002) and the footer teapot (0015) needs it on every page anyway.
 - **Credit the teapot** in any derived use as a Utah Teapot.
 - **New interactive canvases** must keep the focus, label, and reset pattern, or the site test fails.
