@@ -4,7 +4,7 @@
 - **Requirements:** all (this task introduces `docs/requirements.md`)
 - **Decisions:** ADR 0018
 - **Model:** main session
-- **PR:** (link when opened)
+- **PR:** #27
 
 ## Goal
 The owner asked: "Integrate this template into this project along with its standardard." Afterwards, every
