@@ -66,9 +66,9 @@ I'm always researching and developing! Feel free to reach out to me if you want 
 ## How this site was made
 <!-- Your AI-use note, shown at the bottom of the About page. Keep it true: if you
      write more of the code, or use AI for any of your writing, change it here. -->
-I designed this site in Figma and built it with **Claude**, Anthropic's AI coding assistant. Claude wrote most of the code and some of the interface text, working from my direction, and each change went live only after I reviewed and merged it.
+I designed this website in Figma using my own design inspirations and ideas from various album covers and early 80s and late 90s graphics. I chose both the color palette and the font family to establish my own branding. I then used Claude Code by Anthropic to integrate my work into a working and functional website. I then reviewed the changes and implemented my own changes as needed to remain in accordance with my design. If you are interested in my original mockup design, here is the Figma preview of the [website](https://www.figma.com/site/uuMSVAiWUYtckwg7fJRxfF/Personal-Website?node-id=0-1&p=f&t=cy0dQUwkqcxKQksT-0).
 
-My bio, my projects, and my R&D posts are my own words. The site has no trackers, loads no outside scripts, and its whole source is [public on GitHub](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io).
+My bio, my projects, and my R&D posts are my own words. The site has no trackers, loads no external scripts, and its entire source code is [public on GitHub](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io).
 
 ## Education
 ### 2025-2027 | B.S. Computer Science, California State University Fullerton
