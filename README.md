@@ -14,10 +14,10 @@ I built it with **Claude Code**, Anthropic's AI coding assistant, working from m
 
 The process stayed deliberate the whole way:
 
-- **One feature branch and pull request per change,** 20 merged over three days (October 18–20, 2026).
+- **One feature branch and pull request per change,** 22 merged over three days (October 18–20, 2026).
 - **An independent review before nearly every PR.** A separate AI reviewer checked each substantial change, and its findings were fixed before I merged.
 - **Tests on every PR in CI,** and a deploy only when they pass.
-- **A decision record for every meaningful choice,** 17 so far, in [`docs/decisions/`](docs/decisions/).
+- **A decision record for every meaningful choice,** 18 so far, in [`docs/decisions/`](docs/decisions/).
 
 ## Tech stack
 
@@ -88,7 +88,8 @@ Before anything is built from Discussions, CI runs the tests on an offline build
 | `tools/` | `build.mjs`, `render.mjs` (sanitizer and markup helpers), `qr.mjs` |
 | `test/` | Unit tests, plus checks run on the built site |
 | `site-text.md` | All page copy and links |
-| `docs/` | The [owner's manual](docs/MANUAL.md) and the [decision records](docs/decisions/) |
+| `docs/` | The [owner's manual](docs/MANUAL.md), the [requirements](docs/requirements.md), [architecture](docs/ARCHITECTURE.md), [usability log](docs/USABILITY.md), [decision records](docs/decisions/) and [task specs](docs/tasks/) |
+| `CHANGELOG.md`, `CLAUDE.md`, `ARCHITECT.md` | The [changelog](CHANGELOG.md), one entry per round of work; the engineering standards; the full architect prompt they condense |
 
 ## Run it locally
 
@@ -124,10 +125,13 @@ py -m http.server 8000 --directory _site                      # preview at http:
 | [0015](docs/decisions/0015-pages-only-nav-and-contact-in-the-footer.md) | Pages-only nav, and contact in the footer |
 | [0016](docs/decisions/0016-data-columns-and-a-decoding-barcode-row.md) | Background data columns, a decoding barcode row, and a bigger teapot |
 | [0017](docs/decisions/0017-figma-details-and-fewer-background-layers.md) | Figma details, and fewer background layers |
+| [0018](docs/decisions/0018-engineering-methodology-kit.md) | Adopt the engineering methodology kit |
 
-## Contributing
+## How it's run
 
-The working rules (stack, commands, tests, and conventions) are in [`CLAUDE.md`](CLAUDE.md). Changes go through a feature branch and a pull request, and only I merge into `main`, which deploys the site.
+Since October 21, 2026 the project follows my engineering methodology kit (ADR 0018). Every change starts as a numbered task spec in [`docs/tasks/`](docs/tasks/) that I approve before any code is written, citing the [requirements](docs/requirements.md) it serves. Claude implements it on a `task/NNNN-slug` branch; separate test and review agents check it independently; the full suite runs on the offline, sample and live builds; and the round is recorded in the [changelog](CHANGELOG.md) with its numbers. `main` is protected, so a pull request can only merge when its `test` check passes, and only I merge.
+
+The working rules (stack, commands, tests, conventions, and the workflow) are in [`CLAUDE.md`](CLAUDE.md), which condenses [`ARCHITECT.md`](ARCHITECT.md).
 
 ## Credits
 
