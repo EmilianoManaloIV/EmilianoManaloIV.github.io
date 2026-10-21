@@ -634,6 +634,7 @@ export const SITE_TEXT = [
   ["How this site was made", "about-made", "block"],
   ["Education", "education", "entries"],
   ["Experience", "experience", "entries"],
+  ["Projects intro", "projects-intro", "inline"],
 ];
 // Links: Email is required; a blank social link removes it from every page.
 export const SITE_LINKS = ["Email", "LinkedIn", "Instagram", "X", "GitHub"];

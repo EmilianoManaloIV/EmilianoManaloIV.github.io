@@ -47,14 +47,15 @@ Before anything is built from Discussions, CI runs the tests on an offline build
     - jagged, drifting terrain from hashed value noise that repeats without a seam.
   - **The Utah teapot,** drawn from its original Bézier patches (Martin Newell, 1975).
   - **A VR headset** built in code.
+  - **A tesseract (a 4D cube),** turned in four dimensions and projected to the screen, never leaving its frame.
   - **A geodesic sphere** that drifts in the margins of big screens.
-  - **Hands-on models:** the teapot and the headset can be dragged or turned with the arrow keys, and each has a Reset button.
+  - **Hands-on models:** the teapot, the headset and the tesseract can be dragged or turned with the arrow keys, and each has a Reset button.
 - **A live console** in the banner that types real telemetry from the shapes on screen, a headline that decodes from glyphs, and a device readout of the visitor's own browser.
 - **A content pipeline from Discussions:**
   - **Pages:** discussions become pages, with comments.
   - **Sanitizer:** a hardened HTML allowlist sanitizer handles anything a visitor writes.
   - **Media:** images and short video clips are copied onto the site (iPhone HEVC clips are detected and refused).
-  - **Projects:** they get skills, cards, and their own pages.
+  - **Projects:** they get skills, cards, their own pages, and a Projects page listing them all.
   - **Renames:** a renamed post keeps its old links working.
 - **A QR code generator written from scratch** ([`tools/qr.mjs`](tools/qr.mjs)), with Reed–Solomon error correction and masking. It draws the code for my conference card.
   - The card's page prints as a badge insert.
@@ -81,7 +82,7 @@ Before anything is built from Discussions, CI runs the tests on an offline build
 
 | Path | What's there |
 |---|---|
-| `index.html`, `about/`, `rd/`, `guestbook/`, `card/`, `404.html` | The pages, hand-written |
+| `index.html`, `about/`, `projects/`, `rd/`, `guestbook/`, `card/`, `404.html` | The pages, hand-written |
 | `templates/` | The R&D post and project page templates the build fills |
 | `styles.css` | Design tokens first, then components; mobile-first at 800, 1280, and 1600 px |
 | `js/` | `main.js` (canvas scenes, console, motion), `geometry.js` (3D math), `models.js` (teapot data), `ui.js` (wayfinding, share, copy), `theme.js` |
@@ -98,7 +99,7 @@ You need Node (24, as CI uses). Python is used only to serve the preview.
 ```bash
 node tools/build.mjs --offline                                # build _site/ without posts
 node tools/build.mjs --fixture test/fixtures/discussions.json # build with sample posts and comments
-node --test                                                   # about 160 tests: unit tests plus checks on _site/
+node --test                                                   # about 200 tests: unit tests plus checks on _site/
 py -m http.server 8000 --directory _site                      # preview at http://localhost:8000
 ```
 
@@ -126,6 +127,7 @@ py -m http.server 8000 --directory _site                      # preview at http:
 | [0016](docs/decisions/0016-data-columns-and-a-decoding-barcode-row.md) | Background data columns, a decoding barcode row, and a bigger teapot |
 | [0017](docs/decisions/0017-figma-details-and-fewer-background-layers.md) | Figma details, and fewer background layers |
 | [0018](docs/decisions/0018-engineering-methodology-kit.md) | Adopt the engineering methodology kit |
+| [0019](docs/decisions/0019-projects-page-and-tesseract.md) | A Projects page, with a hands-on tesseract |
 
 ## How it's run
 

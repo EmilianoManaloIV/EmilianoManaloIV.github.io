@@ -517,6 +517,27 @@ test("site text: inline formatting edge cases", () => {
   assert.equal(renderInline("[x](HTTPS://x.example)"), '<a href="HTTPS://x.example">x</a>');
 });
 
+// The Projects page's intro is the owner's words (task 0002, ADR 0010, 0019).
+test("site text: the Projects page's intro is a one-paragraph field that fills its lede, escaped (task 0002)", async () => {
+  const { readFileSync } = await import("node:fs");
+  assert.deepEqual(SITE_TEXT.find(([, key]) => key === "projects-intro"), ["Projects intro", "projects-intro", "inline"]);
+  const page = readFileSync(new URL("../projects/index.html", import.meta.url), "utf8");
+  assert.match(page, /<p class="lede" data-text="projects-intro">/, "the source page marks its lede");
+  // The owner's text replaces the placeholder in the lede, and nothing else on the page changes.
+  const site = readSiteText(siteFile({ "Projects intro": "Hostile <script>x()</script> & *kind* words $&." }));
+  assert.equal(site.fields["projects-intro"], "Hostile &lt;script&gt;x()&lt;/script&gt; &amp; <em>kind</em> words $&amp;.");
+  const out = applySiteText(page, site);
+  assert.match(out, /<p class="lede">Hostile &lt;script&gt;x\(\)&lt;\/script&gt; &amp; <em>kind<\/em> words \$&amp;\.<\/p>/);
+  assert.doesNotMatch(out, /data-text="projects-intro"|Things I've built/);
+  assert.doesNotMatch(out, /<script>x/);
+  // A blank or two-paragraph intro, or a missing heading, fails with the heading's name.
+  assert.throws(() => readSiteText(siteFile({ "Projects intro": "" })), /"## Projects intro" is empty/);
+  assert.throws(() => readSiteText(siteFile({ "Projects intro": "One.\n\nTwo." })), /"## Projects intro" should be a single paragraph/);
+  assert.throws(() => readSiteText(siteFile().replace("## Projects intro", "## Project intro")), /"## Project intro" isn't a heading/);
+  // The real file has it too, so the build can't fail on it.
+  assert.ok(readSiteText(readFileSync(new URL("../site-text.md", import.meta.url), "utf8")).fields["projects-intro"]);
+});
+
 // == Launch polish (ADR 0011)
 
 test("preview and touch-icon tags appear only for images that exist", () => {

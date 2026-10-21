@@ -58,3 +58,8 @@ After the video clips (0007) and ambient motion (0008), `js/` was 10 bytes under
 - **Every page loads the teapot data,** about 2 KB gzipped, because static imports are the only kind allowed (0002) and the footer teapot (0015) needs it on every page anyway.
 - **Credit the teapot** in any derived use as a Utah Teapot.
 - **New interactive canvases** must keep the focus, label, and reset pattern, or the site test fails.
+
+## Amendment (2026-10-21, task 0002)
+A third hands-on model joins the teapot and the headset: the tesseract beside the Projects page's heading.
+It keeps the focus, label, hint and reset pattern, and is sized by `fitScale()` from a closed-form bound
+so it never leaves its frame. Its 4D turn runs only while motion is on. See ADR 0019.

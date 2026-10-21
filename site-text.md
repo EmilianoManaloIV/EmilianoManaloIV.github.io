@@ -91,3 +91,7 @@ Collects, edits, and distributes multimedia such as photos and videos for the ch
 Took virtual photos and videos for promotional use; engaged online with content creators for collaboration, content creation, and community engagement. 
 ### Oct 2020-May 20222 | Lead Developer, Freelance For VRChat LARP Community
 Created technical guidelines, design schemas, and interactive experiences in VRChat; optimized for rich storytelling through community immersion and engagement. 
+
+## Projects intro
+<!-- One paragraph under the heading of the Projects page (/projects/). -->
+Things I've built, from tools to games, each with the story behind it.

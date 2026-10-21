@@ -34,3 +34,8 @@ Projects use the same pipeline as posts, with three conventions.
 - **Existing projects move:** Blendity and UNOverse must be recreated as discussions. Until then, the home page shows the empty-state line.
 - **Hand-written skills:** other skill groups on the About page stay hand-written. Only "From my projects" is generated.
 - **Order:** projects are always newest first. Pinning or manual order would be a later change.
+
+## Amendment (2026-10-21, task 0002)
+Projects now have their own page, `/projects/`, which lists every card, newest first. The home page's
+Projects section previews only the two newest and links to it, so the home page no longer grows with every
+project. See ADR 0019.

@@ -5,7 +5,7 @@ phone by scanning a QR code, often on slow Wi-Fi, so the site is built on three 
 with zero dependencies that load fast and work without JavaScript; content the owner publishes from GitHub
 Discussions, built into static pages in CI; and graphics and motion that are first-party, accessible, and
 always pausable. Read `docs/requirements.md` (what it must do), `docs/ARCHITECTURE.md` (how it is built)
-and `docs/decisions/` (why, ADRs 0001 to 0018) before changing anything non-trivial. The owner's
+and `docs/decisions/` (why, ADRs 0001 to 0019) before changing anything non-trivial. The owner's
 day-to-day guide is `docs/MANUAL.md`.
 
 ## Role and mission
@@ -65,12 +65,13 @@ a regression test; a refactor starts with tests that pin current behaviour.
 
 ## Project map
 - `index.html` the home page: a fast overview with sections anchored by id. `about/index.html` (About & CV),
-  `rd/index.html` (the R&D blog), `guestbook/index.html`, `card/index.html` (the conference QR card) and
+  `projects/index.html` (every project, under the hands-on tesseract), `rd/index.html` (the R&D blog),
+  `guestbook/index.html`, `card/index.html` (the conference QR card) and
   `404.html` are the other pages.
 - `templates/` `rd-post.html` and `project.html`, which the build fills. Posts are generated into
   `_site/rd/<number>-<slug>/` and projects into `_site/projects/<number>-<slug>/`; generated pages are never
-  committed. Projects also fill the home page's `<!-- PROJECTS -->` and the About page's `<!-- SKILLS -->`
-  markers.
+  committed. Projects fill the Projects page's `<!-- PROJECTS -->` (all of them), the home page's (the newest
+  two, then a link to `/projects/`) and the About page's `<!-- SKILLS -->` markers (ADR 0019).
 - `styles.css` design tokens in `:root` at the top, then components. `js/` first-party scripts:
   `theme.js` (applies a saved theme in `<head>`), `main.js` (canvas wireframes, the banner console, the
   motion gate, toggles), `geometry.js` (pure mesh and projection math), `models.js` (the Utah teapot's
@@ -99,10 +100,12 @@ How the pieces fit:
   `assets/img/share.png` or `apple-touch-icon.png` exist.
 - Every page repeats the home page's header and footer exactly; a test enforces it (ADR 0004). Change the
   nav or footer in every page and both templates at once. The nav links only whole pages (Home, About,
-  R&D, Guestbook); the footer holds the contact details (`id="contact"`) and the hands-on teapot (ADR 0015).
+  Projects, R&D, Guestbook; project pages mark Projects, posts mark R&D, ADR 0019); the footer holds the
+  contact details (`id="contact"`) and the hands-on teapot (ADR 0015).
 - The banner art matches Figma (ADR 0014): `piercedSpheroid()` and `terrainHeight()` in `geometry.js`,
   placed by `artSpots` in `main.js`; on desktop the banner canvas spans the whole banner behind the text.
-  The VR headset is built in code by `headset()`.
+  The VR headset is built in code by `headset()`; the Projects page's tesseract by `tesseract()`, turned by
+  `rotate4()`, brought to 3D by `project4()` and sized by `tesseractRadius()` (ADR 0019).
 - The shared header holds the reading-progress bar and the big-screen ambient canvas (ADR 0009). Screens
   1600px and up scale the layout (`--content-max: 80rem`, larger root font). Titled subpage sections
   carry `data-label="NN — Title"` for their margin label; keep it in step with the title (a test checks).
@@ -269,9 +272,10 @@ The owner's step-by-step guide is `docs/MANUAL.md`; these are the conventions th
   page, renaming keeps old links working, deleting removes the page. A post labelled `opinion` shows an
   Opinion tag (ADR 0013). A broken site link inside a post (for example `/no-such-page/`) stops the deploy
   until fixed; the Actions log names the page.
-- **Projects:** discussions by `EmilianoManaloIV` in **Projects** become a card in the home page's
-  Projects section (newest first) and a page at `/projects/<number>-<title>/`. Card text is the first
-  paragraph; the card image is the first image, or the first clip if there is none. A first line of
+- **Projects:** discussions by `EmilianoManaloIV` in **Projects** become a card on the Projects page
+  (newest first; the newest two also on the home page) and a page at `/projects/<number>-<title>/`. Card
+  text is the first paragraph; the card image is the first image, or the first clip if there is none. A
+  first line of
   exactly `Link: https://…` becomes the "<Title> link" button and is removed from the text; any other first
   line means no button, and the text stays as written. Labels named
   `skill: <name>` show on the project and in the About page's "From my projects" list with counts; other

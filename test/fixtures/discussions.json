@@ -246,6 +246,37 @@
       }
     },
     {
+      "number": 24,
+      "title": "Orbit Sketch",
+      "url": "https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/discussions/24",
+      "createdAt": "2026-10-20T08:00:00Z",
+      "bodyHTML": "<p dir=\"auto\">A tiny sketchpad that draws shapes orbiting a point. It has no picture yet, so its card shows the placeholder.</p>",
+      "author": {
+        "login": "EmilianoManaloIV"
+      },
+      "category": {
+        "name": "Projects"
+      },
+      "labels": {
+        "nodes": [
+          {
+            "name": "skill: Shaders"
+          },
+          {
+            "name": "skill: C++"
+          }
+        ]
+      },
+      "comments": {
+        "totalCount": 0,
+        "pageInfo": {
+          "hasNextPage": false,
+          "endCursor": null
+        },
+        "nodes": []
+      }
+    },
+    {
       "number": 21,
       "title": "UNOverse",
       "url": "https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/discussions/21",

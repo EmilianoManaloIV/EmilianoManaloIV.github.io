@@ -38,6 +38,7 @@ checks the file before deploying.
 **Tips:**
 - **Formatting:** `*italic*`, `**bold**`, and `[link text](https://example.com)` work. Most sections are a single paragraph. **About story** can have several, with a blank line between them. Bullet lists aren't supported.
 - **Education and Experience:** each entry is a `### When | Title` line, such as `### 2023–2027 | B.S. Computer Science`, followed by a sentence or two. Add or remove entries, keeping at least one in each.
+- **Projects intro:** the sentence under the heading of your Projects page (`/projects/`).
 - **Links:** leave a social link empty, with nothing after the colon, to hide it everywhere. Email is required.
 - **If a change doesn't appear:** a mistake stops the update and your site stays as it was. Open the [Actions tab](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/actions), and the failed run says what to fix: a missing, duplicated, or misspelled heading, a bad link, or an extra paragraph. Fix it soon, because new posts, comments, and signatures also wait until the file is valid.
 
@@ -89,12 +90,12 @@ For posts that argue a view, rants included, open the discussion and pick the **
    ```
 
    It becomes the orange "Blendity link" button. With no `Link:` line, there is no button.
-5. Write the description. The first paragraph becomes the text on the home page card.
+5. Write the description. The first paragraph becomes the text on the project's card.
 6. Drag in a screenshot or render. The first image becomes the card picture. With no image, the first [video clip](#add-a-video-clip) is used instead, and with neither, the card shows a placeholder.
 7. Click **Start discussion**.
 8. In the right sidebar, open **Labels** and pick the project's skills. See the next section.
 
-The project shows up in the home page's Projects section, newest first, with its own page at `/projects/<number>-<title>/` where visitors can comment.
+The project shows up on your [Projects page](https://emilianomanaloiv.github.io/projects/), newest first, with its own page at `/projects/<number>-<title>/` where visitors can comment. The home page previews your two newest projects and links to the Projects page for the rest.
 
 ## Add a video clip
 

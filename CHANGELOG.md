@@ -6,6 +6,57 @@ Dates are the owner's local merge dates (Pacific time). Quoted requests are the 
 working sessions, verbatim, typos included; where they weren't kept, **Asked** is reconstructed from the
 pull request and marked so. The numbers under **Checked** are the ones each pull request reported.
 
+## 2026-10-21 (round 24): A Projects page with a hands-on 4D cube (task 0002, ADR 0019)
+
+**Asked:** "I want to add a project page to my website while retaining the style that is currently
+established. Just like the research had a VR-headset, my project page should have a 4D cube." Then: "Make
+sure to pull the current repository on GitHub since I included change manually and the appropriate mark
+down file for adding my own own information remotely."
+
+**Added**
+- **`/projects/`,** in the R&D page's layout: the heading, an intro from a new `## Projects intro` section
+  at the end of `site-text.md` (the owner's own words above it untouched), and every project card, newest
+  first (R-13).
+- **A hands-on tesseract** beside the heading: the 16 corners and 32 edges of a 4D cube, turned in the
+  xw, yw and zw planes and projected to 3D, then drawn like the headset. Drag, the arrow keys, Home and
+  Reset work as on the other models; the 4D turn runs only while motion is on. Its largest projected
+  radius, `2d / √(d² − 4)`, is computed in closed form, so `fitScale()` keeps it inside its frame at any
+  angle (`tesseract()`, `rotate4()`, `project4()`, `tesseractRadius()` in `js/geometry.js`).
+
+**Changed**
+- **The home page previews the two newest projects** and links to the rest with "All projects"; with no
+  projects it keeps its empty state and no link (amends ADR 0006).
+- **Projects joins the nav as 02:** 00 Home, 01 About, 02 Projects, 03 R&D, 04 Guestbook, on every page
+  and both templates; project pages mark Projects as current (amends ADR 0015).
+- Project pages' breadcrumb and "Back to all projects", and the 404's way back, go to `/projects/`.
+- ADRs 0006, 0009 and 0015 carry amendments pointing to ADR 0019; requirements R-03, R-08 and R-11
+  amended, R-13 added; ARCHITECTURE, USABILITY, MANUAL, README and `CLAUDE.md` updated.
+
+**Changed after the review**
+- **The tablet header no longer squeezes:** with five nav items, from 800 to about 940 px each label
+  broke its number from its name, the theme toggle wrapped, and the social icons shrank to 17 px, under
+  their 24 px target. The tools now wrap to a second row there; measured in headless Chrome from 320 to
+  1600 px in both themes with no broken label and every icon at least 24 px.
+- Amendments added to the three ADRs this changes; the README's layout table and test count, and
+  `CLAUDE.md`'s ADR range, corrected; the console's unused "TESS" label removed (task 0002, "After the
+  review").
+
+**Checked**
+- New tests: the tesseract's corners, edges and degree; `rotate4` keeping lengths; the sampled worst
+  radius within 1% of the bound; the cube inside its frame at every sampled 4D and 3D angle together; the
+  Projects page, its hands-on model and its list; the five-item nav and its marks; the home preview of
+  two with its link, and none offline; no `/#projects` links left; the intro from `site-text.md`; the
+  tablet header's wrapping. The sample data gained a third project.
+- Unit and site checks: offline build 175 tests (173 pass, 1 skipped, 1 todo); fixture build 200 (199
+  pass, 1 todo); live build 185 (183 pass, 1 skipped, 1 todo). The skip is the sample-data-only projects
+  check; the todo is the launch-readiness check for `TODO` placeholders.
+- JavaScript 19,898 bytes gzipped (budget 32 KB); the largest page about 141 KB gzipped (budget 200 KB),
+  the Projects page about 140 KB.
+- Browser (headless Chrome; the in-app browser was unavailable): the Projects page at 320, 375, 800, 1280
+  and 1600 px in light and dark, the model beside the heading from 800 px, no horizontal scroll; the cube
+  turning with motion on and frozen with motion off and under reduced motion; arrow keys, Home and Reset;
+  the home preview; no console errors.
+
 ## 2026-10-21 (round 23): Adopt the engineering methodology kit (task 0001, ADR 0018)
 
 **Asked:** "Integrate this template into this project along with its standardard."

@@ -48,7 +48,7 @@ test("the build produces every source page plus the expected pages", () => {
   // Build output folders all start with "_" (tools/build.mjs --out), so none count as source.
   const skip = new Set(["test", "templates", "docs", "tools", "node_modules", ".git", ".github", ".claude", "assets", "js"]);
   const sources = list(repo).filter((f) => f.endsWith(".html") && !skip.has(f.split("/")[0]) && !f.startsWith("_"));
-  for (const page of [...sources, "index.html", "404.html", "about/index.html", "rd/index.html", "guestbook/index.html"]) {
+  for (const page of [...sources, "index.html", "404.html", "about/index.html", "projects/index.html", "rd/index.html", "guestbook/index.html"]) {
     assert.ok(allPages.includes(page), `${page} missing from the build`);
   }
 });
@@ -230,14 +230,23 @@ test("every page repeats the home page's header and footer exactly", () => {
 test("the nav links whole pages only, and each page marks its own (ADR 0015)", () => {
   const nav = html("index.html").match(/<ul class="nav-list">([\s\S]*?)<\/ul>/)[1];
   const hrefs = [...nav.matchAll(/<a href="([^"]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(hrefs, ["/", "/about/", "/rd/", "/guestbook/"], "Home, About, R&D, Guestbook, with no #section links");
+  // (task 0002: Projects joined the nav as 02, between About and R&D)
+  assert.deepEqual(hrefs, ["/", "/about/", "/projects/", "/rd/", "/guestbook/"], "Home, About, Projects, R&D, Guestbook, with no #section links");
   const numbers = [...nav.matchAll(/<span class="nav-index" aria-hidden="true">(\d{2})<\/span>/g)].map((m) => m[1]);
-  assert.deepEqual(numbers, ["00", "01", "02", "03"], "numbered in order, with no gaps");
+  assert.deepEqual(numbers, ["00", "01", "02", "03", "04"], "numbered in order, with no gaps");
+  const names = [...nav.matchAll(/<\/span> ([^<]+)<\/a>/g)].map((m) => m[1]);
+  assert.deepEqual(names, ["Home", "About", "Projects", "R&amp;D", "Guestbook"]);
   const marks = (file) => html(file).match(/<a href="([^"]+)" aria-current="page">/g) ?? [];
   assert.deepEqual(marks("index.html"), ['<a href="/" aria-current="page">']);
   assert.deepEqual(marks("about/index.html"), ['<a href="/about/" aria-current="page">']);
   assert.deepEqual(marks("guestbook/index.html"), ['<a href="/guestbook/" aria-current="page">']);
-  for (const page of ["404.html", "card/index.html", ...pages.filter((p) => p.startsWith("projects/"))]) {
+  // The Projects page and every project page mark Projects, as posts mark R&D (ADR 0019).
+  assert.ok(pages.includes("projects/index.html"));
+  for (const page of pages.filter((p) => p.startsWith("projects/"))) {
+    assert.deepEqual(marks(page), ['<a href="/projects/" aria-current="page">'], page);
+  }
+  // The 404 and the QR card belong to no section, so neither marks one.
+  for (const page of ["404.html", "card/index.html"]) {
     assert.deepEqual(marks(page), [], page);
   }
   for (const page of pages.filter((p) => p.startsWith("rd/"))) {
@@ -288,19 +297,19 @@ test("nothing from a stranger's post or project is published", () => {
 });
 
 // ADR 0006: projects come from Discussions; their "skill:" labels feed the About page.
-test("projects: every page is on the home page, dated, and linked to its discussion", () => {
-  const home = html("index.html");
-  const projects = pages.filter((p) => p.startsWith("projects/"));
+test("projects: every project page is listed on /projects/, dated, and linked to its discussion (task 0002)", () => {
+  const list = html("projects/index.html");
+  const projects = pages.filter((p) => p.startsWith("projects/") && p !== "projects/index.html");
   for (const page of projects) {
     const path = `/${page.replace(/index\.html$/, "")}`;
-    assert.match(home, new RegExp(`<h3><a href="${path}">`), `${path} has no card on the home page`);
+    assert.match(list, new RegExp(`<h3><a href="${path}">`), `${path} has no card on /projects/`);
     const text = html(page);
     assert.match(text, /<time datetime="\d{4}-\d{2}-\d{2}">/, `${path}: needs a <time datetime>`);
     assert.match(text, /href="https:\/\/github\.com\/EmilianoManaloIV\/EmilianoManaloIV\.github\.io\/discussions\/\d+"/, `${path}: needs its Discussions thread`);
     for (const [, href] of text.matchAll(/<a class="tag tag-link" href="([^"]+)">[^<]* link<\/a>/g)) assert.match(href, /^https:\/\//, `${path}: link button must be https`);
   }
-  const cards = home.match(/<article class="card">[\s\S]*?<\/article>/g) ?? [];
-  assert.equal(cards.filter((c) => /<h3><a href="\/projects\//.test(c)).length, projects.length, "one home card per project page");
+  const cards = list.match(/<article class="card">[\s\S]*?<\/article>/g) ?? [];
+  assert.equal(cards.filter((c) => /<h3><a href="\/projects\//.test(c)).length, projects.length, "one card per project page, and no card without a page");
 });
 
 test("projects: every skill on a project appears on the About page, and only skills do", () => {
@@ -309,12 +318,197 @@ test("projects: every skill on a project appears on the About page, and only ski
   const aboutSkills = [...list.matchAll(/<span class="tag" title="Used in [^"]*">([^<]+?) <span class="tag-count">/g)].map((m) => m[1]);
   assert.equal(new Set(aboutSkills).size, aboutSkills.length, "a skill is listed twice");
   const projectSkills = new Set();
-  for (const page of pages.filter((p) => p.startsWith("projects/"))) {
+  for (const page of pages.filter((p) => p.startsWith("projects/") && p !== "projects/index.html")) {
     const tags = html(page).match(/<h1>[\s\S]*?<ul class="tags">([\s\S]*?)<\/ul>/)?.[1] ?? "";
     for (const [, skill] of tags.matchAll(/<span class="tag">([^<]+)<\/span>/g)) projectSkills.add(skill);
   }
   assert.deepEqual([...projectSkills].sort(), [...aboutSkills].sort(), "About skills must match the projects' skills");
   for (const name of ["bug", "enhancement", "documentation"]) assert.ok(!aboutSkills.includes(name), `non-skill label ${name} leaked`);
+});
+
+// == The Projects page (task 0002, ADR 0019)
+
+const projectPages = pages.filter((p) => p.startsWith("projects/") && p !== "projects/index.html");
+const cardLinks = (text) => [...text.matchAll(/<h3><a href="(\/projects\/[^"]+)">/g)].map((m) => m[1]);
+const pagePath = (page) => `/${page.replace(/index\.html$/, "")}`;
+// The fixture is the only build with the visitor-video marker; it holds three owner projects
+// (#21, #22, #24) and one stranger's (#23, which must never publish).
+const isFixtureBuild = pages.some((p) => read(p).includes("FIXTURE-VISITOR-VIDEO"));
+
+test("/projects/ pairs its heading with a hands-on tesseract, then lists the projects under '01 — All projects' (task 0002)", () => {
+  const text = html("projects/index.html");
+  assert.equal((text.match(/<h1\b/g) ?? []).length, 1, "one h1");
+  assert.match(text, /<h1>Projects<\/h1>/);
+  assert.match(text, /<link rel="canonical" href="https:\/\/emilianomanaloiv\.github\.io\/projects\/">/);
+  // The tesseract sits in the heading's hero, beside the text, like the R&D headset.
+  const hero = text.match(/<section id="projects" class="page-hero hero-split">([\s\S]*?)<\/section>/)?.[1] ?? "";
+  assert.match(hero, /<h1>Projects<\/h1>/, "the heading is in the hero");
+  const figure = hero.match(/<figure class="model model-tesseract">[\s\S]*?<\/figure>/)?.[0] ?? "";
+  assert.ok(figure, "the tesseract figure is in the hero beside the heading");
+  const canvas = figure.match(/<canvas\b[^>]*>/)?.[0] ?? "";
+  assert.match(canvas, /\sdata-scene="tesseract"/);
+  assert.match(canvas, /\stabindex="0"/, "focusable");
+  assert.match(canvas, /\srole="img"/);
+  assert.match(canvas, /\saria-roledescription="3D model"/);
+  assert.match(canvas, /\saria-label="[^"]*[Tt]esseract[^"]*"/, "labelled with what it is");
+  assert.doesNotMatch(canvas, /aria-hidden/, "a focusable canvas must not be hidden");
+  assert.match(figure, /<span class="model-hint" aria-hidden="true">Drag or use arrow keys<\/span>/, "visible hint");
+  assert.match(figure, /<button class="toggle model-reset" type="button" data-reset>Reset view<\/button>/, "Reset view");
+  assert.match(figure, /<figcaption>FIG\. 02\.1 \/ [^<]+<\/figcaption>/, "captioned, and first in the page's figure numbers");
+  // One tesseract, on this page only.
+  assert.equal((text.match(/data-scene="tesseract"/g) ?? []).length, 1);
+  for (const page of pages.filter((p) => p !== "projects/index.html")) assert.doesNotMatch(html(page), /data-scene="tesseract"|model-tesseract/, `${page}: the tesseract belongs to /projects/`);
+  // Then the numbered section whose margin label matches its title.
+  assert.match(text, /<section id="all" class="section" data-label="01 — All projects">\s*<div class="container">\s*<h2 class="section-title"><span class="section-index" aria-hidden="true">01 \/<\/span> All projects<\/h2>/);
+  assert.match(text, /<div class="project-list">/);
+  assert.match(text, /<p class="eyebrow"><a href="\/">Home<\/a> \/ Projects<\/p>/);
+});
+
+test("the tesseract's frame is square, hidden without JavaScript, and left out of print, like the headset's (task 0002)", () => {
+  const css = withoutComments(read("styles.css"));
+  const square = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(([, , body]) => /aspect-ratio:\s*1;/.test(body)).flatMap(([, sel]) => selectorList(sel));
+  assert.ok(square.includes(".tesseract-scene"), "a 4D turn can reach anywhere in the frame, so it needs a square one");
+  const sized = css.match(/\.model-teapot,\s*\.model-headset,\s*\.model-tesseract \{[^}]*max-width:[^}]*\}/);
+  assert.ok(sized, "the figure is capped in width like the other models");
+  assert.match(css, /html:not\(\.js\) canvas\[data-scene\],\s*html:not\(\.js\) \.model \{\s*display: none;/, "without JavaScript the figure hides");
+  const split = blocksAt(css, "@media (min-width: 800px)").map(([from, to]) => css.slice(from, to)).find((block) => block.includes(".hero-split .container"));
+  assert.ok(split && /grid-template-columns/.test(split), "the heading and the model sit side by side from 800px");
+  const print = blocksAt(css, "@media print").map(([from, to]) => css.slice(from, to)).find((block) => block.includes(":root:root:root")) ?? "";
+  assert.ok(selectorList(print.match(/([^{}]+)\{\s*display: none !important;\s*\}/)?.[1] ?? "").includes(".model"), "print hides the model");
+  // The figure is a .model in a hero-split, so those two rules cover it.
+  assert.match(html("projects/index.html"), /<figure class="model model-tesseract">/);
+});
+
+// Regression (found in review): with five nav items, the header at 800 to about 940px squeezed.
+// Each link wrapped its number above its name, the "Dark mode: off" toggle broke onto two lines,
+// and the social icons shrank below 24px. Read from the CSS rules; layout itself needs a browser.
+test("the tablet header wraps its tools to a second row instead of squeezing the nav, the toggle and the icons (task 0002, ADR 0019)", () => {
+  const css = withoutComments(read("styles.css"));
+  const tablet = blocksAt(css, "@media (min-width: 800px)").map(([from, to]) => css.slice(from, to)).find((block) => block.includes(".site-header .container"));
+  assert.ok(tablet, "the 800px block styles the header container");
+  const rule = (selector) => tablet.match(new RegExp(`(?:^|[\\s}])${selector.replace(/[.]/g, "\\.")} \\{([^}]*)\\}`))?.[1] ?? "";
+  const container = rule(".site-header .container");
+  assert.match(container, /flex-direction:\s*row;/, "name, nav and tools sit in a row from 800px");
+  assert.match(container, /flex-wrap:\s*wrap;/, "when they don't fit, the tools drop to a second row");
+  assert.match(container, /gap:\s*var\(--space-3\) var\(--space-8\);/, "a tight row gap, so the second row doesn't float away");
+  assert.match(rule(".nav-list a"), /white-space:\s*nowrap;/, "a nav link never breaks its number from its name");
+  assert.match(rule(".nav-list"), /display:\s*flex;/, "the nav is a row of links");
+  assert.match(rule(".header-tools"), /margin-left:\s*auto;/, "the tools stay at the right end");
+  // The toggle's label ("Dark mode: off") must not break either; nothing in the header lets it wrap
+  // by switching white-space back.
+  assert.doesNotMatch(tablet, /\.toggle[^{]*\{[^}]*white-space:\s*normal/);
+  // The icons keep a 24px target (WCAG 2.5.8): a 20px icon plus 2px padding on every side.
+  const link = css.match(/\.socials a \{([^}]*)\}/)?.[1] ?? "";
+  assert.match(link, /display:\s*inline-flex;/);
+  assert.match(link, /padding:\s*2px;/);
+  for (const page of pages) {
+    const header = html(page).match(/<header class="site-header">[\s\S]*?<\/header>/)[0];
+    const icons = [...header.matchAll(/<svg class="icon" viewBox="0 0 24 24" width="(\d+)" height="(\d+)"/g)];
+    assert.ok(icons.length > 0, `${page}: header icons`);
+    for (const [, width, height] of icons) assert.ok(Number(width) + 4 >= 24 && Number(height) + 4 >= 24, `${page}: a ${width}x${height} icon is under a 24px target`);
+  }
+});
+
+test("the tesseract painter is sized from tesseractRadius and turns only with the shared clock, so motion off freezes it (task 0002)", () => {
+  const main = read("js/main.js");
+  assert.match(main, /import \{[^}]*\btesseract\b[^}]*\brotate4\b[^}]*\bproject4\b[^}]*\btesseractRadius\b[^}]*\} from "\.\/geometry\.js/);
+  // The geometry tests prove the fit for 4D distance d and camera distance c; the painter must use the same ones.
+  const painter = main.match(/\n  tesseract\(ctx, w, h\) \{([\s\S]*?)\n  \},/)?.[1] ?? "";
+  assert.ok(painter, "a tesseract painter exists");
+  const [, d4, camera] = painter.match(/project\(rotate\(project4\(rotate4\(p, turn4\), (\d+)\), ax, ay\), w \/ 2, h \/ 2, scale, (\d+)\)/) ?? [];
+  assert.ok(d4 && camera, "the painter turns in 4D, projects to 3D, then turns and projects to the screen");
+  const fit = main.match(/const tesseractFit = fitScale\(\{ vertices: \[\[tesseractRadius\((\d+)\), 0, 0\]\] \}, (\d+)\);/);
+  assert.ok(fit, "the frame is sized from tesseractRadius()");
+  assert.equal(fit[1], d4, "the radius bound uses the same 4D distance as the projection");
+  assert.equal(fit[2], camera, "the fit uses the same camera distance as the projection");
+  assert.match(painter, /\* 0\.94 \* tesseractFit/, "a little breathing room inside the frame, like the headset");
+  // The 4D turn is a function of the shared clock, which main.js advances only while motion is on.
+  assert.match(main, /const hyperTurn = \(t\) => \[[^\]]+\];/);
+  assert.match(painter, /hyperTurn\(time\)/);
+  assert.doesNotMatch(main.match(/const hyperTurn[^\n]*/)[0], /Date|performance|random/, "no separate clock");
+  assert.match(main, /time \+= Math\.min\(delta \/ 1000, 0\.1\);/);
+  assert.match(main, /tesseract: \(t\) => \[/, "the 3D pose, so a drag and Reset work like the headset's");
+});
+
+test("the Projects page lists every project, newest first, and the home page previews the two newest with a link to it (task 0002)", () => {
+  const list = cardLinks(html("projects/index.html"));
+  const home = html("index.html");
+  const preview = cardLinks(home);
+  assert.deepEqual([...list].sort(), projectPages.map(pagePath).sort(), "/projects/ lists exactly the generated project pages");
+  assert.equal(preview.length, Math.min(2, list.length), "the home page holds at most 2 cards");
+  assert.deepEqual(preview, list.slice(0, preview.length), "the home cards are the first of /projects/'s, newest first");
+  // Newest first by date (the pages carry the day; same-day projects can sit either way).
+  const days = list.map((path) => html(`${path.slice(1)}index.html`).match(/<time datetime="(\d{4}-\d{2}-\d{2})">/)[1]);
+  assert.deepEqual(days, [...days].sort().reverse(), "newest first");
+  const link = '<a class="tag tag-link" href="/projects/">All projects</a>';
+  const emptyState = '<p class="empty-state">Projects are on their way.</p>';
+  if (list.length) {
+    assert.equal(home.split(link).length - 1, 1, "the home page links to /projects/ once");
+    assert.ok(!home.includes(emptyState) && !html("projects/index.html").includes(emptyState), "no empty state next to real cards");
+  } else {
+    // The offline build: nothing to show, nothing to link to.
+    assert.ok(home.includes(emptyState), "the home page shows its empty state");
+    assert.ok(html("projects/index.html").includes(emptyState), "so does /projects/");
+    assert.ok(!home.includes("all-projects") && !home.includes('href="/projects/">All projects'), "no link to an empty list");
+    assert.match(html("projects/index.html"), /<div class="project-list">\s*<\/div>/, "the list is empty");
+  }
+  // Each card carries its own numbered caption: the tesseract is FIG. 02.1, so /projects/ cards
+  // start at 02.2; the home page has no tesseract, so its cards start at 02.1.
+  const figures = (text) => [...text.matchAll(/<figcaption>FIG\. (02\.\d+) \//g)].map((m) => m[1]);
+  assert.deepEqual(figures(html("projects/index.html")), ["02.1", ...list.map((_, i) => `02.${i + 2}`)]);
+  assert.deepEqual(figures(home), preview.map((_, i) => `02.${i + 1}`));
+});
+
+test("with the fixture's three projects, /projects/ lists all of them and the home page shows the 2 newest (task 0002)", { skip: !isFixtureBuild && "needs the fixture build" }, () => {
+  const { discussions } = JSON.parse(source("test/fixtures/discussions.json"));
+  // The owner's projects, newest first by the fixture's own dates; the stranger's (#23) is never published.
+  const mine = discussions
+    .filter((d) => d.category.name === "Projects" && d.author.login === "EmilianoManaloIV")
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .map((d) => d.number);
+  assert.equal(mine.length, 3, "the fixture has three owner projects");
+  const numbersOf = (links) => links.map((path) => Number(path.match(/^\/projects\/(\d+)-/)[1]));
+  assert.deepEqual(numbersOf(cardLinks(html("projects/index.html"))), mine, "all three, newest first");
+  assert.deepEqual(numbersOf(cardLinks(html("index.html"))), mine.slice(0, 2), "the home page shows the two newest");
+  assert.ok(!numbersOf(cardLinks(html("index.html"))).includes(mine[2]), "the oldest is only on /projects/");
+  assert.ok(!numbersOf(cardLinks(html("projects/index.html"))).includes(23), "a stranger's project is never listed");
+  // The newest project has no image, so its card keeps the placeholder slot.
+  const newest = html("projects/index.html").match(/<article class="card">[\s\S]*?<\/article>/)[0];
+  assert.match(newest, /<div class="slot" aria-hidden="true">[^<]+ image<\/div>/);
+  // A skill that only the third project has still reaches the About page (the skills test above compares the sets).
+  assert.match(html("about/index.html"), /Shaders <span class="tag-count">×1/);
+  assert.match(html("about/index.html"), /title="Used in Orbit Sketch, Blendity">C\+\+ <span class="tag-count">×2/, "C++ is shared by two projects");
+});
+
+test("no page links to /#projects: the whole-page link is /projects/, and only the home page's own rail jumps to its section (task 0002)", () => {
+  for (const [name, text] of [...allPages.map((p) => [p, read(p)]), ...TEMPLATES.map((t) => [t, source(t)]), ["404.html (source)", source("404.html")]]) {
+    for (const href of attrs(text, "href")) {
+      assert.doesNotMatch(href, /^(\/|\/index\.html|https?:\/\/emilianomanaloiv\.github\.io\/?)#projects$/, `${name}: links to /#projects`);
+      if (/#projects$/.test(href) && href !== "#projects") assert.fail(`${name}: ${href}`);
+    }
+  }
+  // The one in-page jump to #projects is the home page's rail, and its target still exists.
+  const sourceHome = source("index.html");
+  assert.equal((sourceHome.match(/<a href="#projects"/g) ?? []).length, 1, "the home page's rail dot");
+  assert.ok(attrs(html("index.html"), "id").includes("projects"));
+  for (const page of pages.filter((p) => p !== "index.html")) assert.doesNotMatch(html(page), /<a href="#projects"/, `${page}: a bare #projects jump belongs to the home page`);
+  // Where visitors used to be sent to the home section, they now go to the page.
+  for (const page of projectPages) {
+    const text = html(page);
+    assert.match(text, /<p class="eyebrow"><a href="\/projects\/">Projects<\/a> \//, `${page}: breadcrumb`);
+    assert.match(text, /<a href="\/projects\/">Back to all projects<\/a>/, `${page}: way back`);
+  }
+  assert.match(strip(source("templates/project.html")), /<a href="\/projects\/">Back to all projects<\/a>/);
+  assert.match(html("404.html"), /<a class="tag tag-link" href="\/projects\/">Projects<\/a>/, "the 404 offers the Projects page");
+});
+
+test("the Projects page is in the sitemap and its intro comes from site-text.md (task 0002)", () => {
+  assert.ok(read("sitemap.xml").includes(`<loc>${SITE}/projects/</loc>`));
+  const { fields } = readSiteText(source("site-text.md"));
+  assert.ok(fields["projects-intro"], "site-text.md has a '## Projects intro'");
+  assert.match(source("site-text.md"), /^## Projects intro$/m);
+  assert.ok(html("projects/index.html").includes(`<p class="lede">${fields["projects-intro"]}</p>`), "the lede is the owner's text");
+  assert.doesNotMatch(read("projects/index.html"), /data-text/, "the marker is filled and removed");
 });
 
 test("guestbook links to GitHub Discussions and explains signing", () => {
@@ -346,10 +540,17 @@ test("clips are local, sized, muted, never autoplay, and only in the owner's tex
   assert.match(main, /video\[data-clip\]/, "main.js gates clips");
   assert.match(main, /const awake = motion && !document\.hidden;[\s\S]*const want = awake && clip\.seen === true;\s*if \(want !== clip\.want\) want \? clip\.play\(\)/, "clips play only when motion is on, the tab is visible, and the clip is on screen");
   for (const file of scripts) assert.equal((read(`js/${file}`).match(/\.play\(/g) ?? []).length, file === "main.js" ? 1 : 0, `${file}: play() outside the motion gate`);
-  // The fixture build has clips in a post, a project page, and that project's home card.
+  // The fixture has one clip in a post and one in project #21 (UNOverse, which has no image, so
+  // its card shows the clip). The clip appears on UNOverse's own page and, since task 0002, on
+  // its card on /projects/, which repeats every card. UNOverse is the oldest of the three
+  // fixture projects, so it is not among the two the home page previews; had it been, the home
+  // page would add a fourth. So: 1 post + 1 project page + 1 /projects/ card = 3.
   if (pages.some((p) => read(p).includes("FIXTURE-VISITOR-VIDEO"))) {
     const count = pages.reduce((n, p) => n + (html(p).match(/<video\b/g) ?? []).length, 0);
     assert.equal(count, 3, "fixture clips");
+    const withClips = pages.filter((p) => /<video\b/.test(html(p))).filter((p) => p.startsWith("projects/")).sort();
+    assert.deepEqual(withClips, ["projects/21-unoverse/index.html", "projects/index.html"], "the clip is on UNOverse's page and its /projects/ card");
+    assert.doesNotMatch(html("index.html"), /<video\b/, "UNOverse is not among the two newest, so the home page shows no clip");
   }
 });
 
@@ -595,6 +796,7 @@ test("hands-on models are focusable, labelled, and resettable (ADR 0009)", () =>
   assert.ok(models >= 3, "the footer teapot and the R&D headset should be found");
   assert.match(html("index.html"), /data-scene="teapot"/);
   assert.match(html("rd/index.html"), /data-scene="headset"/);
+  assert.match(html("projects/index.html"), /data-scene="tesseract"/, "the Projects page's tesseract is a hands-on model (task 0002)");
 });
 
 test("the faint console echoes and data columns are gone; the banner console stays (ADR 0017)", () => {
@@ -711,7 +913,7 @@ test("site text: the file is valid, and the built pages carry it with no markers
 test("site text: marked elements never contain their own tag, so filling them is exact", () => {
   // applySiteText replaces up to the first closing tag of the same name; a nested
   // element of that tag inside a marked one would leave a stray tail (ADR 0010).
-  for (const file of ["index.html", "about/index.html", "rd/index.html", "guestbook/index.html", "404.html", ...TEMPLATES]) {
+  for (const file of ["index.html", "about/index.html", "projects/index.html", "rd/index.html", "guestbook/index.html", "404.html", ...TEMPLATES]) {
     for (const [, tag, inner] of source(file).matchAll(/<([a-z][a-z0-9]*)\b[^>]*\sdata-text="[^"]+"[^>]*>([\s\S]*?)<\/\1>/g)) {
       assert.doesNotMatch(inner, new RegExp(`<${tag}\\b`), `${file}: a <${tag} data-text> holds another <${tag}>`);
     }
@@ -720,7 +922,7 @@ test("site text: marked elements never contain their own tag, so filling them is
 
 test("site text: every editable spot in the source pages is a known key", () => {
   const keys = new Set(Object.keys(readSiteText(source("site-text.md")).fields));
-  for (const file of ["index.html", "about/index.html", "rd/index.html", "guestbook/index.html", "404.html", ...TEMPLATES]) {
+  for (const file of ["index.html", "about/index.html", "projects/index.html", "rd/index.html", "guestbook/index.html", "404.html", ...TEMPLATES]) {
     for (const [, key] of source(file).matchAll(/data-text="([^"]+)"/g)) assert.ok(keys.has(key), `${file}: unknown data-text="${key}"`);
   }
 });

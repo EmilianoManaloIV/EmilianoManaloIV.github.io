@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { lathe, piercedSpheroid, POLAR, BORE, grid, sphere, cube, terrainHeight, DRIFT, rotate, orient, project, bezierPatches, uprightUnit, fitUnit, headset, icosphere, fitScale } from "../js/geometry.js";
+import { lathe, piercedSpheroid, POLAR, BORE, grid, sphere, cube, terrainHeight, DRIFT, rotate, orient, project, bezierPatches, uprightUnit, fitUnit, headset, icosphere, fitScale, tesseract, rotate4, project4, tesseractRadius } from "../js/geometry.js";
 import { teapotPoints, teapotPatches } from "../js/models.js";
 
 const length = ([x, y, z]) => Math.hypot(x, y, z);
@@ -223,4 +223,123 @@ test("fitScale keeps a model inside its frame at every orientation", () => {
     assert.ok(worst <= 1 + 1e-9, `${name} reaches ${worst.toFixed(3)} of its frame`);
     assert.ok(worst > 0.85, `${name}: the bound should not be needlessly loose (${worst.toFixed(3)})`);
   }
+});
+
+// == The tesseract (task 0002, ADR 0019)
+
+const length4 = (p) => Math.hypot(...p);
+// Angles from 0 up to (not including) a full turn, in steps of about `step`.
+const angles = (step) => Array.from({ length: Math.ceil((Math.PI * 2) / step) }, (_, i) => i * step);
+
+test("the tesseract is the 16 corners and 32 edges of a 4D cube, four edges at every corner (task 0002)", () => {
+  const mesh = tesseract();
+  assert.equal(mesh.vertices.length, 16);
+  assert.equal(mesh.edges.length, 32);
+  for (const v of mesh.vertices) {
+    assert.equal(v.length, 4, "every corner has four coordinates");
+    assert.ok(v.every((c) => c === 1 || c === -1), `${v} is not a corner of [-1, 1]^4`);
+  }
+  assert.equal(new Set(mesh.vertices.map((v) => v.join())).size, 16, "no corner is listed twice");
+  const keys = mesh.edges.map(([a, b]) => `${Math.min(a, b)}-${Math.max(a, b)}`);
+  assert.equal(new Set(keys).size, 32, "no edge is listed twice");
+  const degree = new Array(16).fill(0);
+  for (const [a, b] of mesh.edges) {
+    assert.ok(mesh.vertices[a] && mesh.vertices[b] && a !== b, `bad edge ${a}-${b}`);
+    degree[a]++, degree[b]++;
+    // Every edge is a side of the cube: 2 long in 4D, and its corners differ along one axis only.
+    const [p, q] = [mesh.vertices[a], mesh.vertices[b]];
+    assert.ok(Math.abs(length4(p.map((c, i) => c - q[i])) - 2) < 1e-12, `edge ${a}-${b} is not 2 long`);
+    assert.equal(p.filter((c, i) => c !== q[i]).length, 1, `edge ${a}-${b} changes more than one axis`);
+  }
+  assert.ok(degree.every((d) => d === 4), `every corner joins four neighbours, got ${degree}`);
+});
+
+test("turning in 4D keeps every point at the same distance from the centre, and no turn changes nothing (task 0002)", () => {
+  const points = [...tesseract().vertices, [0.3, -1.2, 0.7, 2.1], [0, 0, 0, 1]];
+  for (const p of points) {
+    assert.deepEqual(rotate4(p, [0, 0, 0]), p);
+    for (const xw of angles(0.9)) {
+      for (const yw of angles(1.1)) {
+        for (const zw of angles(1.3)) {
+          assert.ok(Math.abs(length4(rotate4(p, [xw, yw, zw])) - length4(p)) < 1e-9, `${p} turned by ${[xw, yw, zw]}`);
+        }
+      }
+    }
+  }
+  // Each plane leaves the other two axes where they were.
+  const xw = rotate4([1, 2, 3, 4], [0.5, 0, 0]);
+  assert.deepEqual([xw[1], xw[2]], [2, 3], "an xw turn leaves y and z alone");
+  const yw = rotate4([1, 2, 3, 4], [0, 0.5, 0]);
+  assert.deepEqual([yw[0], yw[2]], [1, 3], "a yw turn leaves x and z alone");
+  const zw = rotate4([1, 2, 3, 4], [0, 0, 0.5]);
+  assert.deepEqual([zw[0], zw[1]], [1, 2], "a zw turn leaves x and y alone");
+});
+
+test("the 4D perspective changes nothing at w = 0 and shrinks points farther along w (task 0002)", () => {
+  assert.deepEqual(project4([1, -2, 3, 0]), [1, -2, 3]);
+  const near = project4([1, 1, 1, -1]);
+  const far = project4([1, 1, 1, 1]);
+  assert.ok(near[0] > 1 && far[0] < 1);
+  assert.ok(project4([1, 0, 0, 1], 5)[0] > project4([1, 0, 0, 1], 3)[0], "a farther eye flattens the view");
+});
+
+test("no turn of the tesseract projects past tesseractRadius, and the worst sampled turn comes within 1% of it (task 0002)", () => {
+  const { vertices } = tesseract();
+  for (const d of [3, 4, 6]) {
+    const bound = tesseractRadius(d);
+    let worst = 0;
+    for (const xw of angles(0.1)) {
+      for (const yw of angles(0.5)) {
+        for (const zw of angles(0.5)) {
+          for (const p of vertices) worst = Math.max(worst, length(project4(rotate4(p, [xw, yw, zw]), d)));
+        }
+      }
+    }
+    assert.ok(worst <= bound + 1e-9, `d = ${d}: radius ${worst} passes the bound ${bound}`);
+    assert.ok(worst >= bound * 0.99, `d = ${d}: the bound ${bound} is loose, the worst sampled radius is ${worst}`);
+  }
+  // The closed form, by hand for d = 3: sqrt(4 - w^2) * d / (d + w) at its peak, w = -4 / d.
+  const w = -4 / 3;
+  assert.ok(Math.abs(tesseractRadius(3) - (Math.sqrt(4 - w * w) * 3) / (3 + w)) < 1e-12);
+});
+
+test("the tesseract stays inside its frame at every sampled 4D turn and 3D view, corners and edges alike (task 0002)", () => {
+  const { vertices, edges } = tesseract();
+  // The sizing main.js's tesseract painter uses: d = 3 for the 4D step, a camera distance of 5 for the 3D step.
+  const d = 3;
+  const distance = 5;
+  const scale = fitScale({ vertices: [[tesseractRadius(d), 0, 0]] }, distance); // in half the frame's shorter side
+  const reach = ([x, y]) => Math.max(Math.abs(x), Math.abs(y));
+  const seen = (p, ax, ay) => reach(project(rotate(p, ax, ay), 0, 0, scale, distance));
+  // Corners: every 4D turn on a grid, each seen from every 3D view on a grid.
+  let corner = 0;
+  for (const xw of angles(0.5)) {
+    for (const yw of angles(0.5)) {
+      for (const zw of angles(0.5)) {
+        for (const v of vertices) {
+          const p = project4(rotate4(v, [xw, yw, zw]), d);
+          for (const ax of angles(0.4)) for (const ay of angles(0.4)) corner = Math.max(corner, seen(p, ax, ay));
+        }
+      }
+    }
+  }
+  assert.ok(corner <= 1 + 1e-9, `a corner reaches ${corner.toFixed(4)} of its frame`);
+  // The bound is tight, not a small figure lost in a big frame.
+  assert.ok(corner > 0.85, `the fit is needlessly loose (${corner.toFixed(3)})`);
+  // Edges: points a quarter, half and three quarters along each, interpolated in 4D and then
+  // projected, so the lines themselves (not just the lines between projected corners) are checked.
+  let edge = 0;
+  for (const xw of angles(0.9)) {
+    for (const yw of angles(0.9)) {
+      for (const zw of angles(0.9)) {
+        for (const [a, b] of edges) {
+          for (const t of [0.25, 0.5, 0.75]) {
+            const p = project4(rotate4(vertices[a].map((c, i) => c + (vertices[b][i] - c) * t), [xw, yw, zw]), d);
+            for (const ax of angles(0.8)) for (const ay of angles(0.8)) edge = Math.max(edge, seen(p, ax, ay));
+          }
+        }
+      }
+    }
+  }
+  assert.ok(edge <= 1 + 1e-9, `an edge reaches ${edge.toFixed(4)} of its frame`);
 });

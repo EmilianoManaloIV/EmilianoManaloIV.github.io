@@ -46,3 +46,9 @@ The owner decided that:
 - **Every page ends with the contact details,** which suits conference visitors who land on a post from a shared link.
 - **Projects have no nav item.** They stay on the home page, which the Home item reaches, and the 404's "ways back" still link `/#projects`.
 - **Changing the nav or footer** still means editing every page and both templates at once. The test names any page that was missed.
+
+## Amendment (2026-10-21, task 0002)
+Projects now has a page of its own, so it joins the nav as a whole page: 00 Home, 01 About, 02 Projects,
+03 R&D, 04 Guestbook. Project pages mark Projects as current, as posts mark R&D, and the 404's way back and
+the project pages' links go to `/projects/` instead of `/#projects`. On tablets narrower than about
+1000px the header's tools wrap to a second row so the five labels never break. See ADR 0019.

@@ -286,6 +286,46 @@ export function terrainHeight(x, z, t) {
   return h * fade(x) * fade(z);
 }
 
+// A tesseract (a 4D cube, task 0002, ADR 0019): the 16 corners of [-1, 1]^4, joined
+// where they differ in one coordinate, which gives its 32 edges. Its vertices are 4D,
+// [x, y, z, w]; rotate4() and project4() bring them down to 3D.
+export function tesseract() {
+  const vertices = [];
+  const edges = [];
+  for (let i = 0; i < 16; i++) vertices.push([0, 1, 2, 3].map((bit) => ((i >> bit) & 1 ? 1 : -1)));
+  for (let i = 0; i < 16; i++) {
+    for (let bit = 0; bit < 4; bit++) if (!(i & (1 << bit))) edges.push([i, i | (1 << bit)]);
+  }
+  return { vertices, edges };
+}
+
+// Rotate a 4D point in the xw, yw and zw planes, in that order: the turns that involve
+// the fourth axis, which make the inner cube pass through the outer one.
+export function rotate4(p, [xw = 0, yw = 0, zw = 0]) {
+  const q = [...p];
+  for (const [axis, angle] of [[0, xw], [1, yw], [2, zw]]) {
+    const c = Math.cos(angle);
+    const s = Math.sin(angle);
+    [q[axis], q[3]] = [q[axis] * c - q[3] * s, q[axis] * s + q[3] * c];
+  }
+  return q;
+}
+
+// 4D to 3D perspective, by the same rule project() uses from 3D to the screen: points
+// farther along w shrink toward the centre.
+export function project4([x, y, z, w], distance = 3) {
+  const k = distance / (distance + w);
+  return [x * k, y * k, z * k];
+}
+
+// The largest 3D radius project4() can give a tesseract corner, however it is turned.
+// A corner is 2 from the centre in 4D, so its 3D radius is sqrt(4 - w^2) * d / (d + w),
+// which peaks at w = -4 / d at 2d / sqrt(d^2 - 4). Both projections keep straight lines
+// straight, so bounding the corners bounds the whole wireframe (fed to fitScale()).
+export function tesseractRadius(distance = 3) {
+  return (2 * distance) / Math.sqrt(distance * distance - 4);
+}
+
 // Rotate a point around the x axis, then the y axis.
 export function rotate([x, y, z], ax, ay) {
   const cx = Math.cos(ax);
