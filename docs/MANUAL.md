@@ -30,6 +30,11 @@ Your bio, values, education, experience, email, and social links all live in one
 
 The site updates in about a minute.
 
+`main` is protected, so code changes arrive by pull request with passing tests. As the repository's
+administrator you can still commit `site-text.md` edits straight to `main` this way: if GitHub offers
+**Commit directly to the `main` branch** with a note about bypassing rules, that's expected. The build
+checks the file before deploying.
+
 **Tips:**
 - **Formatting:** `*italic*`, `**bold**`, and `[link text](https://example.com)` work. Most sections are a single paragraph. **About story** can have several, with a blank line between them. Bullet lists aren't supported.
 - **Education and Experience:** each entry is a `### When | Title` line, such as `### 2023–2027 | B.S. Computer Science`, followed by a sentence or two. Add or remove entries, keeping at least one in each.
