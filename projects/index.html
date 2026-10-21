@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Projects | Emiliano Panday Manalo IV</title>
+  <meta name="description" content="Projects by Emiliano Panday Manalo IV: what each one is, how it was built, and the skills behind it.">
+  <link rel="canonical" href="https://emilianomanaloiv.github.io/projects/">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#f1eee5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#292927" media="(prefers-color-scheme: dark)">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://emilianomanaloiv.github.io/projects/">
+  <meta property="og:title" content="Projects | Emiliano Panday Manalo IV">
+  <meta property="og:description" content="Projects by Emiliano Panday Manalo IV: what each one is, how it was built, and the skills behind it.">
+  <meta name="twitter:card" content="summary">
+
+  <script src="/js/theme.js"></script>
+  <link rel="preload" href="/assets/fonts/inter-latin-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/ibm-plex-mono-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="modulepreload" href="/js/geometry.js">
+  <link rel="modulepreload" href="/js/models.js">
+  <script type="module" src="/js/main.js"></script>
+  <script type="module" src="/js/ui.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="read-progress" aria-hidden="true"></div>
+    <canvas class="ambient-scene" data-scene="ambient" aria-hidden="true"></canvas>
+    <div class="container">
+      <a class="monogram" href="/" aria-label="Emiliano Panday Manalo IV, home">EM</a>
+      <nav id="site-nav" aria-label="Primary">
+        <ul class="nav-list">
+          <li><a href="/"><span class="nav-index" aria-hidden="true">00</span> Home</a></li>
+          <li><a href="/about/"><span class="nav-index" aria-hidden="true">01</span> About</a></li>
+          <li><a href="/projects/" aria-current="page"><span class="nav-index" aria-hidden="true">02</span> Projects</a></li>
+          <li><a href="/rd/"><span class="nav-index" aria-hidden="true">03</span> R&amp;D</a></li>
+          <li><a href="/guestbook/"><span class="nav-index" aria-hidden="true">04</span> Guestbook</a></li>
+        </ul>
+      </nav>
+      <div class="header-tools">
+        <ul class="socials" aria-label="Social profiles">
+          <li><a href="https://www.instagram.com/TODO" data-link="instagram" aria-label="Instagram"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="12" cy="12" r="3"/><path d="M16.5 7.5v.01"/></svg></a></li>
+          <li><a href="https://www.linkedin.com/in/TODO" data-link="linkedin" aria-label="LinkedIn"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 11v5M8 8v.01M12 16v-5M16 16v-3a2 2 0 0 0-4 0"/></svg></a></li>
+          <li><a href="https://x.com/TODO" data-link="x" aria-label="X"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4l11.733 16h4.267l-11.733-16zM4 20l6.768-6.768M13.228 10.772L20 4"/></svg></a></li>
+          <li><a href="https://github.com/EmilianoManaloIV" data-link="github" aria-label="GitHub"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li>
+        </ul>
+        <button class="toggle" type="button" id="theme-toggle" aria-pressed="false">Dark mode<span data-state aria-hidden="true">: off</span></button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section id="projects" class="page-hero hero-split">
+      <div class="container">
+        <div>
+          <p class="eyebrow"><a href="/">Home</a> / Projects</p>
+          <h1>Projects</h1>
+          <p class="lede" data-text="projects-intro">Things I've built, from tools to games, each with the story behind it.</p>
+        </div>
+        <figure class="model model-tesseract">
+          <canvas class="tesseract-scene" data-scene="tesseract" tabindex="0" role="img" aria-roledescription="3D model" aria-label="Tesseract (4D cube) wireframe"></canvas>
+          <figcaption>FIG. 02.1 / Tesseract, a 4D cube in projection</figcaption>
+          <p class="model-controls"><span class="model-hint" aria-hidden="true">Drag or use arrow keys</span> <button class="toggle model-reset" type="button" data-reset>Reset view</button></p>
+        </figure>
+      </div>
+    </section>
+
+    <section id="all" class="section" data-label="01 — All projects">
+      <div class="container">
+        <h2 class="section-title"><span class="section-index" aria-hidden="true">01 /</span> All projects</h2>
+        <!-- The build (tools/build.mjs) fills this from the Projects discussions, newest first (ADR 0006, 0019). -->
+        <div class="project-list"><!-- PROJECTS --></div>
+        <p class="empty-state">Projects are on their way.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-contact" id="contact">
+        <h2 class="visually-hidden">Contact</h2>
+        <hr class="section-rule" aria-hidden="true">
+        <ul class="contact-list">
+          <li>Email: <a href="mailto:TODO@example.com" data-link="email" data-link-text>TODO@example.com</a> <button class="action" type="button" data-link="email" data-copy-email="TODO@example.com" aria-label="Copy email address">Copy</button></li>
+          <li>LinkedIn: <a href="https://www.linkedin.com/in/TODO" data-link="linkedin" data-link-text>linkedin.com/in/TODO</a></li>
+          <li>GitHub: <a href="https://github.com/EmilianoManaloIV" data-link="github" data-link-text>github.com/EmilianoManaloIV</a></li>
+        </ul>
+        <ul class="tags">
+          <li><a class="tag tag-link" href="/emiliano-manalo.vcf" download>Save contact</a></li>
+          <li><button class="action" type="button" data-share>Share this page</button></li>
+        </ul>
+        <p class="copy-status" role="status" data-copy-status></p>
+      </div>
+      <div class="footer-brand-block">
+        <hr class="footer-rule">
+        <p class="footer-brand">EM</p>
+        <p class="footer-tagline">Blending Engineering Practices With Art</p>
+        <p class="footer-ai">Built with AI assistance · <a href="/about/#made">How this site was made</a></p>
+        <p class="footer-links"><a href="/guestbook/">Sign the guestbook</a> · <a href="/card/">Show my QR card</a></p>
+        <p class="footer-motion"><button class="toggle" type="button" data-motion-toggle aria-pressed="true">Motion<span data-state aria-hidden="true">: on</span></button></p>
+        <ul class="socials" aria-label="Social profiles">
+          <li><a href="https://www.instagram.com/TODO" data-link="instagram" aria-label="Instagram"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="12" cy="12" r="3"/><path d="M16.5 7.5v.01"/></svg></a></li>
+          <li><a href="https://www.linkedin.com/in/TODO" data-link="linkedin" aria-label="LinkedIn"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 11v5M8 8v.01M12 16v-5M16 16v-3a2 2 0 0 0-4 0"/></svg></a></li>
+          <li><a href="https://x.com/TODO" data-link="x" aria-label="X"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4l11.733 16h4.267l-11.733-16zM4 20l6.768-6.768M13.228 10.772L20 4"/></svg></a></li>
+          <li><a href="https://github.com/EmilianoManaloIV" data-link="github" aria-label="GitHub"><svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li>
+        </ul>
+      </div>
+      <figure class="model model-teapot">
+        <canvas class="teapot-scene" data-scene="teapot" tabindex="0" role="img" aria-roledescription="3D model" aria-label="Utah teapot wireframe"></canvas>
+        <figcaption>Utah teapot, Newell 1975</figcaption>
+        <p class="model-controls"><span class="model-hint" aria-hidden="true">Drag or use arrow keys</span> <button class="toggle model-reset" type="button" data-reset>Reset view</button></p>
+      </figure>
+    </div>
+  </footer>
+</body>
+</html>

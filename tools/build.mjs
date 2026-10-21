@@ -16,7 +16,7 @@ import { qrSvg } from "./qr.mjs";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = "https://emilianomanaloiv.github.io";
 const REPO = process.env.GITHUB_REPOSITORY || "EmilianoManaloIV/EmilianoManaloIV.github.io";
-const STATIC = ["index.html", "404.html", "styles.css", "favicon.svg", "emiliano-manalo.vcf", "site.webmanifest", "assets", "js", "about", "rd", "guestbook", "card"];
+const STATIC = ["index.html", "404.html", "styles.css", "favicon.svg", "emiliano-manalo.vcf", "site.webmanifest", "assets", "js", "about", "rd", "projects", "guestbook", "card"];
 // Limits for images and clips found in posts and comments, which strangers can write.
 // Attempts count against maxPerPage whether they succeed or not, so a comment full of
 // dead links can't stall the build; pageBytes keeps a page's media well under Pages limits.
@@ -325,11 +325,18 @@ async function build() {
     projects.push(project);
   }
   projects.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  const homeFile = join(out, "index.html");
   // Empty states are removed here too, not only by CSS :has(), so older browsers never
   // show "on their way" under real cards or a heading over an empty list.
-  let home = r.insertAt(readFileSync(homeFile, "utf8"), "<!-- PROJECTS -->", projects.map(r.projectCard).join("\n        "));
-  if (projects.length) home = r.insertAt(home, '<p class="empty-state">Projects are on their way.</p>', "");
+  const noProjects = '<p class="empty-state">Projects are on their way.</p>';
+  // The Projects page lists them all; its tesseract is FIG. 02.1, so cards start at 02.2 (ADR 0019).
+  const listFile = join(out, "projects", "index.html");
+  let list = r.insertAt(readFileSync(listFile, "utf8"), "<!-- PROJECTS -->", projects.map((p, i) => r.projectCard(p, i + 1)).join("\n        "));
+  if (projects.length) list = r.insertAt(list, noProjects, "");
+  write(listFile, list);
+  // The home page previews the two newest, and links to the rest only when there are any.
+  const homeFile = join(out, "index.html");
+  let home = r.insertAt(readFileSync(homeFile, "utf8"), "<!-- PROJECTS -->", projects.slice(0, 2).map(r.projectCard).join("\n        "));
+  home = projects.length ? r.insertAt(home, noProjects, "") : r.insertAt(home, '<p class="all-projects"><a class="tag tag-link" href="/projects/">All projects</a></p>', "");
   write(homeFile, home);
   const aboutFile = join(out, "about", "index.html");
   const skills = r.skillsList(projects);

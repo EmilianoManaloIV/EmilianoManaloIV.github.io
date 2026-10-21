@@ -24,6 +24,7 @@ task 0001 were back-filled from the pull requests that fixed them (ADR 0018) and
 | The banner's terrain looked small next to Figma's. | The terrain drawn at 40% of the banner's width, since the banner is taller than Figma's (PR #20, ADR 0014). |
 | On phones of 360 px and narrower, the values band's ID strip was cut off at the right. | The strip's cells share a phone's width and keep Figma's widths only from 1280 px (PR #23, ADR 0017). |
 | The home page showed a grey "portrait" placeholder. | The owner's photo, cropped to the frame and compressed to 112 KB (PR #26). |
+| Every new project made the home page one card longer, and there was no single page listing them all. | A Projects page with every project under a hands-on tesseract; the home page previews the two newest and links to it; Projects in the nav (task 0002, ADR 0019). |
 
 ## Known
 

@@ -1,5 +1,5 @@
 // Motion, console, headline, device readout, and toggles; see ADR 0002. No network use.
-import { piercedSpheroid, grid, cube, sphere, terrainHeight, DRIFT, rotate, orient, project, bezierPatches, uprightUnit, fitUnit, headset, icosphere, fitScale } from "./geometry.js";
+import { piercedSpheroid, grid, cube, sphere, terrainHeight, DRIFT, rotate, orient, project, bezierPatches, uprightUnit, fitUnit, headset, icosphere, fitScale, tesseract, rotate4, project4, tesseractRadius } from "./geometry.js";
 import { teapotPoints, teapotPatches } from "./models.js";
 
 const root = document.documentElement;
@@ -36,6 +36,7 @@ const meshes = {
   teapot: uprightUnit(bezierPatches(teapotPoints, teapotPatches, 3, 6)),
   headset: fitUnit(headset()),
   icosa: icosphere(1),
+  tesseract: tesseract(), // 4D vertices; the painter brings them down to 3D (task 0002)
 };
 
 function strokeMesh(ctx, mesh, transform) {
@@ -61,7 +62,12 @@ const poses = {
   teapot: (t) => [0.35 + Math.sin(t * 0.25) * 0.15, t * 0.3],
   headset: (t) => [0.3 + Math.sin(t * 0.2) * 0.12, 2.6 + t * 0.28],
   ambient: (t) => [0.4 + Math.sin(t * 0.05) * 0.2, (t * TAU) / 90], // one turn per 90 s
+  // The tesseract's 3D view turns slowly; its 4D turn (hyperTurn) does the rest (task 0002).
+  tesseract: (t) => [0.4 + Math.sin(t * 0.15) * 0.1, 0.5 + t * 0.12],
 };
+// The tesseract's turns in the xw, yw and zw planes at time t, at unrelated rates so
+// the inner cube never passes through the outer one the same way twice (ADR 0019).
+const hyperTurn = (t) => [t * 0.41, t * 0.17, t * 0.26];
 // Hands-on models (ADR 0009): a visitor's own turn, added on top of the pose.
 const turns = {};
 const posed = (name) => poses[name](time).map((a, i) => a + (turns[name]?.[i] || 0));
@@ -184,6 +190,15 @@ const painters = {
     // its frame at any angle, with a little breathing room (ADR 0009).
     strokeMesh(ctx, meshes.headset, (p) => project(rotate(p, ax, ay), w / 2, h / 2, (Math.min(w, h) / 2) * 0.94 * headsetFit, 5));
   },
+  // The Projects page's 4D cube (task 0002, ADR 0019): turned in 4D, projected to 3D,
+  // then turned and projected like the headset. Sized from tesseractRadius(), so no
+  // 4D turn and no visitor's drag can push it past its frame.
+  tesseract(ctx, w, h) {
+    const [ax, ay] = posed("tesseract");
+    const turn4 = hyperTurn(time);
+    const scale = (Math.min(w, h) / 2) * 0.94 * tesseractFit;
+    strokeMesh(ctx, meshes.tesseract, (p) => project(rotate(project4(rotate4(p, turn4), 3), ax, ay), w / 2, h / 2, scale, 5));
+  },
 };
 
 const scenes = [...document.querySelectorAll("canvas[data-scene]")].map((canvas) => ({
@@ -200,6 +215,7 @@ const ambient = scenes.find((s) => s.canvas.dataset.scene === "ambient");
 const motionScenes = scenes.filter((s) => s !== ambient);
 let ambientTime = 0;
 const headsetFit = fitScale(meshes.headset, 5);
+const tesseractFit = fitScale({ vertices: [[tesseractRadius(3), 0, 0]] }, 5);
 let ambientTimer = 0;
 
 // Pixel ratio per scene, capped at 2. The full-screen ambient sphere draws at 1x:

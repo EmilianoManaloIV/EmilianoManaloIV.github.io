@@ -13,9 +13,9 @@ it so. These were back-filled from `CLAUDE.md` and ADRs 0001 to 0017 when the pr
   the GitHub app; within about a minute it appears at `/rd/<number>-<title>/` with its comments, newest
   first on the R&D page. Editing updates it, renaming keeps old links working, deleting removes it
   (ADR 0005).
-- **R-03** The owner adds a project the same way, in **Projects**: a card on the home page, a page at
-  `/projects/<number>-<title>/`, an optional link button, and skills from `skill:` labels listed with
-  counts on the About page (ADR 0006).
+- **R-03** The owner adds a project the same way, in **Projects**: a card on the Projects page (and on the home
+  page while it is one of the two newest), a page at `/projects/<number>-<title>/`, an optional link
+  button, and skills from `skill:` labels listed with counts on the About page (ADR 0006, 0019).
 - **R-04** Posts and projects can carry short video clips that play muted and looped only while motion is
   on; HEVC recordings are refused with a build warning; comments never show video (ADR 0007).
 - **R-05** Visitors sign a guestbook (one pinned discussion, one comment per signature) with their GitHub
@@ -25,17 +25,19 @@ it so. These were back-filled from `CLAUDE.md` and ADRs 0001 to 0017 when the pr
 - **R-07** The owner has a conference card at `/card/`: a QR code drawn by the build, a printable badge
   insert, a vCard, and link previews and a home-screen icon when their images exist (ADR 0011).
 - **R-08** Visitors can turn the hands-on 3D models (the Utah teapot on every page, the VR headset on the
-  R&D page) by dragging or with the arrow keys, and put them back with Reset or the Home key (ADR 0009,
-  0015).
+  R&D page, the tesseract on the Projects page) by dragging or with the arrow keys, and put them back with
+  Reset or the Home key (ADR 0009, 0015, 0019).
 - **R-09** The home banner shows the art designed in Figma: the pierced spheroid, the drifting terrain, the
   console, the headline, and the instrument labels (ADR 0014, 0016, 0017).
 - **R-10** Every page discloses that the site was built with AI assistance and links to how; R&D posts
   labelled `opinion` show an Opinion tag (ADR 0013).
-- **R-11** The top nav links whole pages (Home, About, R&D, Guestbook); every page ends with the contact
-  details and the teapot (ADR 0015).
+- **R-11** The top nav links whole pages (Home, About, Projects, R&D, Guestbook); every page ends with the
+  contact details and the teapot (ADR 0015, 0019).
 - **R-12** Visitors can copy the owner's email, share the page, save the contact, follow the social
   links, see where they are on the page, switch the theme, and pause all motion; the site remembers the
   theme and motion choices (ADR 0003, 0008, 0017).
+- **R-13** Visitors find every project on one page, `/projects/`, newest first, under a heading with a
+  hands-on tesseract; the home page previews the two newest and links to it (ADR 0019).
 
 ## Qualities
 - **Q-01** Zero dependencies: no npm packages, frameworks, CDNs, or external stylesheet, script or font

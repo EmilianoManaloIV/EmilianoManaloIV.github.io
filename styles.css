@@ -1418,6 +1418,11 @@ html:not(.js) .model {
   font-size: var(--text-small);
 }
 
+/* The home page previews two projects, then this link to the rest (ADR 0019). */
+.all-projects {
+  margin-top: var(--space-6);
+}
+
 /* "Opinion" on R&D posts labelled "opinion" (ADR 0013): an outlined tag in the date
    line, so readers know a post argues a view. Ink on the page passes AA. */
 .tag-opinion {
@@ -1632,7 +1637,8 @@ html:not(.js) .model {
 }
 
 .teapot-scene,
-.headset-scene {
+.headset-scene,
+.tesseract-scene {
   width: 100%;
   aspect-ratio: 4 / 3;
   color: var(--color-ink);
@@ -1644,13 +1650,16 @@ html:not(.js) .model {
 }
 
 /* The headset can face any way, and its strap reaches as far up as sideways, so its
-   frame is square: the largest size that never clips at any angle. */
-.headset-scene {
+   frame is square: the largest size that never clips at any angle. The tesseract
+   turns in four dimensions, so its frame is square too (ADR 0019). */
+.headset-scene,
+.tesseract-scene {
   aspect-ratio: 1;
 }
 
 .model-teapot,
-.model-headset {
+.model-headset,
+.model-tesseract {
   max-width: 24rem;
   margin-top: var(--space-8);
 }
@@ -1667,7 +1676,7 @@ html:not(.js) .model {
   padding-inline: var(--space-4);
 }
 
-/* A heading with a model beside it: the R&D headset. */
+/* A heading with a model beside it: the R&D headset, the Projects tesseract. */
 @media (min-width: 800px) {
   .hero-split .container {
     display: grid;
@@ -1693,15 +1702,22 @@ html:not(.js) .model {
    Tablet: 800px and up
    ========================================================================== */
 @media (min-width: 800px) {
+  /* The five-item nav doesn't fit beside the name and tools below about 1000px; there
+     the tools wrap to a second row instead of squeezing every label (ADR 0019). */
   .site-header .container {
     flex-direction: row;
+    flex-wrap: wrap;
     align-items: center;
-    gap: var(--space-8);
+    gap: var(--space-3) var(--space-8);
   }
 
   .nav-list {
     display: flex;
     gap: var(--space-4);
+  }
+
+  .nav-list a {
+    white-space: nowrap;
   }
 
   .header-tools {

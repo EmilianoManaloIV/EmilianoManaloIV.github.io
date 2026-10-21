@@ -39,8 +39,9 @@
         <ul class="nav-list">
           <li><a href="/"><span class="nav-index" aria-hidden="true">00</span> Home</a></li>
           <li><a href="/about/"><span class="nav-index" aria-hidden="true">01</span> About</a></li>
-          <li><a href="/rd/"><span class="nav-index" aria-hidden="true">02</span> R&amp;D</a></li>
-          <li><a href="/guestbook/"><span class="nav-index" aria-hidden="true">03</span> Guestbook</a></li>
+          <li><a href="/projects/" aria-current="page"><span class="nav-index" aria-hidden="true">02</span> Projects</a></li>
+          <li><a href="/rd/"><span class="nav-index" aria-hidden="true">03</span> R&amp;D</a></li>
+          <li><a href="/guestbook/"><span class="nav-index" aria-hidden="true">04</span> Guestbook</a></li>
         </ul>
       </nav>
       <div class="header-tools">
@@ -58,7 +59,7 @@
   <main id="main">
     <article id="project" class="section post">
       <div class="container prose">
-        <p class="eyebrow"><a href="/#projects">Projects</a> / <time datetime="{{date_iso}}">{{date}}</time> · {{minutes}} min read</p>
+        <p class="eyebrow"><a href="/projects/">Projects</a> / <time datetime="{{date_iso}}">{{date}}</time> · {{minutes}} min read</p>
         <h1>{{title}}</h1>
         <ul class="tags">
           {{actions}}
@@ -72,7 +73,7 @@
         <h2 class="section-title"><span class="section-index" aria-hidden="true">01 /</span> Comments ({{comment_count}})</h2>
         {{comments}}
         <p><a class="tag tag-link" href="{{discussion_url}}">Comment on GitHub</a></p>
-        <p class="note">Commenting uses your GitHub account; your username appears here. <a href="/#projects">Back to all projects</a>.</p>
+        <p class="note">Commenting uses your GitHub account; your username appears here. <a href="/projects/">Back to all projects</a>.</p>
       </div>
     </section>
   </main>
