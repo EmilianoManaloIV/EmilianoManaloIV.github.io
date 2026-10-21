@@ -53,15 +53,15 @@ Creation, from good software to art, is intrinsically human. Technology is here 
 Evolved To Learn
 
 ## Value 3 text
-The world is always changing with new techniques, new technologies, and new mediums. Embracing change and being curious is crucial; not a weakness.
+The world is always changing with new techniques, new technologies, and new mediums. Embracing change and being curious are crucial, not weaknesses.
 
 ## About one-liner
 Finding ways to integrate technology ethically with art, media, and society.
 
 ## About story
-TODO: A longer bio. Where you started, what pulled you toward technology, engineering, and art, and what you are working toward now.
+My journey started with my intrinsic love for human psychology, philosophy, and reading literature in high school. I often discussed my ideas both online and in person to gain further perspectives on the world and its various ideals. It was also during this time that I began learning 3D modeling, photography, and mixed media in my free time, expanding my repertoire of knowledge. During the COVID pandemic, I became a freelance artist, putting my skills on the open market and getting a feel for what it means to be a free-roam artist in various online communities. Post-pandemic, I set my sights on psychology as a career but was quickly enamored with computer science and engineering. It was here that I decided I wanted to study computer science with a social-psychological foundation to better apply technology in a meaningful, human-driven way. It was here that I discovered ACM SIGGRAPH and SIGCHI, and fell in love with computer graphics and human-computer interaction. I now believe that the deviation from one subject to another wasn't a sign of uncertainty. It was a sign of strength, holistic understanding, and a willingness to bridge knowledge between seemingly unrelated subjects. The world is a complex and often tangled place of ideas and subjects; I'm open to unraveling and solving these nuances willingly and passionately.
 
-TODO: What you want to talk about with people you meet at the conference.
+I'm always researching and developing! Feel free to reach out to me if you want to discuss anything related to ethical AI, computer graphics, or human-computer interactions! 
 
 ## How this site was made
 <!-- Your AI-use note, shown at the bottom of the About page. Keep it true: if you
@@ -71,9 +71,23 @@ I designed this site in Figma and built it with **Claude**, Anthropic's AI codin
 My bio, my projects, and my R&D posts are my own words. The site has no trackers, loads no outside scripts, and its whole source is [public on GitHub](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io).
 
 ## Education
-### TODO: Years | TODO: Degree or program
-TODO: School, location. Focus areas, honors, or relevant coursework.
+### 2025-2027 | B.S. Computer Science, California State University Fullerton
+Focus on computer graphics and human-computer interaction. Dean's List, one semester. ACM SIGGRAPH student chapter vice-chair.
+### 2022-2025 | A.A. Psychology, Riverside City College
+Social psychology concentration. Psychological research and statistics. 
+### 2022-2025 | A.S. Computer Science, Riverside City College
+Basic data structures and algorithms. Dean's List, one or two semesters.
+### 2017-2021 | High School Diploma, Redlands Adventist Academy
+Concert Band (Drums). Jazz Band (Drums). Audio Visual Team. 
 
 ## Experience
-### TODO: Dates | TODO: Role, organization
-TODO: One or two lines on what you built or changed, with a number if you have one.
+### Jun 2026-Present | Vice-Chair, ACM SIGGRAPH CSUF
+Organizes, advises, and coordinates with the chapter chair to execute events and policies.
+### Dec 2025-May 2026 | Community Management Lead, ACM SIGGRAPH CSUF
+Coordinates and organizes content team and community engagement for the chapter.
+### Aug 2025-Dec 2025 | Historian, ACM SIGGRAPH CSUF
+Collects, edits, and distributes multimedia such as photos and videos for the chapter.
+### Jun 2023-Jan 2024 | Virtual Producer & Content Creator, Freelance For VRChat Kmart Community
+Took virtual photos and videos for promotional use; engaged online with content creators for collaboration, content creation, and community engagement. 
+### Oct 2020-May 20222 | Lead Developer, Freelance For VRChat LARP Community
+Created technical guidelines, design schemas, and interactive experiences in VRChat; optimized for rich storytelling through community immersion and engagement. 
