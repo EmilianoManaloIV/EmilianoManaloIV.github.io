@@ -1,11 +1,11 @@
 # 0002: A Projects page with a hands-on 4D cube
 
-- **Status:** done (in review)
+- **Status:** done
 - **Requirements:** R-03, R-08, R-11, new R-13; Q-02, Q-03, Q-04, Q-05, Q-09, Q-10, Q-11
 - **Decisions:** ADR 0019 (amends ADR 0006, 0009, 0015)
 - **Model:** main session (cross-cutting: geometry, page, build, nav on every page); tests by the
   `test-engineer` agent
-- **PR:** (link when opened)
+- **PR:** [#28](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/pull/28)
 
 ## Goal
 The owner asked: "I want to add a project page to my website while retaining the style that is currently
