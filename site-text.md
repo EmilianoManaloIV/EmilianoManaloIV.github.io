@@ -89,7 +89,7 @@ Coordinates and organizes content team and community engagement for the chapter.
 Collects, edits, and distributes multimedia such as photos and videos for the chapter.
 ### Jun 2023-Jan 2024 | Virtual Producer & Content Creator, Freelance For VRChat Kmart Community
 Took virtual photos and videos for promotional use; engaged online with content creators for collaboration, content creation, and community engagement. 
-### Oct 2020-May 20222 | Lead Developer, Freelance For VRChat LARP Community
+### Oct 2020-May 2022 | Lead Developer, Freelance For VRChat LARP Community
 Created technical guidelines, design schemas, and interactive experiences in VRChat; optimized for rich storytelling through community immersion and engagement. 
 
 ## Projects intro
