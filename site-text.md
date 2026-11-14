@@ -35,7 +35,7 @@ Aspiring Creative Technologist, Technical Artist, And Software Engineer
 Bridging Creatives And Technologists
 
 ## Home about text
-I'm an aspiring creative technologist looking to bridge the misunderstandings between creatives and technologists. I believe there is a way for both paths to intersect and benefit from each other, rather than diverge and oppose each other. I'm currently researching ethical AI integration, computer graphics, and human-computer interactions. 
+I'm an aspiring hybrid visionary looking to bridge the misunderstandings between creatives and technologists. I believe there is a way for both paths to intersect and benefit from each other, rather than diverge and oppose each other. I'm currently researching ethical AI integration, computer graphics, and human-computer interactions. 
 
 ## Value 1 heading
 Polymath Thinking
