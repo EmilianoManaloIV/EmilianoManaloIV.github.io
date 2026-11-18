@@ -4,7 +4,7 @@
 - **Requirements:** new R-14; Q-02, Q-03
 - **Decisions:** none needed (the address was planned in `about/index.html` when the CV section was made)
 - **Model:** main session (one asset, one link); tests by the `test-engineer` agent
-- **PR:** (link when opened)
+- **PR:** [#30](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/pull/30)
 
 ## Goal
 The owner shared their resume ("This is my Resume") and chose to offer it as a download. Afterwards, the
