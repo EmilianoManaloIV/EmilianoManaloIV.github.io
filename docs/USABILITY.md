@@ -25,12 +25,13 @@ task 0001 were back-filled from the pull requests that fixed them (ADR 0018) and
 | On phones of 360 px and narrower, the values band's ID strip was cut off at the right. | The strip's cells share a phone's width and keep Figma's widths only from 1280 px (PR #23, ADR 0017). |
 | The home page showed a grey "portrait" placeholder. | The owner's photo, cropped to the frame and compressed to 112 KB (PR #26). |
 | Every new project made the home page one card longer, and there was no single page listing them all. | A Projects page with every project under a hands-on tesseract; the home page previews the two newest and links to it; Projects in the nav (task 0002, ADR 0019). |
+| The About & CV page promised a CV that wasn't there yet ("A downloadable CV is on its way"). | The owner's resume as a "Download CV (PDF)" link, 148 KB and fetched only when tapped; a test keeps its email link in step with the site's (task 0003). |
 
 ## Known
 
 | The problem | Why it is still there |
 |---|---|
-| The About & CV page has no downloadable CV and only the skills from projects. | Two `TODO` notes in `about/index.html` wait for the CV PDF and any hand-written skill groups; the launch-readiness test stays pending until they are resolved. |
+| The About & CV page lists only the skills from projects. | A `TODO` note in `about/index.html` waits for any hand-written skill groups; the launch-readiness test stays pending until it is resolved. |
 | Shared links show no preview image, and an iPhone home-screen icon falls back to a screenshot. | `assets/img/share.png` and `apple-touch-icon.png` are not exported from Figma yet; the build adds them automatically when they exist (ADR 0011). |
 | The Copy and Share buttons are verified only through their failure path. | The automated browser can't grant clipboard access; a check on a real phone is the remaining test. |
 | The R&D page is empty. | No R&D post has been published yet. |

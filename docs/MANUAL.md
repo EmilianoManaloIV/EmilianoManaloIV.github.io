@@ -7,6 +7,7 @@ For how the site was made and how it works inside, see the [README](../README.md
 - [Edit your site text](#edit-your-site-text)
 - [At the conference: your QR card](#at-the-conference-your-qr-card)
 - [Link previews and home-screen icon](#link-previews-and-home-screen-icon)
+- [Update your CV](#update-your-cv)
 - [Publish an R&D post](#publish-an-rd-post)
 - [Add a project](#add-a-project)
 - [Add a video clip](#add-a-video-clip)
@@ -39,7 +40,7 @@ checks the file before deploying.
 - **Formatting:** `*italic*`, `**bold**`, and `[link text](https://example.com)` work. Most sections are a single paragraph. **About story** can have several, with a blank line between them. Bullet lists aren't supported.
 - **Education and Experience:** each entry is a `### When | Title` line, such as `### 2023–2027 | B.S. Computer Science`, followed by a sentence or two. Add or remove entries, keeping at least one in each.
 - **Projects intro:** the sentence under the heading of your Projects page (`/projects/`).
-- **Links:** leave a social link empty, with nothing after the colon, to hide it everywhere. Email is required.
+- **Links:** leave a social link empty, with nothing after the colon, to hide it everywhere. Email is required. If you change your email, [upload a CV](#update-your-cv) with the new address at the same time, or the update stops until you do.
 - **If a change doesn't appear:** a mistake stops the update and your site stays as it was. Open the [Actions tab](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/actions), and the failed run says what to fix: a missing, duplicated, or misspelled heading, a bad link, or an extra paragraph. Fix it soon, because new posts, comments, and signatures also wait until the file is valid.
 
 ## At the conference: your QR card
@@ -62,6 +63,18 @@ Two optional images make the site look finished when it's shared or saved. Expor
 | `assets/img/apple-touch-icon.png` | 180 × 180 | The icon when someone adds your site to an iPhone home screen |
 
 The site picks them up on the next build. You don't need to change any code.
+
+## Update your CV
+
+Your About & CV page has a **Download CV (PDF)** link to [`assets/cv/emiliano-manalo-cv.pdf`](../assets/cv/emiliano-manalo-cv.pdf). To replace it:
+
+1. Export your resume as a PDF and rename the file `emiliano-manalo-cv.pdf`, exactly.
+2. Open the [`assets/cv`](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/tree/main/assets/cv) folder on GitHub and choose **Add file → Upload files**.
+3. Drag the PDF in, then **Commit changes**, choosing **Commit directly to the `main` branch** (the note about bypassing rules is expected, as for site text). It replaces the old one, and visitors get it within a few minutes.
+
+**What the build checks:** the PDF is one page, under 1 MB, carries no scripts or embedded files, and its email is a link that matches the email in [`site-text.md`](../site-text.md). If any of these fails, the update stops and your site stays as it was; the failed run in the [Actions tab](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/actions) says which. Fix it soon, because new posts, comments, and signatures also wait until it passes.
+
+**What only you can check:** the email *printed* at the top of the PDF. The build reads the link but can't read printed text, so look at it before uploading.
 
 ## Publish an R&D post
 
