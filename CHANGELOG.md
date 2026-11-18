@@ -6,6 +6,41 @@ Dates are the owner's local merge dates (Pacific time). Quoted requests are the 
 working sessions, verbatim, typos included; where they weren't kept, **Asked** is reconstructed from the
 pull request and marked so. The numbers under **Checked** are the ones each pull request reported.
 
+## 2026-11-17 (round 25): Download my CV from the About page (task 0003)
+
+**Asked:** "This is my Resume", with the PDF; the owner chose to offer it as a download, keeping the
+site's email address, and re-exported the resume with it.
+
+**Added**
+- **The CV as a download:** the About & CV page's CV section has a "Download CV (PDF)" link to
+  `assets/cv/emiliano-manalo-cv.pdf` (148 KB, one page, fetched only when tapped) in place of "A
+  downloadable CV is on its way" (R-14).
+- **"Update your CV"** in the manual: upload a new PDF under the same name from GitHub, with what the
+  build checks and what only the owner can check.
+
+**Changed**
+- `docs/USABILITY.md`: the missing CV moves to Fixed; only the hand-written skill groups stay Known, so
+  the launch-readiness check stays pending.
+
+**Changed after the review**
+- The manual now warns that changing the email in `site-text.md` needs a CV with the new address at the
+  same time, and lists every check the build makes on the PDF; the PDF reader skips `endstream`, and the
+  active-content guard matches names only where a PDF dictionary uses them, so a harmless re-export
+  can't fail by chance (task 0003, "After the review").
+
+**Checked**
+- New tests: the About page offers the CV with `download` and no empty state, and no other page links
+  it; the built PDF is real, one page and under 1 MB; its email link equals the `Email:` line of
+  `site-text.md`, read from compressed streams too; the check rejects a wrong or missing address in plain
+  and compressed PDFs; the PDF carries no scripts, launch actions or embedded files.
+- Unit and site checks: offline build 180 tests (178 pass, 1 skipped, 1 todo); fixture build 205 (204
+  pass, 1 todo); live build 190 (188 pass, 1 skipped, 1 todo).
+- JavaScript 19,953 bytes gzipped, unchanged by this round (budget 32 KB); the largest page about 142 KB
+  gzipped (budget 200 KB); the PDF is a download, not part of any page's weight.
+- Browser (headless Chrome): the CV section at 320, 375, 800, 1280 and 1600 px in light and dark, the
+  link 36 px tall with no horizontal scroll, the PDF served as `application/pdf` byte for byte; no console
+  errors.
+
 ## 2026-10-21 (round 24): A Projects page with a hands-on 4D cube (task 0002, ADR 0019)
 
 **Asked:** "I want to add a project page to my website while retaining the style that is currently

@@ -38,6 +38,8 @@ it so. These were back-filled from `CLAUDE.md` and ADRs 0001 to 0017 when the pr
   theme and motion choices (ADR 0003, 0008, 0017).
 - **R-13** Visitors find every project on one page, `/projects/`, newest first, under a heading with a
   hands-on tesseract; the home page previews the two newest and links to it (ADR 0019).
+- **R-14** Visitors can download the owner's CV as a PDF from the About & CV page, and it gives the same
+  email address as the rest of the site (task 0003).
 
 ## Qualities
 - **Q-01** Zero dependencies: no npm packages, frameworks, CDNs, or external stylesheet, script or font

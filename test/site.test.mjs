@@ -4,7 +4,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, existsSync, readdirSync } from "node:fs";
-import { gzipSync } from "node:zlib";
+import { gzipSync, inflateSync, deflateSync } from "node:zlib";
 import { dirname, join, resolve, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -873,6 +873,113 @@ test("deploy workflow builds with tools/build.mjs and tests the result", () => {
   assert.match(workflow, /discussions: read/);
   assert.doesNotMatch(workflow, /discussions: write|contents: write/, "the build only reads");
   assert.match(workflow, /discussion:\s*\n\s*types: \[[^\]]*\blabeled\b[^\]]*\bunlabeled\b/, "adding a skill label must rebuild (ADR 0006)");
+});
+
+// ---- The CV download (task 0003) ----
+// pdfTeX stores links in Flate-compressed object streams, so a plain-text search finds no /URI.
+// pdfText returns the file as latin1 text followed by every stream that inflates.
+const CV = "assets/cv/emiliano-manalo-cv.pdf";
+function pdfText(buffer) {
+  const raw = buffer.toString("latin1");
+  const parts = [raw];
+  // (?<!end) so the "stream" inside "endstream" does not start a junk slice.
+  for (const m of raw.matchAll(/(?<!end)stream\r?\n/g)) {
+    const start = m.index + m[0].length;
+    const end = raw.indexOf("endstream", start);
+    if (end < 0) continue;
+    try {
+      parts.push(inflateSync(buffer.subarray(start, end)).toString("latin1"));
+    } catch {
+      // Not a Flate stream (an image, a font, or plain text): the plain-text pass covers it.
+    }
+  }
+  return parts.join("\n");
+}
+const pdfMailtos = (text) => [...text.matchAll(/\/URI\s*\(mailto:([^)]*)\)/g)].map((m) => m[1]);
+const pdfPageCount = (text) => (text.match(/\/Type\s*\/Page(?![\w])/g) ?? []).length;
+// The mailto rule, as a function so the tests below can prove it fails on bad PDFs.
+// Returns a message when the PDF is wrong, or "" when it is right.
+function mailtoProblem(text, siteEmail) {
+  const found = pdfMailtos(text);
+  if (!found.length) return `the CV PDF has no mailto: link; expected ${siteEmail}. Re-export the PDF with the email as a link.`;
+  const wrong = found.filter((a) => a !== siteEmail);
+  if (!wrong.length) return "";
+  return `the CV PDF links ${[...new Set(wrong)].join(", ")} but site-text.md has ${siteEmail}. Fix the address in the resume and re-export the PDF.`;
+}
+// A tiny PDF whose link annotation sits in plain text or inside a Flate stream.
+function syntheticPdf(mailto, compress) {
+  const link = mailto === null ? "" : `<< /Type /Annot /Subtype /Link /A << /S /URI /URI (mailto:${mailto}) >> >>`;
+  const body = compress ? deflateSync(Buffer.from(link)) : Buffer.from(link);
+  return Buffer.concat([
+    Buffer.from("%PDF-1.5\n1 0 obj\n<< /Type /Page >>\nendobj\n2 0 obj\n<< /Length 0 >>\nstream\n"),
+    body,
+    Buffer.from("\nendstream\nendobj\n%%EOF\n"),
+  ]);
+}
+
+test("the About page offers the CV as a download, with no empty state or TODO, and no other page links it (task 0003)", () => {
+  const about = read("about/index.html");
+  const section = /<section id="cv"[\s\S]*?<\/section>/.exec(about)?.[0];
+  assert.ok(section, "the CV section is missing");
+  assert.match(section, /<a [^>]*href="\/assets\/cv\/emiliano-manalo-cv\.pdf"[^>]*\sdownload(?=[\s>=])[^>]*>Download CV \(PDF\)<\/a>/);
+  assert.doesNotMatch(section, /TODO/);
+  assert.doesNotMatch(section, /on its way|empty-state/i, "the empty state is gone");
+  for (const page of pages.filter((p) => p !== "about/index.html")) {
+    assert.ok(!read(page).includes("emiliano-manalo-cv"), `${page} should not link the CV`);
+  }
+});
+
+test("the built site holds the CV PDF: a real PDF, one page, under 1 MB (task 0003)", () => {
+  assert.ok(existsSync(join(site, CV)), `${CV} missing from the build`);
+  const buffer = readFileSync(join(site, CV));
+  assert.equal(buffer.subarray(0, 5).toString("latin1"), "%PDF-");
+  assert.ok(buffer.length < 1024 * 1024, `the CV is ${buffer.length} bytes; keep it under 1 MB`);
+  assert.equal(pdfPageCount(pdfText(buffer)), 1, "the CV should be one page");
+});
+
+test("the CV PDF's email link is the address in site-text.md, so an old export cannot go live (task 0003)", () => {
+  const { links } = readSiteText(source("site-text.md"));
+  const text = pdfText(readFileSync(join(site, CV)));
+  assert.ok(pdfMailtos(text).length >= 1, "the CV PDF has no mailto: link");
+  assert.equal(mailtoProblem(text, links.email), "");
+});
+
+test("the CV email check catches a wrong address and a missing one, in plain and compressed PDFs (task 0003)", () => {
+  const good = "emilianomanaloiv@gmail.com";
+  const old = "emilianopandaymanaloiv@gmail.com"; // the first export the owner sent
+  for (const compress of [false, true]) {
+    const label = compress ? "compressed" : "plain";
+    assert.equal(mailtoProblem(pdfText(syntheticPdf(good, compress)), good), "", `${label}: right address passes`);
+    const wrong = mailtoProblem(pdfText(syntheticPdf(old, compress)), good);
+    assert.ok(wrong.includes(old) && wrong.includes(good) && /re-export/i.test(wrong), `${label}: wrong address must fail naming both; got "${wrong}"`);
+    const none = mailtoProblem(pdfText(syntheticPdf(null, compress)), good);
+    assert.match(none, /no mailto/, `${label}: a PDF with no mailto must fail`);
+    assert.equal(pdfPageCount(pdfText(syntheticPdf(good, compress))), 1);
+  }
+});
+
+// A guard for future uploads: the owner replaces this file from the web, so nothing checks
+// what a new export contains. /OpenAction alone is allowed (hyperref's initial view).
+// Names count only in dictionary position (/S /JavaScript, /JS (code), /Type /EmbeddedFile): bare bytes
+// like "/JS" turn up by chance in compressed data and font programs, which must not fail a good export.
+const ACTIVE = [
+  ["/JavaScript", /\/S\s*\/JavaScript(?![A-Za-z])/],
+  ["/JS", /\/JS\s*[(<\d]/],
+  ["/Launch", /\/S\s*\/Launch(?![A-Za-z])/],
+  ["/EmbeddedFile", /\/Type\s*\/EmbeddedFile(?![A-Za-z])/],
+];
+const activeContent = (text) => ACTIVE.filter(([, pattern]) => pattern.test(text)).map(([name]) => name);
+test("the CV PDF carries no scripts, launch actions or embedded files (task 0003)", () => {
+  assert.deepEqual(activeContent(pdfText(readFileSync(join(site, CV)))), [], "the CV PDF contains active content");
+  // The scan must see names hidden in a compressed stream, and allow /OpenAction.
+  const dict = "<< /S /JavaScript /JS (app.alert(1)) >>";
+  const wrap = (body) => Buffer.concat([Buffer.from("%PDF-1.5\nstream\n"), body, Buffer.from("\nendstream\n")]);
+  for (const body of [Buffer.from(dict), deflateSync(Buffer.from(dict))]) assert.deepEqual(activeContent(pdfText(wrap(body))), ["/JavaScript", "/JS"]);
+  assert.deepEqual(activeContent(pdfText(wrap(deflateSync(Buffer.from("<< /S /Launch /Type /EmbeddedFile >>"))))), ["/Launch", "/EmbeddedFile"]);
+  // Stray bytes outside a dictionary are not active content.
+  assert.deepEqual(activeContent(Buffer.from([0x9f, 0x2f, 0x4a, 0x53, 0xe1, 0x00, 0x2f, 0x4a, 0x53, 0xff]).toString("latin1")), []);
+  assert.deepEqual(activeContent("x /JS y /JavaScript z /Launch /EmbeddedFile"), []);
+  assert.deepEqual(activeContent("/OpenAction [1 0 R /Fit]"), []);
 });
 
 // Reported as a todo rather than a failure while content is still pending.
