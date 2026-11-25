@@ -24,7 +24,7 @@
 ## Links
 Email: emilianomanaloiv@gmail.com
 LinkedIn: https://www.linkedin.com/in/emiliano-manalo-iv/
-Instagram: https://www.instagram.com/emanalo8
+Instagram: https://www.instagram.com/epmanaloiv/
 X: https://x.com/EPolyGen
 GitHub: https://github.com/EmilianoManaloIV
 
