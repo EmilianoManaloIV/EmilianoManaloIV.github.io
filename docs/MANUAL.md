@@ -100,6 +100,12 @@ article. Instagram points readers to the R&D link in your bio and uses the artic
 JPEG (at least 320 pixels wide, up to 8 MB, and between 4:5 and 1.91:1). If the JPEG is incompatible
 or unavailable when publishing, Instagram uses the site's R&D card.
 
+LinkedIn and X each attach the first compatible JPEG or PNG from the article and keep the article link
+in the post text. LinkedIn uses photos under 10 MB and under 36,152,320 pixels with alt text up to
+300 characters. X uses photos up to 5 MB and up to 8192 pixels on either side with alt text up to
+1,000 characters. If no photo qualifies or the selected file is unavailable when publishing, that
+channel sends the text and link.
+
 Announcements use the title and the article's plain text, with paragraph breaks. Each channel gets
 the full text when it fits. Longer announcements end with an ellipsis before the article link or
 Instagram bio prompt. The website displays the full article and its supported attachments.

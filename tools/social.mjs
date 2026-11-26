@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { domainToASCII } from "node:url";
-import { isPost, plainText } from "./render.mjs";
+import { decodeEntities, isPost, plainText } from "./render.mjs";
 
 export const SOCIAL_LABEL = "share: social";
 export const CHANNELS = ["linkedin", "x", "instagram"];
@@ -13,13 +13,18 @@ export function socialCandidate(post, article, media, site) {
   if (!wantsSocial(post)) return null;
   // The localized article body contains only the author's images and their original alt text.
   const byFile = new Map([...media.values()].map((item) => [item.file, item]));
-  let image = coverImage(site);
-  for (const [, file, alt] of article.matchAll(/<img src="(img-\d+\.jpg)" alt="([^"]*)"/g)) {
+  const selected = {};
+  for (const [, file, extension, alt] of article.matchAll(/<img src="(img-\d+\.(jpg|png))" alt="([^"]*)"/g)) {
     const { width, height, bytes } = byFile.get(file);
+    if (width < 2 || height < 2) continue;
     const ratio = width / height;
-    if (width < 320 || bytes > 8_000_000 || ratio < 0.8 || ratio > 1.91) continue;
-    image = { url: site + post.path + file, alt: plainText(alt) };
-    break;
+    const photo = { url: site + post.path + file, alt: decodeEntities(alt) };
+    if (photo.alt.length <= 300 && bytes < 10_000_000 && width * height < 36_152_320) selected.linkedin ??= photo;
+    if (photo.alt.length <= 1000 && bytes <= 5_000_000 && width <= 8192 && height <= 8192) selected.x ??= photo;
+    if (extension === "jpg" && width >= 320 && bytes <= 8_000_000 && ratio >= 0.8 && ratio <= 1.91) {
+      selected.instagram ??= photo;
+    }
+    if (selected.linkedin && selected.x && selected.instagram) break;
   }
   const text = article
     .split(/<\/?(?:p|h[1-6]|li|ul|ol|blockquote|pre|figure|figcaption|table|tr|details|summary|div)(?:\s[^>]*)?>|<(?:br|hr)\s*\/?>/gi)
@@ -27,7 +32,11 @@ export function socialCandidate(post, article, media, site) {
     .filter(Boolean)
     .join("\n\n");
   const updatedAt = post.updatedAt ?? post.createdAt;
-  return { number: post.number, title: post.title, text, url: site + post.path, updatedAt, image };
+  const { instagram: image = coverImage(site), ...images } = selected;
+  return {
+    number: post.number, title: post.title, text, url: site + post.path, updatedAt, image,
+    ...(Object.keys(images).length && { images }),
+  };
 }
 
 export const revisionMarker = (revision) => "<!-- social-revision: " + revision + " -->";
@@ -96,9 +105,9 @@ export function announcements(post) {
   const bio = "\n\nRead it via the R&D link in my bio.";
   return {
     // Buffer counts the LinkedIn link as 24 characters and the two newlines as two.
-    linkedin: { text: shorten(article, 3000 - 26, units, 24) + link },
+    linkedin: { text: shorten(article, 3000 - 26, units, 24) + link, ...(post.images?.linkedin && { image: post.images.linkedin }) },
     // X counts the article link as 23 characters and the newline as one.
-    x: { text: shorten(article, 280 - 24, xWeight, 23) + "\n" + post.url },
+    x: { text: shorten(article, 280 - 24, xWeight, 23) + "\n" + post.url, ...(post.images?.x && { image: post.images.x }) },
     instagram: { text: shorten(article, 2196 - instagramWeight(bio), instagramWeight) + bio, image: post.image },
   };
 }

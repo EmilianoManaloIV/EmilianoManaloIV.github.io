@@ -103,7 +103,7 @@ You need Node (24, as CI uses). Python is used only to serve the preview.
 ```bash
 node tools/build.mjs --offline                                # build _site/ without posts
 node tools/build.mjs --fixture test/fixtures/discussions.json # build with sample posts and comments
-node --test                                                   # 236 tests on the sample build, including one todo
+node --test                                                   # 240 tests on the sample build, including one todo
 py -m http.server 8000 --directory _site                      # preview at http://localhost:8000
 ```
 

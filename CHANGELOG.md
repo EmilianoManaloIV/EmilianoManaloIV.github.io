@@ -6,6 +6,16 @@ Dates are the owner's local merge dates (Pacific time). Quoted requests are the 
 working sessions, verbatim, typos included; where they weren't kept, **Asked** is reconstructed from the
 pull request and marked so. The numbers under **Checked** are the ones each pull request reported.
 
+## 2026-11-26 (round 30) · Attach article photos to LinkedIn and X (task 0008, ADR 0020)
+
+**Asked.** “Shouldn't LinkedIn and X also get photo post systems too?”
+
+**Added.** Each channel can attach the first compatible JPEG or PNG from the article, keeping its alt text and the article link. If that channel has no usable image at publishing time, it submits the text and article link.
+
+**Changed after the review.** Photo selection observes Buffer's per-channel alt-text limits and decodes the author's image descriptions once.
+
+**Checked.** Mocked submissions cover photo selection, per-channel limits, caption links, and unavailable images. Offline 215 tests (213 passed, one skipped, one todo), fixture 240 (239 passed, one todo), live 230 (228 passed, one skipped, one todo). JavaScript totaled 19,968 bytes gzipped and the largest page was about 142 KB.
+
 ## 2026-11-26 (round 29) · Update the Instagram fallback card (task 0007, ADR 0020)
 
 **Asked.** The owner supplied a new square R&D graphic for Instagram announcements.

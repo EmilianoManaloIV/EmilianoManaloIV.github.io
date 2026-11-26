@@ -31,7 +31,7 @@ class PublishingError extends Error {}
 function reportLine(post, channel, status, message) {
   const heading = `Discussion #${post.number}${channel ? " · " + NAMES[channel] : ""}${": " + status}`;
   if (!message) return "- " + heading + "\n";
-  const image = message.image ? "\n\n![Instagram image](" + message.image.url + ")\n" : "";
+  const image = message.image ? "\n\n![" + NAMES[channel] + " image](" + message.image.url + ")\n" : "";
   return "### " + heading + "\n\n<pre>" + escapeHtml(message.text) + "</pre>" + image + "\n\n";
 }
 
@@ -116,10 +116,11 @@ function bufferClient({ key, organization, channelIds }, request) {
   let channels;
 
   const reject = (reason) => ({ rejection: { status: "rejected", reason } });
-  async function liveJpeg({ url }) {
+  async function liveImage({ url }) {
     try {
       const photo = await request(url, { method: "HEAD" });
-      return photo.ok && photo.headers.get("content-type")?.split(";")[0] === "image/jpeg";
+      const type = url.endsWith(".png") ? "image/png" : "image/jpeg";
+      return photo.ok && photo.headers.get("content-type")?.split(";")[0] === type;
     } catch {
       return false;
     }
@@ -133,20 +134,26 @@ function bufferClient({ key, organization, channelIds }, request) {
       if (!connection || connection.isDisconnected) {
         return reject("Check the configured Buffer channel and its connection.");
       }
-      if (image) {
+      if (channel === "instagram") {
         if (connection.type === "profile") return reject("Instagram automatic publishing needs a professional connection.");
-        if (!(await liveJpeg(image))) {
+        if (!(await liveImage(image))) {
           const fallback = coverImage(SITE);
-          if (image.url === fallback.url || !(await liveJpeg(fallback))) {
+          if (image.url === fallback.url || !(await liveImage(fallback))) {
             return reject("The Instagram JPEG and fallback are unavailable on the live site.");
           }
           image = fallback;
         }
-        input.assets = [{ image: { url: image.url, metadata: { altText: image.alt } } }];
         input.metadata = { instagram: { type: "post", shouldShareToFeed: true } };
+      } else if (image && !(await liveImage(image))) {
+        image = undefined;
+      }
+      if (image) {
+        const asset = { url: image.url };
+        if (image.alt) asset.metadata = { altText: image.alt };
+        input.assets = [{ image: asset }];
       }
     } catch {
-      return reject("Could not verify the Buffer channel or live JPEG.");
+      return reject("Could not verify the Buffer channel or live image.");
     }
     return { input };
   }
@@ -185,12 +192,15 @@ export async function publishSocial(posts, env, { fetch = globalThis.fetch, repo
   }
 
   for (const post of posts) {
-    const path = new URL(post.url).pathname;
+    const prefix = SITE + postPath(post);
+    const localPhoto = (photo, pattern) => typeof photo?.url === "string" &&
+      photo.url.startsWith(prefix) && pattern.test(photo.url.slice(prefix.length));
+    const optionalPhotos = [post.images?.linkedin, post.images?.x].filter(Boolean);
     if (!Number.isSafeInteger(post.number) || post.number < 1 ||
         !/^[a-f0-9]{64}$/.test(post.revision) || !Number.isFinite(Date.parse(post.updatedAt)) ||
-        SITE + postPath(post) !== post.url ||
-        (post.image.url !== SITE + COVER &&
-         !(post.image.url.startsWith(SITE + path) && /^social-[a-f0-9]{64}\.jpg$/.test(post.image.url.slice((SITE + path).length))))) {
+        prefix !== post.url ||
+        (post.image?.url !== SITE + COVER && !localPhoto(post.image, /^social-[a-f0-9]{64}\.jpg$/)) ||
+        !optionalPhotos.every((photo) => localPhoto(photo, /^social-[a-f0-9]{64}\.(jpg|png)$/))) {
       throw new PublishingError("Invalid article or image URL in the social manifest");
     }
   }

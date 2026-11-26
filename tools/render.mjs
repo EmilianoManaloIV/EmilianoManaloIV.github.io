@@ -53,7 +53,7 @@ const codePoint = (n) => (n > 0 && n <= 0x10ffff && !(n >= 0xd800 && n <= 0xdfff
 
 // Decode before re-escaping, so an attribute is never escaped twice. Numeric entities
 // are decoded too, so "&#106;avascript:" can't slip past the URL check.
-const decodeEntities = (s) =>
+export const decodeEntities = (s) =>
   s
     .replace(/&#(\d+);?/g, (m, n) => codePoint(Number(n)))
     .replace(/&#x([0-9a-f]+);?/gi, (m, n) => codePoint(parseInt(n, 16)))

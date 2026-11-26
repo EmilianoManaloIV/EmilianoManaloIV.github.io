@@ -6,7 +6,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { publishSocial } from "../tools/publish-social.mjs";
-import { announcements } from "../tools/social.mjs";
+import { announcements, socialCandidate } from "../tools/social.mjs";
 
 const REPO = "EmilianoManaloIV/EmilianoManaloIV.github.io";
 const SITE = "https://emilianomanaloiv.github.io";
@@ -160,7 +160,7 @@ function mockPublisher({
   };
 }
 
-test("only labeled owner R&D posts announce, with exact article copy and the Instagram fallback (tasks 0004, 0006)", async (t) => {
+test("only labeled owner R&D posts announce and comment photos never attach (tasks 0004, 0006, 0008)", async (t) => {
   const content = structuredClone(fixture);
   const post = content.discussions.find(({ number }) => number === 14);
   const comment = post.comments.nodes[0];
@@ -259,6 +259,124 @@ test("Instagram gets the author's first compatible JPEG and its alt text (task 0
   assert.deepEqual(readFileSync(join(out, new URL(posts[0].image.url).pathname)), image);
 });
 
+test("LinkedIn and X preview and attach their first compatible article photos alongside the article link (task 0008)", async (t) => {
+  const content = structuredClone(fixture);
+  const post = content.discussions.find(({ number }) => number === 14);
+  const pngSource = "https://github.com/user-attachments/assets/wide.png";
+  const png = Buffer.from(content.media["https://github.com/user-attachments/assets/fixture-pixel.png"], "base64");
+  // Only the PNG header dimensions are read by the build.
+  png.writeUInt32BE(8193, 16);
+  png.writeUInt32BE(900, 20);
+  content.media[pngSource] = png.toString("base64");
+  post.bodyHTML += `<p><img src="${pngSource}" alt="Light &amp; shadow with a literal &amp;lt; entity"></p>`;
+  post.bodyHTML += attachJpeg(content, "banner", "The author&#39;s banner", 640, 320);
+  post.bodyHTML += attachJpeg(content, "later", "A later photo", 800, 400);
+
+  const { out, posts: [announcement] } = buildFixture(t, content);
+  const photos = {};
+  for (const [channel, extension, bytes, alt] of [
+    ["linkedin", "png", png, "Light & shadow with a literal &lt; entity"],
+    ["x", "jpg", Buffer.from(content.media["https://github.com/user-attachments/assets/banner.jpg"], "base64"), "The author's banner"],
+  ]) {
+    const digest = createHash("sha256").update(bytes).digest("hex");
+    const url = candidate.url + `social-${digest}.${extension}`;
+    photos[channel] = { url, alt };
+    assert.deepEqual(readFileSync(join(out, new URL(url).pathname)), bytes);
+  }
+  assert.deepEqual(announcement.images, photos);
+  assert.deepEqual(announcement.image, candidate.image);
+
+  const preview = mockPublisher();
+  assert.equal(await publishSocial([announcement], { PAGES_DEPLOYED: "success" }, preview), true);
+  assert.deepEqual(preview.calls, []);
+  assert.deepEqual(preview.reports, [
+    [announcement, "linkedin", "preview", { text: copy.linkedin, image: photos.linkedin }],
+    [announcement, "x", "preview", { text: copy.x, image: photos.x }],
+    [announcement, "instagram", "preview", { text: copy.instagram, image: candidate.image }],
+  ]);
+
+  const page = readFileSync(join(out, new URL(announcement.url).pathname, "index.html"), "utf8");
+  const selected = { ...photos, instagram: candidate.image };
+  const mock = mockPublisher({ page, headImage(url) {
+    const type = url === photos.linkedin.url ? "image/png" : "image/jpeg";
+    return new Response(null, { headers: { "Content-Type": type } });
+  } });
+  assert.equal(await publishSocial([announcement], env, mock), true);
+  assert.deepEqual(mock.calls.filter(({ method }) => method === "HEAD").map(({ url }) => url),
+    Object.values(selected).map(({ url }) => url));
+  assert.deepEqual(mock.mutations.map(({ input: { channelId, text, assets } }) => ({ channelId, text, assets })),
+    Object.entries(selected).map(([channel, { url, alt }]) => ({
+      channelId: ids[channel], text: copy[channel], assets: [{ image: { url, metadata: { altText: alt } } }],
+    })));
+});
+
+test("LinkedIn and X attach photos only within their own size and dimension limits (task 0008)", () => {
+  const post = { ...discussion, path: new URL(candidate.url).pathname };
+  const file = "img-1.png";
+  for (const [reason, width, height, bytes, channels] of [
+    ["X accepts exactly 5 MB", 800, 600, 5_000_000, ["linkedin", "x"]],
+    ["X rejects one byte over 5 MB", 800, 600, 5_000_001, ["linkedin"]],
+    ["X accepts exactly 8192 pixels in width", 8192, 600, 100, ["linkedin", "x"]],
+    ["X accepts exactly 8192 pixels in height", 600, 8192, 100, ["linkedin", "x"]],
+    ["X rejects one pixel over its width limit", 8193, 600, 100, ["linkedin"]],
+    ["X rejects one pixel over its height limit", 600, 8193, 100, ["linkedin"]],
+    ["LinkedIn accepts one byte below 10 MB", 800, 600, 9_999_999, ["linkedin"]],
+    ["LinkedIn rejects photos at 10 MB", 800, 600, 10_000_000, []],
+    ["LinkedIn accepts photos below 36,152,320 pixels", 5120, 7060, 100, ["linkedin", "x"]],
+    ["LinkedIn rejects exactly 36,152,320 pixels", 5120, 7061, 100, ["x"]],
+    ["a one-pixel-wide image is ignored", 1, 600, 100, []],
+    ["a one-pixel-high image is ignored", 800, 1, 100, []],
+  ]) {
+    const media = new Map([[file, { file, width, height, bytes }]]);
+    const announcement = socialCandidate(post, `<img src="${file}" alt="Article photo">`, media, SITE);
+    const messages = announcements(announcement);
+    for (const channel of ["linkedin", "x"]) {
+      assert.deepEqual(messages[channel].image, channels.includes(channel)
+        ? { url: candidate.url + file, alt: "Article photo" } : undefined, `${reason} (${channel})`);
+      assert.ok(messages[channel].text.endsWith(candidate.url), `${reason} (${channel} keeps the link)`);
+    }
+    assert.deepEqual(messages.instagram.image, candidate.image, `${reason} (Instagram keeps its JPEG cover)`);
+  }
+});
+
+test("LinkedIn and X skip photos with alt text beyond their own limits (task 0008)", () => {
+  const post = { ...discussion, path: new URL(candidate.url).pathname };
+  const files = ["img-1.png", "img-2.png", "img-3.png"];
+  const media = new Map(files.map((file) => [file, { file, width: 800, height: 600, bytes: 100 }]));
+  const image = (file, length) => `<img src="${file}" alt="${"a".repeat(length)}">`;
+  const first = image(files[0], 1001);
+  const second = image(files[1], 1000);
+  const third = image(files[2], 300);
+  const filtered = socialCandidate(post, first + second + third, media, SITE);
+  assert.equal(filtered.images.linkedin.url, candidate.url + files[2]);
+  assert.equal(filtered.images.x.url, candidate.url + files[1]);
+  assert.equal(socialCandidate(post, first, media, SITE).images, undefined);
+  assert.equal(socialCandidate(post, image(files[0], 301), media, SITE).images.linkedin, undefined);
+});
+
+test("unavailable LinkedIn and X photos leave the announcement text and article link in the payload (task 0008)", async () => {
+  const linkedin = { url: candidate.url + `social-${"a".repeat(64)}.png`, alt: "LinkedIn photo" };
+  const x = { url: candidate.url + `social-${"b".repeat(64)}.jpg`, alt: "X photo" };
+  const post = { ...candidate, images: { linkedin, x } };
+  const mock = mockPublisher({ headImage(url) {
+    if (url === linkedin.url) return new Response(null, { status: 404 });
+    if (url === x.url) return new Response(null, { headers: { "Content-Type": "image/png" } });
+    assert.equal(url, candidate.image.url);
+    return new Response(null, { headers: { "Content-Type": "image/jpeg" } });
+  } });
+  assert.equal(await publishSocial([post], env, mock), true);
+  assert.deepEqual(mock.calls.filter(({ method }) => method === "HEAD").map(({ url }) => url),
+    [linkedin.url, x.url, candidate.image.url]);
+  assert.deepEqual(mock.mutations.map(({ input: { channelId, text, assets } }) => ({ channelId, text, assets })), [
+    { channelId: ids.linkedin, text: copy.linkedin, assets: [] },
+    { channelId: ids.x, text: copy.x, assets: [] },
+    {
+      channelId: ids.instagram, text: copy.instagram,
+      assets: [{ image: { url: candidate.image.url, metadata: { altText: candidate.image.alt } } }],
+    },
+  ]);
+});
+
 test("a long article keeps its full title, body and media when Instagram needs the cover (task 0005)", (t) => {
   const content = structuredClone(fixture);
   const post = content.discussions.find(({ number }) => number === 14);
@@ -330,7 +448,7 @@ for (const [scenario, authorResponse, coverAvailable] of [
   });
 }
 
-test("a dry run previews all three announcements without external requests (task 0004)", async () => {
+test("a legacy manifest without optional photos still previews all three announcements without requests (tasks 0004, 0008)", async () => {
   const mock = mockPublisher();
   assert.equal(await publishSocial([candidate], { PAGES_DEPLOYED: "success" }, mock), true);
   assert.deepEqual(mock.calls, []);

@@ -252,15 +252,21 @@ function write(file, html) {
 function prepareSocial(post, article, media, dir) {
   const candidate = socialCandidate(post, article, media, SITE);
   if (!candidate) return null;
-  const useCover = candidate.image.url === SITE + COVER;
-  const image = readFileSync(useCover ? join(out, COVER) : join(dir, basename(candidate.image.url)));
-  if (!useCover) {
-    // A rerun can never reuse an image name assigned to another attachment on a newer deploy.
-    const file = `social-${createHash("sha256").update(image).digest("hex")}.jpg`;
-    write(join(dir, file), image);
-    candidate.image.url = SITE + post.path + file;
+  let instagramBytes;
+  for (const photo of new Set([candidate.image, ...Object.values(candidate.images ?? {})])) {
+    const useCover = photo.url === SITE + COVER;
+    const source = basename(photo.url);
+    const bytes = readFileSync(useCover ? join(out, COVER) : join(dir, source));
+    if (photo === candidate.image) instagramBytes = bytes;
+    if (!useCover) {
+      // A rerun can never reuse an image name assigned to another attachment on a newer deploy.
+      const extension = source.split(".").at(-1);
+      const file = `social-${createHash("sha256").update(bytes).digest("hex")}.${extension}`;
+      write(join(dir, file), bytes);
+      photo.url = SITE + post.path + file;
+    }
   }
-  candidate.revision = createHash("sha256").update(JSON.stringify(candidate)).update(image).digest("hex");
+  candidate.revision = createHash("sha256").update(JSON.stringify(candidate)).update(instagramBytes).digest("hex");
   return candidate;
 }
 
