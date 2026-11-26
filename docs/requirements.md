@@ -40,6 +40,9 @@ it so. These were back-filled from `CLAUDE.md` and ADRs 0001 to 0017 when the pr
   hands-on tesseract; the home page previews the two newest and links to it (ADR 0019).
 - **R-14** Visitors can download the owner's CV as a PDF from the About & CV page, and it gives the same
   email address as the rest of the site (task 0003).
+- **R-15** The owner can label an R&D discussion `share: social` to announce it on Instagram, LinkedIn
+  and X after deployment. The workflow starts in dry-run mode and tracks each channel independently
+  (task 0004, ADR 0020).
 
 ## Qualities
 - **Q-01** Zero dependencies: no npm packages, frameworks, CDNs, or external stylesheet, script or font

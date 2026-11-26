@@ -6,6 +6,16 @@ Dates are the owner's local merge dates (Pacific time). Quoted requests are the 
 working sessions, verbatim, typos included; where they weren't kept, **Asked** is reconstructed from the
 pull request and marked so. The numbers under **Checked** are the ones each pull request reported.
 
+## 2026-11-25 (round 26) · Social announcements for tagged R&D posts (task 0004, ADR 0020)
+
+**Asked.** “Is there anyway to integrate when I "post" on my website. It can also autopost onto Instagram, LinkedIn, and Twitter?” The owner chose labeled posts and asked for a test before merging.
+
+**Added.** The `share: social` label opts an article into announcements for LinkedIn, X, and Instagram through Buffer after deployment. The workflow previews them by default. Instagram uses a compatible article JPEG or a card in the site's colors.
+
+**Changed after the review.** The publisher checks the live revision and current label before sending to each channel. Author images use digest-based addresses. Social runs independently of Pages, and attempts retain enough information to reconcile an uncertain result before retrying. A personal Instagram connection is caught before submission.
+
+**Checked.** The sample article produced exact previews and three mocked submissions. The tests cover failed deploys, manifest write failures, removed labels, an older image address reused by a comment, the Instagram fallback, and partial or uncertain submissions. The offline build had 194 tests (192 passed, one skipped, one todo), the fixture build had 219 (218 passed, one todo), and the live build had 204 (202 passed, one skipped, one todo). JavaScript totaled 19,968 bytes gzipped. The largest page weighed about 142 KB under the page budget calculation.
+
 ## 2026-11-17 (round 25): Download my CV from the About page (task 0003)
 
 **Asked:** "This is my Resume", with the PDF; the owner chose to offer it as a download, keeping the

@@ -54,12 +54,19 @@ jobs:
       - name: Build from GitHub Discussions
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node tools/build.mjs
+        run: node tools/build.mjs --social-manifest "$RUNNER_TEMP/social.json"
       - name: Check the built site
         run: node --test
       - uses: actions/upload-pages-artifact@v4
         with:
           path: _site
+      - uses: actions/upload-artifact@v6
+        continue-on-error: true
+        with:
+          name: social-candidates-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/social.json
+          if-no-files-found: error
+          retention-days: 3
 
   deploy:
     needs: build

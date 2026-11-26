@@ -10,6 +10,13 @@
     {
       "number": 14,
       "title": "Learning shaders, one triangle at a time",
+      "labels": {
+        "nodes": [
+          {
+            "name": "share: social"
+          }
+        ]
+      },
       "url": "https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/discussions/14",
       "createdAt": "2026-10-20T15:00:00Z",
       "bodyHTML": "<p dir=\"auto\">Notes from my first week writing fragment shaders for the banner wireframes.</p><h2 dir=\"auto\">What clicked</h2><p dir=\"auto\">Thinking in <code>uv</code> space made everything simpler.</p><p dir=\"auto\"><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://github.com/user-attachments/assets/fixture-pixel.png\"><img src=\"https://github.com/user-attachments/assets/fixture-pixel.png\" alt=\"A rendered triangle\" style=\"max-width: 100%;\"></a></p><script>alert('never')</script><p dir=\"auto\">The banner's spin, as a clip instead of a GIF:</p><details open=\"\" class=\"details-reset border rounded-2\">\n  <summary class=\"tmp-px-3 py-2\">\n    <svg aria-hidden=\"true\" height=\"16\" viewBox=\"0 0 16 16\" version=\"1.1\" width=\"16\" class=\"octicon octicon-device-camera-video\"><path d=\"M16 3.75v8.5\"></path></svg>\n    <span class=\"m-1\">orbit-demo.mp4</span>\n    <span class=\"dropdown-caret\"></span>\n  </summary>\n\n  <video src=\"https://private-user-images.githubusercontent.com/1/fixture-clip.mp4?jwt=fixture\" data-canonical-src=\"https://private-user-images.githubusercontent.com/1/fixture-clip.mp4?jwt=fixture\" controls=\"controls\" muted=\"muted\" class=\"d-block rounded-bottom-2 border-top width-fit\" style=\"max-height:640px; min-height: 200px\" autoplay onplay=\"alert(1)\" poster=\"https://evil.example/p.png\">\n\n  </video>\n</details><p dir=\"auto\">Off-site video is dropped:</p><details open=\"\" class=\"details-reset border rounded-2\">\n  <summary class=\"tmp-px-3 py-2\">\n    <svg aria-hidden=\"true\" height=\"16\" viewBox=\"0 0 16 16\" version=\"1.1\" width=\"16\" class=\"octicon octicon-device-camera-video\"><path d=\"M16 3.75v8.5\"></path></svg>\n    <span class=\"m-1\">elsewhere.mp4</span>\n    <span class=\"dropdown-caret\"></span>\n  </summary>\n\n  <video src=\"https://evil.example/x.mp4\" data-canonical-src=\"https://evil.example/x.mp4\" controls=\"controls\" muted=\"muted\" class=\"d-block rounded-bottom-2 border-top width-fit\" style=\"max-height:640px; min-height: 200px\">\n\n  </video>\n</details>",

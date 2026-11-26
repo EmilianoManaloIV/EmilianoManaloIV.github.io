@@ -871,8 +871,28 @@ test("deploy workflow builds with tools/build.mjs and tests the result", () => {
   assert.match(workflow, /node tools\/build\.mjs/);
   assert.match(workflow, /node --test/);
   assert.match(workflow, /discussions: read/);
-  assert.doesNotMatch(workflow, /discussions: write|contents: write/, "the build only reads");
+  assert.doesNotMatch(workflow, /discussions: write/, "every job treats Discussions as read-only");
   assert.match(workflow, /discussion:\s*\n\s*types: \[[^\]]*\blabeled\b[^\]]*\bunlabeled\b/, "adding a skill label must rebuild (ADR 0006)");
+});
+
+test("only a successful main deploy can start social publishing and write its status (task 0004)", () => {
+  const pages = source(".github/workflows/pages.yml");
+  const social = source(".github/workflows/social.yml");
+  assert.match(social, /workflow_run:\s+workflows: \[Test and deploy\]\s+branches: \[main\]\s+types: \[completed\]/);
+  assert.match(social, /head_repository\.full_name == github\.repository/);
+  assert.match(social, /contains\(fromJSON\('\["push","workflow_dispatch","discussion","discussion_comment","schedule"\]'\), github\.event\.workflow_run\.event\)/);
+  assert.match(social, /workflow_run\.conclusion == 'success'/);
+  assert.match(social, /select\(\.name == "deploy"\) \| \.conclusion/);
+  assert.match(pages, /name: social-candidates-\$\{\{ github\.run_attempt \}\}/);
+  assert.match(social, /PAGES_RUN_ATTEMPT: \$\{\{ github\.event\.workflow_run\.run_attempt \}\}/);
+  assert.match(social, /actions\/runs\/\$PAGES_RUN_ID\/attempts\/\$PAGES_RUN_ATTEMPT\/jobs/);
+  assert.match(social, /name: social-candidates-\$\{\{ github\.event\.workflow_run\.run_attempt \}\}/);
+  assert.match(social, /run-id: \$\{\{ github\.event\.workflow_run\.id \}\}/);
+  assert.match(social, /if: steps\.pages\.outputs\.result == 'success'/);
+  assert.match(social, /^ {2}group: social-publishing$/m);
+  assert.match(social, /^ {4}permissions:\s*\n {6}actions: read\s*\n {6}contents: write/m);
+  // ADR 0020 needs a status-branch write. Pages itself stays read-only for repository contents.
+  assert.doesNotMatch(pages, /contents: write|discussions: write/);
 });
 
 // ---- The CV download (task 0003) ----

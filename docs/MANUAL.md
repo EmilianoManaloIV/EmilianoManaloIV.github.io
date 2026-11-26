@@ -9,6 +9,7 @@ For how the site was made and how it works inside, see the [README](../README.md
 - [Link previews and home-screen icon](#link-previews-and-home-screen-icon)
 - [Update your CV](#update-your-cv)
 - [Publish an R&D post](#publish-an-rd-post)
+- [Announce an R&D post on social media](#announce-an-rd-post-on-social-media)
 - [Add a project](#add-a-project)
 - [Add a video clip](#add-a-video-clip)
 - [Skills on the About page](#skills-on-the-about-page)
@@ -90,6 +91,46 @@ The first paragraph is the summary on the R&D page and in link previews. Images 
 ### Mark a post as opinion
 
 For posts that argue a view, rants included, open the discussion and pick the **`opinion`** label in the right sidebar. The post and its R&D card show a small **Opinion** tag within a minute. Remove the label to take the tag off.
+
+## Announce an R&D post on social media
+
+The `share: social` label opts one of your R&D articles into an announcement on LinkedIn, X and Instagram.
+The **Social announcements** workflow starts after Pages deploys. LinkedIn and X link to the
+article. Instagram points readers to the R&D link in your bio and uses the article's first compatible
+JPEG (up to 8 MB and between 4:5 and 1.91:1), or the site's R&D card.
+
+### Set it up and preview
+
+1. Connect your LinkedIn and X profiles and your Instagram **Creator** or **Business** account to Buffer.
+   Add `https://emilianomanaloiv.github.io/rd/` to your Instagram bio. Get an API key and use Buffer's API
+   explorer to find your organization ID and the exact three channel IDs. [Buffer API](https://support.buffer.com/en-us/articles/using-buffers-api-GtIYIQilz5) · [Find channel IDs](https://developers.buffer.com/examples/get-channels.html)
+2. In GitHub **Settings → Secrets and variables → Actions**, add the repository secret `BUFFER_API_KEY`.
+   Under **Variables**, add `BUFFER_ORGANIZATION_ID` and `BUFFER_CHANNEL_IDS`. The latter is a JSON object
+   such as `{"linkedin":"yourLinkedInId","x":"yourXId","instagram":"yourInstagramId"}`.
+3. Create the `social-publishing-state` branch from `main`. This branch tracks submissions. Keep it after
+   merging feature branches. Create the `share: social` repository label and apply it to a single R&D
+   article you want to announce.
+4. Leave `SOCIAL_PUBLISH` unset or set it to `false`. Open the **Social announcements** run's **Summary** to review the
+   exact announcements and image. Once you're ready, set `SOCIAL_PUBLISH` to `true` and use **Run workflow**
+   on `main`, or wait for the scheduled run. Check the three channels in Buffer under **Sent**.
+
+### Pause and recover
+
+Set `SOCIAL_PUBLISH` to `false` to return future runs to preview mode. Remove the label to stop subsequent
+submissions for that article. Manage announcements already submitted through Buffer or the destination
+platform. Editing or deleting the Discussion controls the website article.
+
+The `social-publishing-state` branch has one JSON file for each Discussion number. Check the recorded
+channel ID, time and article URL when looking up a submission. Each channel is
+`accepted` (Buffer returned a post ID), `rejected` (the workflow could verify that no post was accepted),
+`pending` (the outcome is uncertain), or `not_sent` (the final eligibility check stopped the submission).
+An eligible later deployment can retry `not_sent` automatically. If Buffer accepted the announcement but delivery failed, use
+Buffer's own retry. For a `rejected` entry, correct the problem and remove only that channel's entry from
+the JSON file on the state branch, then run **Test and deploy** on `main`. For a `pending` entry, wait
+for **Social announcements** to finish before checking Buffer's queue, Sent history, and the destination
+account. If you find the announcement, change the status to `accepted`. If you confirm the request
+was rejected, remove that channel's entry and rerun. Leave the claim in place while the outcome is
+uncertain. Keep accepted entries so edits and renames cannot submit them a second time.
 
 ## Add a project
 

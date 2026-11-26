@@ -26,6 +26,7 @@ task 0001 were back-filled from the pull requests that fixed them (ADR 0018) and
 | The home page showed a grey "portrait" placeholder. | The owner's photo, cropped to the frame and compressed to 112 KB (PR #26). |
 | Every new project made the home page one card longer, and there was no single page listing them all. | A Projects page with every project under a hands-on tesseract; the home page previews the two newest and links to it; Projects in the nav (task 0002, ADR 0019). |
 | The About & CV page promised a CV that wasn't there yet ("A downloadable CV is on its way"). | The owner's resume as a "Download CV (PDF)" link, 148 KB and fetched only when tapped; a test keeps its email link in step with the site's (task 0003). |
+| Sharing an R&D article on three networks takes three manual posts. | The owner adds the `share: social` label. After deployment, Actions shows a preview or sends three platform-specific announcements through Buffer (task 0004, ADR 0020). |
 
 ## Known
 
