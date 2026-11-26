@@ -4,7 +4,7 @@
 - **Requirements:** R-02, R-15
 - **Decisions:** ADR 0020
 - **Model:** main session
-- **PR:** pending
+- **PR:** [#37](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/pull/37)
 
 ## Goal
 Social announcements include the full text when it fits. The owner asked to shorten copy only when a destination's limit requires it.
