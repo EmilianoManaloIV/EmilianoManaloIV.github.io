@@ -6,6 +6,16 @@ Dates are the owner's local merge dates (Pacific time). Quoted requests are the 
 working sessions, verbatim, typos included; where they weren't kept, **Asked** is reconstructed from the
 pull request and marked so. The numbers under **Checked** are the ones each pull request reported.
 
+## 2026-11-25 (round 27) · Fit social announcements to each platform (task 0005, ADR 0020)
+
+**Asked.** “Sure, lets do that, just In case I post something too large; the post still can be accessed regardless.” The owner asked for the same behavior for text.
+
+**Fixed.** LinkedIn, X, and Instagram shorten announcements within their own text limits and keep the article link or bio prompt. X counts after Unicode normalization. Instagram uses the branded card if the article JPEG is too small or unavailable. The website displays the full article and its supported media.
+
+**Changed after the review.** The formatter now uses Buffer's 2,196-unit Instagram limit, including the extra weight of newlines, and accounts for Buffer's 24-unit LinkedIn URLs.
+
+**Checked.** Nine regression cases cover length limits, Unicode, image fallback and full website content. Offline 203 tests (201 passed, one skipped, one todo), fixture 228 (227 passed, one todo), live 213 (211 passed, one skipped, one todo). JavaScript was 19,968 bytes gzipped and the largest page was about 142 KB. Social requests used mocks.
+
 ## 2026-11-25 (round 26) · Social announcements for tagged R&D posts (task 0004, ADR 0020)
 
 **Asked.** “Is there anyway to integrate when I "post" on my website. It can also autopost onto Instagram, LinkedIn, and Twitter?” The owner chose labeled posts and asked for a test before merging.

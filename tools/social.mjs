@@ -3,6 +3,7 @@ import { isPost, plainText } from "./render.mjs";
 export const SOCIAL_LABEL = "share: social";
 export const CHANNELS = ["linkedin", "x", "instagram"];
 export const COVER = "/assets/img/rd-social.jpg";
+export const coverImage = (site) => ({ url: site + COVER, alt: "R&D on Emiliano Panday Manalo IV's website" });
 export const wantsSocial = (discussion) =>
   isPost(discussion) && discussion.labels?.nodes?.some(({ name }) => name === SOCIAL_LABEL);
 
@@ -10,11 +11,11 @@ export function socialCandidate(post, body, media, site) {
   if (!wantsSocial(post)) return null;
   // The localized article body contains only the author's images and their original alt text.
   const byFile = new Map([...media.values()].map((item) => [item.file, item]));
-  let image = { url: site + COVER, alt: "R&D on Emiliano Panday Manalo IV's website" };
+  let image = coverImage(site);
   for (const [, file, alt] of body.matchAll(/<img src="(img-\d+\.jpg)" alt="([^"]*)"/g)) {
     const { width, height, bytes } = byFile.get(file);
     const ratio = width / height;
-    if (bytes > 8_000_000 || ratio < 0.8 || ratio > 1.91) continue;
+    if (width < 320 || bytes > 8_000_000 || ratio < 0.8 || ratio > 1.91) continue;
     image = { url: site + post.path + file, alt: plainText(alt) };
     break;
   }
@@ -24,22 +25,36 @@ export function socialCandidate(post, body, media, site) {
 
 export const revisionMarker = (revision) => "<!-- social-revision: " + revision + " -->";
 
-export function announcements(post) {
-  const title = post.title.replace(/\s+/g, " ").trim();
-  const summary = [title, post.summary].filter(Boolean).join("\n\n");
-  // Budget two units per character and reserve a shortened URL for any domain separator in the title.
-  let remaining = 240;
-  let shortTitle = "";
-  for (const character of title) {
-    remaining -= /[.\u3002\uff0e\uff61]/u.test(character) ? 25 : 2;
+const graphemes = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+// A conservative allowance for URLs in the source copy, including bare domains.
+const urlMarkers = (text) => text.match(/[.:\u3002\uff0e\uff61]/gu)?.length ?? 0;
+const linkedinWeight = (text) => text.length + 24 * urlMarkers(text);
+const xWeight = (text) => 2 * Array.from(text).length + 23 * urlMarkers(text);
+const instagramWeight = (text) => text.length + (text.match(/[\r\n]/g)?.length ?? 0);
+
+function shorten(text, limit, weight) {
+  if (weight(text) <= limit) return text;
+  let remaining = limit - weight("…");
+  let shortened = "";
+  for (const { segment } of graphemes.segment(text)) {
+    remaining -= weight(segment);
     if (remaining < 0) break;
-    shortTitle += character;
+    shortened += segment;
   }
-  if (shortTitle !== title) shortTitle = shortTitle.trimEnd() + "…";
+  return shortened.trimEnd() + "…";
+}
+
+export function announcements(post) {
+  const title = post.title.normalize("NFC").replace(/\s+/g, " ").trim();
+  const summary = [title, post.summary.normalize("NFC")].filter(Boolean).join("\n\n");
+  const link = "\n\n" + post.url;
+  const bio = "\n\nRead it via the R&D link in my bio.";
   return {
-    linkedin: { text: summary + "\n\n" + post.url },
-    x: { text: shortTitle + "\n" + post.url },
-    instagram: { text: summary + "\n\nRead it via the R&D link in my bio.", image: post.image },
+    // Buffer counts the LinkedIn link as 24 characters and the two newlines as two.
+    linkedin: { text: shorten(summary, 3000 - 26, linkedinWeight) + link },
+    // X counts the article link as 23 characters and the newline as one.
+    x: { text: shorten(title, 280 - 24, xWeight) + "\n" + post.url },
+    instagram: { text: shorten(summary, 2196 - instagramWeight(bio), instagramWeight) + bio, image: post.image },
   };
 }
 

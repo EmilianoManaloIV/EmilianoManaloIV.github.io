@@ -97,7 +97,11 @@ For posts that argue a view, rants included, open the discussion and pick the **
 The `share: social` label opts one of your R&D articles into an announcement on LinkedIn, X and Instagram.
 The **Social announcements** workflow starts after Pages deploys. LinkedIn and X link to the
 article. Instagram points readers to the R&D link in your bio and uses the article's first compatible
-JPEG (up to 8 MB and between 4:5 and 1.91:1), or the site's R&D card.
+JPEG (at least 320 pixels wide, up to 8 MB, and between 4:5 and 1.91:1). If the JPEG is incompatible
+or unavailable when publishing, Instagram uses the site's R&D card.
+
+Announcements shorten the title and excerpt to fit the channel, while keeping the article link
+or Instagram bio prompt. The website keeps the full article and its supported attachments.
 
 ### Set it up and preview
 
