@@ -29,6 +29,7 @@ task 0001 were back-filled from the pull requests that fixed them (ADR 0018) and
 | Sharing an R&D article on three networks takes three manual posts. | The owner adds the `share: social` label. After deployment, Actions shows a preview or sends three platform-specific announcements through Buffer (task 0004, ADR 0020). |
 | A long article or an incompatible photo could cause a social announcement to fail. | The announcement fits the channel's text limit and keeps the link or bio prompt. Instagram can use the branded card. The full article remains available on the website (task 0005, ADR 0020). |
 | Social posts stopped at the website card's short excerpt. | Every channel gets the full article text when it fits, with space reserved for the website link or Instagram bio prompt (task 0006, ADR 0020). |
+| Readers had to leave LinkedIn or X to see an article photo. | Each channel attaches a compatible article photo and includes the link to read the full piece (task 0008, ADR 0020). |
 
 ## Known
 

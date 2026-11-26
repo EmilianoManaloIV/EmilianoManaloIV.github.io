@@ -40,3 +40,10 @@ including X, while preserving the article link or Instagram bio prompt. For X th
 weighted Unicode ranges from twitter-text and counts complete emoji and URLs as units. A checked-in
 IANA root-zone snapshot helps distinguish links from dotted text such as code identifiers. The snapshot
 is local build data. [X character counting](https://docs.x.com/fundamentals/counting-characters) · [twitter-text v3 weights](https://github.com/twitter/twitter-text/blob/master/config/v3.json) · [IANA root-zone data](https://data.iana.org/TLD/tlds-alpha-by-domain.txt)
+
+## Amendment (2026-11-26, task 0008)
+
+LinkedIn and X can each attach the first compatible JPEG or PNG from the article. The build uses their
+separate limits and writes digest-named copies, preserving alt text. The manifest keeps optional images
+for these channels alongside the existing Instagram image. The publisher checks the live asset before
+attaching it and keeps the article link in the text. [Buffer media API](https://developers.buffer.com/guides/hosting-media.html) · [Buffer image limits](https://support.buffer.com/articles/ideal-image-sizes-and-formats-for-your-buffer-posts-JxHNGZFvf9) · [LinkedIn Images API](https://learn.microsoft.com/en-us/linkedin/marketing/community-management/shares/images-api?view=li-lms-2026-09)
