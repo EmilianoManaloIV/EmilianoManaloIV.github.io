@@ -4,7 +4,7 @@
 - **Requirements:** R-15, Q-01
 - **Decisions:** ADR 0020
 - **Model:** main session
-- **PR:** pending
+- **PR:** [#39](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/pull/39)
 
 ## Goal
 LinkedIn and X announcements can attach a photo from the article along with the article link.
