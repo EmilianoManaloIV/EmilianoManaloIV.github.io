@@ -4,7 +4,7 @@
 - **Requirements:** R-02, R-15, Q-08
 - **Decisions:** ADR 0020
 - **Model:** main session
-- **PR:** pending
+- **PR:** [#35](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/pull/35)
 
 ## Goal
 The owner can publish a full R&D article even when its text or media exceeds a social platform's limits.
