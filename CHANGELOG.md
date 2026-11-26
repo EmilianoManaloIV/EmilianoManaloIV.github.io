@@ -6,6 +6,14 @@ Dates are the owner's local merge dates (Pacific time). Quoted requests are the 
 working sessions, verbatim, typos included; where they weren't kept, **Asked** is reconstructed from the
 pull request and marked so. The numbers under **Checked** are the ones each pull request reported.
 
+## 2026-11-26 (round 29) · Update the Instagram fallback card (task 0007, ADR 0020)
+
+**Asked.** The owner supplied a new square R&D graphic for Instagram announcements.
+
+**Changed.** The Instagram fallback is the supplied artwork, encoded as a 1080 × 1080 JPEG (410,330 bytes).
+
+**Checked.** Inspected the encoded graphic and confirmed that the built cover matches it. The launch post resolves to the new cover in the live-content preview. Offline 211 tests (209 passed, one skipped, one todo), fixture 236 (235 passed, one todo), live 226 (224 passed, one skipped, one todo). JavaScript totaled 19,968 bytes gzipped and the largest page was about 142 KB.
+
 ## 2026-11-26 (round 28) · Use the article text in social announcements (task 0006, ADR 0020)
 
 **Asked.** “Shouldn't it only cutoff and choose to post this when the message goes beyond the character limit?”
