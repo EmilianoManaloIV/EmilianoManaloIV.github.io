@@ -12,12 +12,12 @@
     "attemptedAt": "2026-11-26T08:40:15.126Z",
     "url": "https://emilianomanaloiv.github.io/rd/36-website-and-social-media-launch/",
     "revision": "c8bbf2e58c231d23d4d0c769b50c87f7cd2ddcbb45ac6144bb3830c6753fc8eb",
-    "status": "rejected",
-    "reason": "Buffer declined the create-post request."
+    "status": "not_sent",
+    "reason": "Owner requested another submission to X only."
   },
   "instagram": {
     "channelId": "6b07daac8541f09ecbabb37d",
-    "attemptedAt": "2026-11-26T08:40:17.310Z",
+    "attemptedAt": "2026-11-26T08:40:17.31Z",
     "url": "https://emilianomanaloiv.github.io/rd/36-website-and-social-media-launch/",
     "revision": "c8bbf2e58c231d23d4d0c769b50c87f7cd2ddcbb45ac6144bb3830c6753fc8eb",
     "status": "accepted",
