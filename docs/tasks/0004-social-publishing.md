@@ -4,7 +4,7 @@
 - **Requirements:** R-15, Q-01, Q-08
 - **Decisions:** ADR 0020
 - **Model:** main session
-- **PR:** pending
+- **PR:** [#32](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/pull/32)
 
 ## Goal
 The owner can opt an R&D article into Instagram, LinkedIn and X announcements with one Discussion label. Validate the entire path on a sample article before the owner merges.
