@@ -22,3 +22,12 @@ Sharing after a successful Pages deploy gives the announcement a live destinatio
 The site's deploy can succeed independently of Buffer. The owner needs a Buffer account, a professional Instagram account, and an R&D link in the Instagram bio. The workflow records acceptance by Buffer. Actual delivery is visible in Buffer. The owner manages existing social posts on the platforms themselves.
 
 Watch for pending submissions after timeouts. Check Buffer before clearing a claim so a retry cannot duplicate a post.
+
+## Amendment (2026-11-25, task 0005)
+
+The social formatter bounds the finished text using Buffer's API limits and reserves space for the link
+or bio prompt. It accounts for LinkedIn's URL weight and Instagram's newline weight. For X it normalizes
+Unicode before counting with conservative character and URL weights. A social image
+must satisfy the JPEG size and aspect ratio requirements and be at least 320 pixels wide. If a selected
+image is unavailable on the live site, the publisher checks the branded card before preparing Instagram's
+request. These decisions apply to the announcements and preserve the rendered website article. [Buffer API text limits](https://developers.buffer.com/guides/character-limits.html) · [X character counting](https://docs.x.com/fundamentals/counting-characters) · [Instagram image specifications](https://developers.facebook.com/documentation/instagram-platform/instagram-graph-api/reference/ig-user/media#image-specifications)

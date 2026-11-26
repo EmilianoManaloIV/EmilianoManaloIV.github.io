@@ -1,7 +1,7 @@
 import { appendFileSync, readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { escapeHtml, postPath } from "./render.mjs";
-import { CHANNELS, COVER, revisionMarker, runSocial, wantsSocial } from "./social.mjs";
+import { CHANNELS, COVER, coverImage, revisionMarker, runSocial, wantsSocial } from "./social.mjs";
 
 const SITE = "https://emilianomanaloiv.github.io";
 const REPO = "EmilianoManaloIV/EmilianoManaloIV.github.io";
@@ -116,6 +116,14 @@ function bufferClient({ key, organization, channelIds }, request) {
   let channels;
 
   const reject = (reason) => ({ rejection: { status: "rejected", reason } });
+  async function liveJpeg({ url }) {
+    try {
+      const photo = await request(url, { method: "HEAD" });
+      return photo.ok && photo.headers.get("content-type")?.split(";")[0] === "image/jpeg";
+    } catch {
+      return false;
+    }
+  }
   async function prepare(channel, { text, image }) {
     const channelId = channelIds[channel];
     const input = { channelId, text, assets: [], mode: "shareNow", schedulingType: "automatic", needsApproval: false };
@@ -127,9 +135,12 @@ function bufferClient({ key, organization, channelIds }, request) {
       }
       if (image) {
         if (connection.type === "profile") return reject("Instagram automatic publishing needs a professional connection.");
-        const photo = await request(image.url, { method: "HEAD" });
-        if (!photo.ok || photo.headers.get("content-type")?.split(";")[0] !== "image/jpeg") {
-          return reject("The Instagram JPEG is unavailable on the live site.");
+        if (!(await liveJpeg(image))) {
+          const fallback = coverImage(SITE);
+          if (image.url === fallback.url || !(await liveJpeg(fallback))) {
+            return reject("The Instagram JPEG and fallback are unavailable on the live site.");
+          }
+          image = fallback;
         }
         input.assets = [{ image: { url: image.url, metadata: { altText: image.alt } } }];
         input.metadata = { instagram: { type: "post", shouldShareToFeed: true } };

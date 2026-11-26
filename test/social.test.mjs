@@ -85,6 +85,10 @@ function mockPublisher({
   page = `<link rel="canonical" href="${candidate.url}"><!-- social-revision: ${candidate.revision} -->`,
   submit = accepted,
   instagramType = "business",
+  headImage = (url) => {
+    assert.equal(url, candidate.image.url);
+    return new Response(null, { headers: { "Content-Type": "image/jpeg" } });
+  },
   loadCurrent = () => current,
   onStateWrite = () => {},
 } = {}) {
@@ -120,9 +124,7 @@ function mockPublisher({
         return Response.json({ data: { repository: { discussion: { ...live, labels } } } });
       }
       if (method === "GET" && url === candidate.url) return new Response(page);
-      if (method === "HEAD" && url === candidate.image.url) {
-        return new Response(null, { headers: { "Content-Type": "image/jpeg" } });
-      }
+      if (method === "HEAD") return headImage(url);
       if (method === "POST" && url === "https://api.buffer.com") {
         assert.equal(headers.Authorization, "Bearer fake-buffer-key");
         assert.equal(headers["Content-Type"], "application/json");
@@ -212,6 +214,77 @@ test("Instagram gets the author's first compatible JPEG and its alt text (task 0
   assert.deepEqual(posts[0].image, { url: candidate.url + "social-" + digest + ".jpg", alt: "Light & shadow" });
   assert.deepEqual(readFileSync(join(out, new URL(posts[0].image.url).pathname)), image);
 });
+
+test("a long article keeps its full title, body and media when Instagram needs the cover (task 0005)", (t) => {
+  const content = structuredClone(fixture);
+  const post = content.discussions.find(({ number }) => number === 14);
+  post.title = "Shader notes " + "波".repeat(3_100) + " complete title";
+  const paragraph = "From first triangle to last pixel. ".repeat(100) + "End of the opening paragraph.";
+  post.bodyHTML = `<p>${paragraph}</p>` + post.bodyHTML
+    + attachJpeg(content, "tiny", "Tiny shader thumbnail", 319, 319)
+    + "<p>End of the full article.</p>";
+
+  const { out, posts: [announcement] } = buildFixture(t, content);
+  assert.deepEqual(announcement.image, candidate.image);
+  const article = join(out, new URL(announcement.url).pathname);
+  const page = readFileSync(join(article, "index.html"), "utf8");
+  assert.ok(page.includes(`<h1>${post.title}</h1>`), "the page retains the entire title");
+  assert.ok(page.includes(`<p>${paragraph}</p>`), "the page retains the entire opening paragraph");
+  assert.ok(page.includes("<p>End of the full article.</p>"));
+  for (const [alt, source] of [
+    ["A rendered triangle", "https://github.com/user-attachments/assets/fixture-pixel.png"],
+    ["Tiny shader thumbnail", "https://github.com/user-attachments/assets/tiny.jpg"],
+  ]) {
+    const image = page.match(new RegExp(`<img src="([^"]+)" alt="${alt}"`));
+    assert.ok(image, `the article displays ${alt}`);
+    assert.deepEqual(readFileSync(join(article, image[1])), Buffer.from(content.media[source], "base64"));
+  }
+  const clip = page.match(/<video\b[^>]*\bsrc="([^"]+)"/);
+  assert.ok(clip, "the article keeps its playable clip");
+  const clipSource = "https://private-user-images.githubusercontent.com/1/fixture-clip.mp4?jwt=fixture";
+  const clipPath = new URL(clip[1], announcement.url).pathname;
+  assert.deepEqual(readFileSync(join(out, clipPath)), Buffer.from(content.media[clipSource], "base64"));
+});
+
+const missingImage = () => new Response(null, { status: 404 });
+for (const [scenario, authorResponse, coverAvailable] of [
+  ["the author JPEG returns 404", missingImage, true],
+  ["the author JPEG URL serves a different format", () => new Response(null, { headers: { "Content-Type": "image/png" } }), true],
+  ["checking the author JPEG throws", () => { throw new TypeError("Simulated network failure"); }, true],
+  ["neither JPEG URL is available", missingImage, false],
+]) {
+  test(`Instagram checks the branded cover when ${scenario} (task 0005)`, async () => {
+    const digest = createHash("sha256").update("author JPEG fixture").digest("hex");
+    const authorImage = { url: candidate.url + `social-${digest}.jpg`, alt: "The author's JPEG" };
+    const post = { ...candidate, image: authorImage };
+    const mock = mockPublisher({ headImage(url) {
+      if (url === authorImage.url) return authorResponse();
+      assert.equal(url, candidate.image.url);
+      return coverAvailable
+        ? new Response(null, { headers: { "Content-Type": "image/jpeg" } })
+        : new Response(null, { status: 404 });
+    } });
+
+    assert.equal(await publishSocial([post], env, mock), coverAvailable);
+    assert.deepEqual(mock.calls.filter(({ method }) => method === "HEAD").map(({ url }) => url), [
+      authorImage.url, candidate.image.url,
+    ]);
+    const entries = mock.states.at(-1);
+    assert.equal(entries.linkedin.status, "accepted");
+    assert.equal(entries.x.status, "accepted");
+    const expectedChannels = coverAvailable ? Object.values(ids) : [ids.linkedin, ids.x];
+    assert.deepEqual(mock.mutations.map(({ input }) => input.channelId), expectedChannels);
+    if (coverAvailable) {
+      const { input } = mock.mutations.at(-1);
+      assert.deepEqual(input.assets, [{ image: { url: candidate.image.url, metadata: { altText: candidate.image.alt } } }]);
+      assert.equal(input.text, copy.instagram);
+      assert.equal(entries.instagram.status, "accepted");
+    } else {
+      assert.equal(entries.instagram.status, "rejected");
+      assert.match(entries.instagram.reason, /JPEG.*unavailable/);
+    }
+  });
+}
 
 test("a dry run previews all three announcements without external requests (task 0004)", async () => {
   const mock = mockPublisher();
@@ -359,4 +432,55 @@ test("a long title leaves room for the URL in a standard X announcement (task 00
   assert.equal(url, candidate.url);
   assert.ok(title.endsWith("…"));
   assert.ok(Array.from(title).length * 2 + 24 <= 280);
+});
+
+const bufferLinkedInWeight = (text) => text.replace(/https?:\/\/[^\s]+/g, "u".repeat(24)).length;
+const bufferInstagramWeight = (text) => text.replace(/\n/g, "\n\n").length;
+
+for (const [channel, limit, suffix, weight] of [
+  ["linkedin", 3_000, "\n\n" + candidate.url, bufferLinkedInWeight],
+  ["instagram", 2_196, "\n\nRead it via the R&D link in my bio.", bufferInstagramWeight],
+]) {
+  test(`${channel} fits long text while keeping complete emoji and the full suffix (task 0005)`, () => {
+    const emoji = "👩‍🔬";
+    const prefix = candidate.title + "\n\n";
+    const room = limit - weight(prefix + suffix);
+    const excerptPrefix = "a".repeat(room - emoji.length);
+    const summary = excerptPrefix + emoji;
+    const exact = announcements({ ...candidate, summary })[channel].text;
+    assert.equal(weight(exact), limit);
+    assert.equal(exact, prefix + summary + suffix);
+
+    const shortened = announcements({ ...candidate, summary: summary + "aa" + emoji.repeat(10) })[channel].text;
+    assert.ok(weight(shortened) <= limit);
+    assert.equal(shortened, prefix + excerptPrefix + "…" + suffix);
+
+    const longTitle = announcements({ ...candidate, title: "波".repeat(3_200) })[channel].text;
+    assert.ok(weight(longTitle) <= limit);
+    assert.ok(longTitle.startsWith("波") && longTitle.endsWith("…" + suffix));
+  });
+}
+
+test("LinkedIn reserves Buffer's full URL cost for links in announcement text (task 0005)", () => {
+  const title = "https://a.co ".repeat(12) + "a".repeat(3_000);
+  const suffix = "\n\n" + candidate.url;
+  const text = announcements({ ...candidate, title }).linkedin.text;
+  assert.ok(text.startsWith("https://a.co "));
+  assert.ok(text.endsWith("…" + suffix));
+  assert.ok(bufferLinkedInWeight(text) <= 3_000);
+});
+
+test("X counts NFC-expanded musical symbols and keeps complete notes before the link (task 0005)", () => {
+  // U+1D15E expands in NFC to U+1D157 U+1D165. Both scalars weigh two on X.
+  const note = "\u{1D15E}";
+  const normalizedNote = "\u{1D157}\u{1D165}";
+  const suffix = "\n" + candidate.url;
+  const exact = announcements({ ...candidate, title: note.repeat(64) }).x.text;
+  assert.equal(exact, normalizedNote.repeat(64) + suffix, "64 four-unit notes plus the link and newline exactly fit");
+
+  const overflow = announcements({ ...candidate, title: note.repeat(65) }).x.text;
+  assert.ok(overflow.endsWith("…" + suffix));
+  const title = overflow.slice(0, -suffix.length);
+  assert.ok(Array.from(title).length * 2 + 24 <= 280);
+  assert.equal(title, normalizedNote.repeat(63) + "…", "the last visible note keeps its stem");
 });
