@@ -17,7 +17,13 @@ const discussion = fixture.discussions.find(({ number }) => number === 14);
 const candidate = {
   number: 14,
   title: "Learning shaders, one triangle at a time",
-  summary: "Notes from my first week writing fragment shaders for the banner wireframes.",
+  text: [
+    "Notes from my first week writing fragment shaders for the banner wireframes.",
+    "What clicked",
+    "Thinking in uv space made everything simpler.",
+    "The banner's spin, as a clip instead of a GIF:",
+    "Off-site video is dropped:",
+  ].join("\n\n"),
   url: SITE + "/rd/14-learning-shaders-one-triangle-at-a-time/",
   updatedAt: discussion.createdAt,
   image: {
@@ -27,10 +33,14 @@ const candidate = {
 };
 const cover = readFileSync(join(root, "assets", "img", "rd-social.jpg"));
 candidate.revision = createHash("sha256").update(JSON.stringify(candidate)).update(cover).digest("hex");
+const linkedinSuffix = "\n\n" + candidate.url;
+const xSuffix = "\n" + candidate.url;
+const instagramSuffix = "\n\nRead it via the R&D link in my bio.";
+const articleCopy = candidate.title + "\n\n" + candidate.text;
 const copy = {
-  linkedin: "Learning shaders, one triangle at a time\n\nNotes from my first week writing fragment shaders for the banner wireframes.\n\nhttps://emilianomanaloiv.github.io/rd/14-learning-shaders-one-triangle-at-a-time/",
-  x: "Learning shaders, one triangle at a time\nhttps://emilianomanaloiv.github.io/rd/14-learning-shaders-one-triangle-at-a-time/",
-  instagram: "Learning shaders, one triangle at a time\n\nNotes from my first week writing fragment shaders for the banner wireframes.\n\nRead it via the R&D link in my bio.",
+  linkedin: articleCopy + linkedinSuffix,
+  x: articleCopy + xSuffix,
+  instagram: articleCopy + instagramSuffix,
 };
 const ids = { linkedin: "linked-in-id", x: "x-id", instagram: "insta-id" };
 const env = {
@@ -150,11 +160,12 @@ function mockPublisher({
   };
 }
 
-test("only labeled owner R&D posts announce, with exact channel copy and the Instagram fallback (task 0004)", async (t) => {
+test("only labeled owner R&D posts announce, with exact article copy and the Instagram fallback (tasks 0004, 0006)", async (t) => {
   const content = structuredClone(fixture);
   const post = content.discussions.find(({ number }) => number === 14);
   const comment = post.comments.nodes[0];
-  comment.bodyHTML += attachJpeg(content, "comment", "A visitor's JPEG");
+  comment.bodyHTML += '<p>Keep this visitor comment on the site.</p>'
+    + attachJpeg(content, "comment", "A visitor's JPEG");
   for (const item of content.discussions.filter(({ number }) => [12, 3, 24].includes(number))) {
     item.labels ??= { nodes: [] };
     item.labels.nodes.push({ name: "share: social" });
@@ -164,6 +175,7 @@ test("only labeled owner R&D posts announce, with exact channel copy and the Ins
   assert.ok(!existsSync(join(out, "social.json")), "the manifest is outside the deployed site");
   const article = join(out, new URL(candidate.url).pathname);
   const page = readFileSync(join(article, "index.html"), "utf8");
+  assert.match(page, /Keep this visitor comment on the site\./);
   assert.match(page, /alt="A visitor&#39;s JPEG"/, "the comment JPEG is on the page but cannot be selected");
   const mock = mockPublisher({ page });
   assert.equal(await publishSocial(posts, env, mock), true);
@@ -200,6 +212,38 @@ test("only labeled owner R&D posts announce, with exact channel copy and the Ins
   assert.deepEqual(mock.calls.slice(callsBefore).map(({ method, url }) => [method, url]), [
     ["GET", `https://api.github.com/repos/${REPO}/contents/14.json?ref=${BRANCH}`],
   ], "renaming an accepted Discussion only reads its existing record");
+});
+
+test("all three channels keep the complete opening paragraph and the paragraph break (task 0006)", (t) => {
+  const content = structuredClone(fixture);
+  const post = content.discussions.find(({ number }) => number === 14);
+  const first = "The shader scales the texture coordinates before sampling the image. ".repeat(2)
+    + "I compared the color & contrast on both screens.";
+  const second = "Next, add highlights.";
+  post.bodyHTML = `<p>${first.replace(" & ", " &amp; ")}</p><p>${second}</p>`;
+
+  const { posts: [announcement] } = buildFixture(t, content);
+  const fullBody = first + "\n\n" + second;
+  assert.ok(first.length > 160);
+  assert.equal(announcement.text, fullBody);
+  const fullCopy = candidate.title + "\n\n" + fullBody;
+  assert.ok(fullCopy.length + 24 <= 280);
+  assert.deepEqual(announcements(announcement), {
+    linkedin: { text: fullCopy + linkedinSuffix },
+    x: { text: fullCopy + xSuffix },
+    instagram: { text: fullCopy + instagramSuffix, image: candidate.image },
+  });
+});
+
+test("social copy preserves punctuation and words next to inline markup (task 0006)", (t) => {
+  const content = structuredClone(fixture);
+  const post = content.discussions.find(({ number }) => number === 14);
+  post.bodyHTML = "<div>Use <code>uv</code>.</div><div>Re<em>render</em> the scene.</div>"
+    + "<details><summary>More detail</summary><p>One more paragraph.</p></details>"
+    + "<blockquote>Lead<p>Nested paragraph.</p></blockquote>";
+
+  const { posts: [announcement] } = buildFixture(t, content);
+  assert.equal(announcement.text, "Use uv.\n\nRerender the scene.\n\nMore detail\n\nOne more paragraph.\n\nLead\n\nNested paragraph.");
 });
 
 test("Instagram gets the author's first compatible JPEG and its alt text (task 0004)", (t) => {
@@ -428,34 +472,32 @@ test("Instagram personal accounts are caught before the publish request (task 00
 });
 
 test("a long title leaves room for the URL in a standard X announcement (task 0004)", () => {
-  const [title, url] = announcements({ ...candidate, title: "波".repeat(200) }).x.text.split("\n");
-  assert.equal(url, candidate.url);
-  assert.ok(title.endsWith("…"));
-  assert.ok(Array.from(title).length * 2 + 24 <= 280);
+  const { x } = announcements({ ...candidate, title: "波".repeat(200), text: "" });
+  assert.equal(x.text, "波".repeat(127) + "…" + xSuffix);
 });
 
 const bufferLinkedInWeight = (text) => text.replace(/https?:\/\/[^\s]+/g, "u".repeat(24)).length;
 const bufferInstagramWeight = (text) => text.replace(/\n/g, "\n\n").length;
 
 for (const [channel, limit, suffix, weight] of [
-  ["linkedin", 3_000, "\n\n" + candidate.url, bufferLinkedInWeight],
-  ["instagram", 2_196, "\n\nRead it via the R&D link in my bio.", bufferInstagramWeight],
+  ["linkedin", 3_000, linkedinSuffix, bufferLinkedInWeight],
+  ["instagram", 2_196, instagramSuffix, bufferInstagramWeight],
 ]) {
   test(`${channel} fits long text while keeping complete emoji and the full suffix (task 0005)`, () => {
     const emoji = "👩‍🔬";
-    const prefix = candidate.title + "\n\n";
+    const prefix = candidate.title + "\n\n" + "First paragraph.\n\n";
     const room = limit - weight(prefix + suffix);
-    const excerptPrefix = "a".repeat(room - emoji.length);
-    const summary = excerptPrefix + emoji;
-    const exact = announcements({ ...candidate, summary })[channel].text;
+    const lastParagraphPrefix = "a".repeat(room - emoji.length);
+    const text = "First paragraph.\n\n" + lastParagraphPrefix + emoji;
+    const exact = announcements({ ...candidate, text })[channel].text;
     assert.equal(weight(exact), limit);
-    assert.equal(exact, prefix + summary + suffix);
+    assert.equal(exact, prefix + lastParagraphPrefix + emoji + suffix);
 
-    const shortened = announcements({ ...candidate, summary: summary + "aa" + emoji.repeat(10) })[channel].text;
+    const shortened = announcements({ ...candidate, text: text + "aa" + emoji.repeat(10) })[channel].text;
     assert.ok(weight(shortened) <= limit);
-    assert.equal(shortened, prefix + excerptPrefix + "…" + suffix);
+    assert.equal(shortened, prefix + lastParagraphPrefix + "…" + suffix);
 
-    const longTitle = announcements({ ...candidate, title: "波".repeat(3_200) })[channel].text;
+    const longTitle = announcements({ ...candidate, title: "波".repeat(3_200), text: "" })[channel].text;
     assert.ok(weight(longTitle) <= limit);
     assert.ok(longTitle.startsWith("波") && longTitle.endsWith("…" + suffix));
   });
@@ -463,24 +505,95 @@ for (const [channel, limit, suffix, weight] of [
 
 test("LinkedIn reserves Buffer's full URL cost for links in announcement text (task 0005)", () => {
   const title = "https://a.co ".repeat(12) + "a".repeat(3_000);
-  const suffix = "\n\n" + candidate.url;
-  const text = announcements({ ...candidate, title }).linkedin.text;
+  const text = announcements({ ...candidate, title, text: "" }).linkedin.text;
   assert.ok(text.startsWith("https://a.co "));
-  assert.ok(text.endsWith("…" + suffix));
+  assert.ok(text.endsWith("…" + linkedinSuffix));
   assert.ok(bufferLinkedInWeight(text) <= 3_000);
+});
+
+test("X keeps punctuated ASCII article text at exactly 280 units (task 0006)", () => {
+  const title = "Shader notes: part 1. Ready?";
+  const prefix = title + "\n\n";
+  const sentence = "RGB: red, green, blue. What changed? ";
+  const body = sentence.repeat(5);
+  const text = body + "a".repeat(256 - prefix.length - body.length);
+  assert.equal((prefix + text).length + 24, 280);
+  assert.equal(announcements({ ...candidate, title, text }).x.text, prefix + text + xSuffix);
+  // In twitter-text v3, U+2026 takes two units.
+  assert.equal(announcements({ ...candidate, title, text: text + "!" }).x.text,
+    prefix + text.slice(0, -2) + "…" + xSuffix);
+});
+
+test("X counts short, long and bare article URLs at 23 units each and keeps links whole (task 0006)", () => {
+  const title = "Links";
+  const prefix = title + "\n\n";
+  const urls = "https://a.co, example.org/docs, https://example.com/a/long/path?mode=rgb#top.";
+  const weightedUrls = "u".repeat(23) + ", " + "u".repeat(23) + ", " + "u".repeat(23) + ".";
+  const lead = "a".repeat(256 - prefix.length - weightedUrls.length - 1) + " ";
+  assert.equal((prefix + lead + weightedUrls).length + 24, 280);
+  assert.equal(announcements({ ...candidate, title, text: lead + urls }).x.text, prefix + lead + urls + xSuffix);
+  assert.equal(announcements({ ...candidate, title, text: lead + urls + " More." }).x.text,
+    prefix + lead + "https://a.co, example.org/docs,…" + xSuffix);
+});
+
+test("X keeps URLs with balanced parentheses at exactly 280 units (task 0006)", () => {
+  const title = "Shader reference";
+  const prefix = title + "\n\n";
+  for (const url of ["https://en.wikipedia.org/wiki/Shader_(computer_graphics)", "https://example.com/a(b(c)d)e"]) {
+    const lead = "a".repeat(256 - prefix.length - 23 - 1) + " ";
+    assert.equal(announcements({ ...candidate, title, text: lead + url }).x.text, prefix + lead + url + xSuffix);
+  }
+});
+
+test("X distinguishes adjacent links from dotted code identifiers (task 0006)", () => {
+  const title = "Shader notes";
+  const prefix = title + "\n\n";
+  const adjacent = "https://a.co,https://b.co";
+  const lead = "a".repeat(256 - prefix.length - 47 - 1) + " ";
+  assert.equal(announcements({ ...candidate, title, text: lead + adjacent }).x.text,
+    prefix + lead + adjacent + xSuffix);
+  assert.equal(announcements({ ...candidate, title, text: lead + adjacent + "!" }).x.text,
+    prefix + lead + "https://a.co,…" + xSuffix);
+
+  const identifier = "render.diffuse";
+  const code = "a".repeat(256 - prefix.length - identifier.length - 1) + " " + identifier;
+  assert.equal(announcements({ ...candidate, title, text: code }).x.text, prefix + code + xSuffix);
+});
+
+test("X counts an NFC-normalized accent and keeps a joined emoji whole (task 0006)", () => {
+  const title = "Shader notes";
+  const prefix = title + "\n\n";
+  const normalizedBody = "a".repeat(256 - prefix.length - 3) + "é";
+  const decomposedBody = normalizedBody.slice(0, -1) + "e\u0301";
+  const emoji = "👩‍🔬";
+  assert.equal(announcements({ ...candidate, title, text: decomposedBody + emoji }).x.text,
+    prefix + normalizedBody + emoji + xSuffix);
+  assert.equal(announcements({ ...candidate, title, text: decomposedBody + emoji + "!" }).x.text,
+    prefix + normalizedBody + "…" + xSuffix);
 });
 
 test("X counts NFC-expanded musical symbols and keeps complete notes before the link (task 0005)", () => {
   // U+1D15E expands in NFC to U+1D157 U+1D165. Both scalars weigh two on X.
   const note = "\u{1D15E}";
   const normalizedNote = "\u{1D157}\u{1D165}";
-  const suffix = "\n" + candidate.url;
-  const exact = announcements({ ...candidate, title: note.repeat(64) }).x.text;
-  assert.equal(exact, normalizedNote.repeat(64) + suffix, "64 four-unit notes plus the link and newline exactly fit");
+  const exact = announcements({ ...candidate, title: note.repeat(64), text: "" }).x.text;
+  assert.equal(exact, normalizedNote.repeat(64) + xSuffix, "64 four-unit notes plus the link and newline exactly fit");
 
-  const overflow = announcements({ ...candidate, title: note.repeat(65) }).x.text;
-  assert.ok(overflow.endsWith("…" + suffix));
-  const title = overflow.slice(0, -suffix.length);
-  assert.ok(Array.from(title).length * 2 + 24 <= 280);
-  assert.equal(title, normalizedNote.repeat(63) + "…", "the last visible note keeps its stem");
+  const overflow = announcements({ ...candidate, title: note.repeat(65), text: "" }).x.text;
+  assert.equal(overflow, normalizedNote.repeat(63) + "…" + xSuffix, "the last visible note keeps its stem");
+});
+
+test("a summary-only manifest still previews copy on every channel (task 0006)", async () => {
+  const { text, ...metadata } = candidate;
+  const summary = text.split("\n\n")[0];
+  const legacy = { ...metadata, summary };
+  const fullCopy = legacy.title + "\n\n" + summary;
+  const mock = mockPublisher();
+  assert.equal(await publishSocial([legacy], { PAGES_DEPLOYED: "success" }, mock), true);
+  assert.deepEqual(mock.calls, []);
+  assert.deepEqual(mock.reports, [
+    [legacy, "linkedin", "preview", { text: fullCopy + linkedinSuffix }],
+    [legacy, "x", "preview", { text: fullCopy + xSuffix }],
+    [legacy, "instagram", "preview", { text: fullCopy + instagramSuffix, image: candidate.image }],
+  ]);
 });

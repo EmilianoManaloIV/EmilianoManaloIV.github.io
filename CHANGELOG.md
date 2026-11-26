@@ -6,6 +6,16 @@ Dates are the owner's local merge dates (Pacific time). Quoted requests are the 
 working sessions, verbatim, typos included; where they weren't kept, **Asked** is reconstructed from the
 pull request and marked so. The numbers under **Checked** are the ones each pull request reported.
 
+## 2026-11-26 (round 28) · Use the article text in social announcements (task 0006, ADR 0020)
+
+**Asked.** “Shouldn't it only cutoff and choose to post this when the message goes beyond the character limit?”
+
+**Changed.** LinkedIn, Instagram and X use the article's plain text with paragraph breaks. Each channel fits the text to its own limit and keeps the article link or Instagram bio prompt.
+
+**Changed after the review.** Block boundaries remain readable around inline markup and nested sections. URL handling preserves balanced paths and adjacent links and counts dotted code identifiers as prose.
+
+**Checked.** Tests cover exact character boundaries, URLs, Unicode, paragraph breaks and older preview artifacts. Offline 211 tests (209 passed, one skipped, one todo), fixture 236 (235 passed, one todo), live 226 (224 passed, one skipped, one todo). JavaScript totaled 19,968 bytes gzipped and the largest page was about 142 KB. The live-content preview included the entire launch article on LinkedIn and Instagram, and the opening with a link on X. Social API requests used mocks.
+
 ## 2026-11-25 (round 27) · Fit social announcements to each platform (task 0005, ADR 0020)
 
 **Asked.** “Sure, lets do that, just In case I post something too large; the post still can be accessed regardless.” The owner asked for the same behavior for text.

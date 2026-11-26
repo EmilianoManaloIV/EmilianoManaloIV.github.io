@@ -31,3 +31,12 @@ Unicode before counting with conservative character and URL weights. A social im
 must satisfy the JPEG size and aspect ratio requirements and be at least 320 pixels wide. If a selected
 image is unavailable on the live site, the publisher checks the branded card before preparing Instagram's
 request. These decisions apply to the announcements and preserve the rendered website article. [Buffer API text limits](https://developers.buffer.com/guides/character-limits.html) · [X character counting](https://docs.x.com/fundamentals/counting-characters) · [Instagram image specifications](https://developers.facebook.com/documentation/instagram-platform/instagram-graph-api/reference/ig-user/media#image-specifications)
+
+## Amendment (2026-11-26, task 0006)
+
+The build uses the author's rendered text, including paragraph breaks, in the social artifact. The
+website cards use their short excerpt. The publisher fits the article text to each channel's limit,
+including X, while preserving the article link or Instagram bio prompt. For X the formatter uses the
+weighted Unicode ranges from twitter-text and counts complete emoji and URLs as units. A checked-in
+IANA root-zone snapshot helps distinguish links from dotted text such as code identifiers. The snapshot
+is local build data. [X character counting](https://docs.x.com/fundamentals/counting-characters) · [twitter-text v3 weights](https://github.com/twitter/twitter-text/blob/master/config/v3.json) · [IANA root-zone data](https://data.iana.org/TLD/tlds-alpha-by-domain.txt)
