@@ -100,8 +100,9 @@ article. Instagram points readers to the R&D link in your bio and uses the artic
 JPEG (at least 320 pixels wide, up to 8 MB, and between 4:5 and 1.91:1). If the JPEG is incompatible
 or unavailable when publishing, Instagram uses the site's R&D card.
 
-Announcements shorten the title and excerpt to fit the channel, while keeping the article link
-or Instagram bio prompt. The website keeps the full article and its supported attachments.
+Announcements use the title and the article's plain text, with paragraph breaks. Each channel gets
+the full text when it fits. Longer announcements end with an ellipsis before the article link or
+Instagram bio prompt. The website displays the full article and its supported attachments.
 
 ### Set it up and preview
 
