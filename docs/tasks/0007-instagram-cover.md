@@ -4,7 +4,7 @@
 - **Requirements:** R-15
 - **Decisions:** ADR 0020
 - **Model:** main session
-- **PR:** pending
+- **PR:** [#38](https://github.com/EmilianoManaloIV/EmilianoManaloIV.github.io/pull/38)
 
 ## Goal and scope
 Use the owner's supplied square R&D graphic when an Instagram announcement needs a fallback image.
