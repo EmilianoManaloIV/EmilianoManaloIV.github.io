@@ -1,0 +1,67 @@
+name: Social announcements
+
+on:
+  workflow_run:
+    workflows: [Test and deploy]
+    branches: [main]
+    types: [completed]
+
+# Keep posts serialized without tying up the Pages deploy slot (ADR 0020).
+concurrency:
+  group: social-publishing
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  social:
+    # A workflow_run can receive write privileges. Accept only this repository's own main deploys.
+    if: >-
+      github.repository == 'EmilianoManaloIV/EmilianoManaloIV.github.io' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.head_branch == 'main' &&
+      contains(fromJSON('["push","workflow_dispatch","discussion","discussion_comment","schedule"]'), github.event.workflow_run.event) &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: write
+      discussions: read
+    steps:
+      - name: Verify Pages deployed
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PAGES_RUN_ID: ${{ github.event.workflow_run.id }}
+          PAGES_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        run: |
+          result=$(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$PAGES_RUN_ID/attempts/$PAGES_RUN_ATTEMPT/jobs" --jq '.jobs[] | select(.name == "deploy") | .conclusion')
+          if [ "$result" = success ]; then
+            echo "result=success" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v5
+        if: steps.pages.outputs.result == 'success'
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        if: steps.pages.outputs.result == 'success'
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v7
+        if: steps.pages.outputs.result == 'success'
+        with:
+          name: social-candidates-${{ github.event.workflow_run.run_attempt }}
+          path: ${{ runner.temp }}
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
+      - name: Preview or submit social announcements
+        if: steps.pages.outputs.result == 'success'
+        env:
+          PAGES_DEPLOYED: ${{ steps.pages.outputs.result }}
+          SOCIAL_PUBLISH: ${{ vars.SOCIAL_PUBLISH }}
+          BUFFER_API_KEY: ${{ vars.SOCIAL_PUBLISH == 'true' && secrets.BUFFER_API_KEY || '' }}
+          BUFFER_ORGANIZATION_ID: ${{ vars.BUFFER_ORGANIZATION_ID }}
+          BUFFER_CHANNEL_IDS: ${{ vars.BUFFER_CHANNEL_IDS }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node tools/publish-social.mjs "$RUNNER_TEMP/social.json"

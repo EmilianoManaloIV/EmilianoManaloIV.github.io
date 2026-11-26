@@ -5,6 +5,7 @@
 //   node tools/build.mjs --offline          no posts or signatures; for quick previews and CI tests
 //   node tools/build.mjs --fixture <file>   content from a saved JSON file, for tests and previews
 //   --out _name                             build into another "_"-prefixed folder of the project
+//   --social-manifest <file>                write the social handoff outside the deployable site
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
@@ -12,6 +13,7 @@ import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import * as r from "./render.mjs";
 import { qrSvg } from "./qr.mjs";
+import { COVER, revisionMarker, socialCandidate, wantsSocial } from "./social.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SITE = "https://emilianomanaloiv.github.io";
@@ -29,6 +31,7 @@ const option = (name) => (args.includes(name) ? args[args.indexOf(name) + 1] : u
 const out = resolve(root, option("--out") ?? "_site");
 const fixturePath = option("--fixture");
 const offline = args.includes("--offline");
+const socialManifest = option("--social-manifest");
 
 // GitHub Actions shows these as warnings on the run.
 const warn = (message) => console.log(process.env.GITHUB_ACTIONS ? `::warning::${message}` : `warning: ${message}`);
@@ -37,17 +40,23 @@ const warn = (message) => console.log(process.env.GITHUB_ACTIONS ? `::warning::$
 
 const COMMENT = "url createdAt isMinimized bodyHTML author { login }";
 const COMMENTS = `comments(first: 100, after: $after) { totalCount pageInfo { hasNextPage endCursor } nodes { ${COMMENT} replies(first: 50) { nodes { ${COMMENT} } } } }`;
+const LABELS = "labels(first: 100) { pageInfo { hasNextPage endCursor } nodes { name } }";
 const DISCUSSIONS = `query($owner: String!, $name: String!, $cursor: String, $after: String) {
   repository(owner: $owner, name: $name) {
     discussionCategories(first: 50) { nodes { name } }
     discussions(first: 50, after: $cursor, orderBy: { field: CREATED_AT, direction: DESC }) {
       pageInfo { hasNextPage endCursor }
-      nodes { number title url createdAt updatedAt bodyHTML author { login } category { name } labels(first: 20) { nodes { name } } ${COMMENTS} }
+      nodes { number title url createdAt updatedAt bodyHTML author { login } category { name } ${LABELS} ${COMMENTS} }
     }
   }
 }`;
 const MORE_COMMENTS = `query($owner: String!, $name: String!, $number: Int!, $after: String) {
   repository(owner: $owner, name: $name) { discussion(number: $number) { ${COMMENTS} } }
+}`;
+const MORE_LABELS = `query($owner: String!, $name: String!, $number: Int!, $after: String) {
+  repository(owner: $owner, name: $name) {
+    discussion(number: $number) { labels(first: 100, after: $after) { pageInfo { hasNextPage endCursor } nodes { name } } }
+  }
 }`;
 
 function token() {
@@ -91,6 +100,19 @@ async function fetchDiscussions() {
   } while (cursor);
   const guestbook = r.findGuestbook(all);
   for (const discussion of all.filter((d) => r.isPost(d) || r.isProject(d) || d === guestbook)) {
+    if (socialManifest && r.isPost(discussion) && !wantsSocial(discussion)) {
+      try {
+        let { pageInfo } = discussion.labels;
+        while (pageInfo.hasNextPage && !wantsSocial(discussion)) {
+          const { repository } = await graphql(auth, MORE_LABELS, { owner, name, number: discussion.number, after: pageInfo.endCursor });
+          if (!repository.discussion) break;
+          discussion.labels.nodes.push(...repository.discussion.labels.nodes);
+          pageInfo = repository.discussion.labels.pageInfo;
+        }
+      } catch {
+        warn("could not read all social labels for R&D discussion #" + discussion.number);
+      }
+    }
     let { pageInfo } = discussion.comments;
     while (pageInfo.hasNextPage) {
       const thread = (await graphql(auth, MORE_COMMENTS, { owner, name, number: discussion.number, after: pageInfo.endCursor })).repository.discussion;
@@ -180,7 +202,7 @@ async function downloadMedia(html, dir, fixtureMedia) {
       counts[kind]++;
       mkdirSync(dir, { recursive: true });
       writeFileSync(join(dir, found.file), bytes);
-      media.set(src, { file: found.file, width: found.width, height: found.height, clip: Boolean(found.clip) });
+      media.set(src, { file: found.file, width: found.width, height: found.height, clip: Boolean(found.clip), bytes: bytes.length });
     } catch (error) {
       warn(`dropped ${kind} ${src.slice(0, 120)}: ${error.message}`);
     }
@@ -227,6 +249,21 @@ function write(file, html) {
   writeFileSync(file, html);
 }
 
+function prepareSocial(post, article, media, dir) {
+  const candidate = socialCandidate(post, article, media, SITE);
+  if (!candidate) return null;
+  const useCover = candidate.image.url === SITE + COVER;
+  const image = readFileSync(useCover ? join(out, COVER) : join(dir, basename(candidate.image.url)));
+  if (!useCover) {
+    // A rerun can never reuse an image name assigned to another attachment on a newer deploy.
+    const file = `social-${createHash("sha256").update(image).digest("hex")}.jpg`;
+    write(join(dir, file), image);
+    candidate.image.url = SITE + post.path + file;
+  }
+  candidate.revision = createHash("sha256").update(JSON.stringify(candidate)).update(image).digest("hex");
+  return candidate;
+}
+
 async function build() {
   // Only ever clear a "_"-prefixed folder directly inside the project.
   if (dirname(out) !== root || !basename(out).startsWith("_")) throw new Error(`refusing to build into ${out}; use --out _name`);
@@ -248,6 +285,7 @@ async function build() {
   // Template values are filled in one pass and never rescanned, so "{{" or "$&" in
   // anything a visitor wrote is inserted as plain text.
   const posts = [];
+  const socialPosts = [];
   for (const d of discussions.filter(r.isPost)) {
     const path = r.postPath(d);
     const dir = join(out, path);
@@ -255,24 +293,34 @@ async function build() {
     const body = r.sanitize(d.bodyHTML);
     const thread = r.renderComments(comments);
     const media = await downloadMedia(body + thread, dir, fixtureMedia);
+    const article = localize(body, media);
     const commentCount = r.countComments(comments);
     const post = { ...d, path, summary: r.summary(body), minutes: r.readingMinutes(body), commentCount };
-    write(
-      join(dir, "index.html"),
-      r.fill(template, {
-        title: r.escapeHtml(d.title),
-        description: r.escapeHtml(post.summary),
-        path,
-        date_iso: r.isoDate(d.createdAt),
-        date: r.formatDate(d.createdAt),
-        minutes: post.minutes,
-        opinion: r.opinionTag(d),
-        body: localize(body, media),
-        comments: localize(thread, media),
-        comment_count: commentCount,
-        discussion_url: r.escapeHtml(d.url),
-      }),
-    );
+    let page = r.fill(template, {
+      title: r.escapeHtml(d.title),
+      description: r.escapeHtml(post.summary),
+      path,
+      date_iso: r.isoDate(d.createdAt),
+      date: r.formatDate(d.createdAt),
+      minutes: post.minutes,
+      opinion: r.opinionTag(d),
+      body: article,
+      comments: localize(thread, media),
+      comment_count: commentCount,
+      discussion_url: r.escapeHtml(d.url),
+    });
+    if (socialManifest) {
+      try {
+        const candidate = prepareSocial(post, article, media, dir);
+        if (candidate) {
+          socialPosts.push(candidate);
+          page = page.replace("</head>", revisionMarker(candidate.revision) + "\n</head>");
+        }
+      } catch {
+        warn("could not prepare a social announcement for R&D discussion #" + post.number);
+      }
+    }
+    write(join(dir, "index.html"), page);
     // /rd/<number>/ always reaches the current address, so renamed posts keep old links working.
     write(join(out, "rd", String(d.number), "index.html"), r.redirectPage(path, SITE));
     posts.push(post);
@@ -395,6 +443,14 @@ async function build() {
   }
   write(join(out, "sitemap.xml"), r.sitemapXml(sitemap));
   write(join(out, "robots.txt"), r.robotsTxt(SITE));
+  // The workflow uploads this separately from the website (task 0004, ADR 0020).
+  if (socialManifest) {
+    try {
+      write(resolve(root, socialManifest), JSON.stringify(socialPosts, null, 2) + "\n");
+    } catch {
+      warn("could not write the social announcements manifest");
+    }
+  }
 
   const mode = offline ? "offline" : fixturePath ? `fixture ${fixturePath}` : `live ${REPO}`;
   console.log(`built ${relative(root, out)}/ (${mode}): ${posts.length} posts, ${projects.length} projects, ${count} guestbook signatures, ${versions.size} fingerprinted assets`);

@@ -39,6 +39,10 @@ HTML · CSS · JS ────┘
 
 Before anything is built from Discussions, CI runs the tests on an offline build and a sample build. Pull requests stop there; only `main` deploys.
 
+After deployment, the owner can opt an R&D article into Instagram, LinkedIn and X announcements with
+a Discussion label. A CI job previews them by default and sends them through Buffer when enabled.
+The owner workflow is in the [manual](docs/MANUAL.md#announce-an-rd-post-on-social-media).
+
 ## What I built
 
 - **A small 3D wireframe engine on `<canvas>`** ([`js/geometry.js`](js/geometry.js)): meshes, rotation, and perspective projection in plain JavaScript, unit-tested.
@@ -99,7 +103,7 @@ You need Node (24, as CI uses). Python is used only to serve the preview.
 ```bash
 node tools/build.mjs --offline                                # build _site/ without posts
 node tools/build.mjs --fixture test/fixtures/discussions.json # build with sample posts and comments
-node --test                                                   # about 200 tests: unit tests plus checks on _site/
+node --test                                                   # 219 tests on the sample build, including one todo
 py -m http.server 8000 --directory _site                      # preview at http://localhost:8000
 ```
 
